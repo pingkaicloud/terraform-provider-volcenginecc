@@ -192,6 +192,22 @@ func resourceWithCreateOnlyPropertyPaths(v []string) ResourceOptionsFunc {
 	}
 }
 
+// resourceWithCollectionIdentities is a helper function to construct functional
+// options that set unordered object collection identity metadata. If called
+// multiple times, the last call replaces prior metadata so generated resource
+// options have deterministic schema-derived behavior.
+func resourceWithCollectionIdentities(v []CollectionIdentity) ResourceOptionsFunc {
+	return func(o *genericResource) error {
+		o.collectionIdentities = make([]CollectionIdentity, len(v))
+		for index, identity := range v {
+			o.collectionIdentities[index] = identity
+			o.collectionIdentities[index].IdentifierPaths = append([]string(nil), identity.IdentifierPaths...)
+		}
+
+		return nil
+	}
+}
+
 const (
 	resourceMaxWaitTimeCreate = 120 * time.Minute
 	resourceMaxWaitTimeUpdate = 120 * time.Minute
@@ -325,6 +341,12 @@ func (opts ResourceOptions) WithCreateOnlyPropertyPaths(v []string) ResourceOpti
 	return append(opts, resourceWithCreateOnlyPropertyPaths(v))
 }
 
+// WithCollectionIdentities appends the option that sets schema-derived unordered
+// object collection identity metadata and returns the updated option list.
+func (opts ResourceOptions) WithCollectionIdentities(v []CollectionIdentity) ResourceOptions {
+	return append(opts, resourceWithCollectionIdentities(v))
+}
+
 // WithCreateTimeoutInMinutes is a helper function to construct functional options
 // that set a resource type's create timeout, append that function to the
 // current slice of functional options and return the new slice of options.
@@ -391,6 +413,7 @@ type genericResource struct {
 	writeOnlyAttributePaths  []*path.Path      // Paths to any write-only attributes
 	readOnlyAttributePaths   []*path.Path      // Paths to any read-only attributes
 	createOnlyAttributePaths []*path.Path      // Paths to any create-only attributes
+	collectionIdentities     []CollectionIdentity
 
 	createTimeout    time.Duration              // Maximum wait time for resource creation
 	updateTimeout    time.Duration              // Maximum wait time for resource update

@@ -104,6 +104,21 @@ func {{ .FactoryFunctionName }}(ctx context.Context) (resource.Resource, error) 
 	{{- end }}
 	})
 {{- end }}
+{{- if .CollectionIdentities }}
+	opts = opts.WithCollectionIdentities([]generic.CollectionIdentity{
+	{{- range .CollectionIdentities }}
+		{
+			PropertyPath: {{ .PropertyPath | printf "%q" }},
+			IdentifierPaths: []string{
+			{{- range .IdentifierPaths }}
+				{{ . | printf "%q" }},
+			{{- end }}
+			},
+			UniqueItems: {{ .UniqueItems }},
+		},
+	{{- end }}
+	})
+{{- end }}
 	opts = opts.WithCreateTimeoutInMinutes({{ .CreateTimeoutInMinutes }}).WithDeleteTimeoutInMinutes({{ .DeleteTimeoutInMinutes }})
 {{ if .HasUpdateMethod }}
 	opts = opts.WithUpdateTimeoutInMinutes({{ .UpdateTimeoutInMinutes }})

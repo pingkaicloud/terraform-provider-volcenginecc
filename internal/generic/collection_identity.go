@@ -11,6 +11,7 @@ import (
 type CollectionIdentity struct {
 	PropertyPath    string
 	IdentifierPaths []string
+	UniqueItems     bool
 }
 
 // alignCollectionByIdentity orders remote elements by matching their identities

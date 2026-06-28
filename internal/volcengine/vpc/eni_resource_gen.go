@@ -316,6 +316,9 @@ func eNIResource(ctx context.Context) (resource.Resource, error) {
 		//
 		//	{
 		//	  "description": "List of private IPv4 addresses for the network interface.",
+		//	  "elementIdentifier": [
+		//	    "/PrivateIpAddress"
+		//	  ],
 		//	  "insertionOrder": false,
 		//	  "items": {
 		//	    "properties": {
@@ -714,6 +717,15 @@ func eNIResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/ProjectName",
 		"/properties/SubnetId",
 		"/properties/PrimaryIpAddress/PrivateIpAddress",
+	})
+	opts = opts.WithCollectionIdentities([]generic.CollectionIdentity{
+		{
+			PropertyPath: "/PrivateIpSets",
+			IdentifierPaths: []string{
+				"/PrivateIpAddress",
+			},
+			UniqueItems: true,
+		},
 	})
 	opts = opts.WithCreateTimeoutInMinutes(0).WithDeleteTimeoutInMinutes(0)
 
