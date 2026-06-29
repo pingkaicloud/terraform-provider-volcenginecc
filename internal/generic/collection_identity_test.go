@@ -377,6 +377,86 @@ func TestNormalizeIdentityCollectionsForPatch(t *testing.T) {
 	}
 }
 
+func TestNormalizeIdentityCollectionsRejectsUnsafeIdentity(t *testing.T) {
+	identity := []CollectionIdentity{{
+		PropertyPath:    "/Labels",
+		IdentifierPaths: []string{"/Name"},
+	}}
+
+	tests := map[string]struct {
+		current   string
+		planned   string
+		wantError string
+	}{
+		"missing identity": {
+			current:   `{"Labels":[{"Value":"one"}]}`,
+			planned:   `{"Labels":[{"Name":"A","Value":"one"}]}`,
+			wantError: `identifier path "/Name" is missing`,
+		},
+		"duplicate current identity": {
+			current:   `{"Labels":[{"Name":"A","Value":"one"},{"Name":"A","Value":"two"}]}`,
+			planned:   `{"Labels":[{"Name":"A","Value":"new"}]}`,
+			wantError: "duplicate identity",
+		},
+		"duplicate planned identity": {
+			current:   `{"Labels":[{"Name":"A","Value":"one"}]}`,
+			planned:   `{"Labels":[{"Name":"A","Value":"one"},{"Name":"A","Value":"two"}]}`,
+			wantError: "duplicate identity",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, _, err := normalizeIdentityCollections(test.current, test.planned, identity)
+			if err == nil || !strings.Contains(err.Error(), test.wantError) {
+				t.Fatalf("normalizeIdentityCollections() error = %v, want containing %q", err, test.wantError)
+			}
+		})
+	}
+}
+
+func TestNormalizeIdentityCollectionsForSetAndMultisetMetadata(t *testing.T) {
+	tests := map[string]CollectionIdentity{
+		"set metadata": {
+			PropertyPath:    "/Labels",
+			IdentifierPaths: []string{"/Name"},
+			UniqueItems:     true,
+		},
+		"multiset metadata": {
+			PropertyPath:    "/Labels",
+			IdentifierPaths: []string{"/Name"},
+			UniqueItems:     false,
+		},
+	}
+
+	for name, identity := range tests {
+		t.Run(name, func(t *testing.T) {
+			normalizedCurrent, normalizedPlanned, err := normalizeIdentityCollections(
+				`{"Labels":[{"Name":"A","Value":"old"},{"Name":"B","Value":"same"}]}`,
+				`{"Labels":[{"Name":"B","Value":"same"},{"Name":"A","Value":"new"}]}`,
+				[]CollectionIdentity{identity},
+			)
+			if err != nil {
+				t.Fatalf("normalizeIdentityCollections() error = %v", err)
+			}
+
+			patch, err := patchDocument(normalizedCurrent, normalizedPlanned)
+			if err != nil {
+				t.Fatalf("patchDocument() error = %v", err)
+			}
+			if !strings.Contains(patch, `/Labels/1/Value`) {
+				t.Fatalf("patch does not target reordered A value: %s", patch)
+			}
+
+			applied, err := applyTestJSONPatch(normalizedCurrent, patch)
+			if err != nil {
+				t.Fatalf("applying patch %s to %s: %v", patch, normalizedCurrent, err)
+			}
+			assertJSONEqual(t, applied, `{"Labels":[{"Name":"B","Value":"same"},{"Name":"A","Value":"new"}]}`)
+		})
+	}
+}
+
 func identityElement(name, value string) map[string]interface{} {
 	return map[string]interface{}{"Name": name, "Value": value}
 }
