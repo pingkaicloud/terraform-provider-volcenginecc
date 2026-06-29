@@ -116,20 +116,23 @@ func resourceIsImmutableType(v bool) ResourceOptionsFunc {
 func resourceWithWriteOnlyPropertyPaths(v []string) ResourceOptionsFunc {
 	return func(o *genericResource) error {
 		writeOnlyAttributePaths := make([]*path.Path, 0)
+		writeOnlyPropertyPaths := make([]string, 0)
 
 		for _, writeOnlyPropertyPath := range v {
-			writeOnlyPropertyPath = strings.ReplaceAll(writeOnlyPropertyPath, "/*/", "/")
-			writeOnlyPropertyPath = strings.TrimSuffix(writeOnlyPropertyPath, "/*")
-			writeOnlyAttributePath, err := o.propertyPathToAttributePath(writeOnlyPropertyPath)
+			attributePropertyPath := strings.ReplaceAll(writeOnlyPropertyPath, "/*/", "/")
+			attributePropertyPath = strings.TrimSuffix(attributePropertyPath, "/*")
+			writeOnlyAttributePath, err := o.propertyPathToAttributePath(attributePropertyPath)
 
 			if err != nil {
 				// return fmt.Errorf("creating write-only attribute path (%s): %w", writeOnlyPropertyPath, err)
 				continue
 			}
 
+			writeOnlyPropertyPaths = append(writeOnlyPropertyPaths, writeOnlyPropertyPath)
 			writeOnlyAttributePaths = append(writeOnlyAttributePaths, writeOnlyAttributePath)
 		}
 
+		o.writeOnlyPropertyPaths = writeOnlyPropertyPaths
 		o.writeOnlyAttributePaths = writeOnlyAttributePaths
 
 		return nil
@@ -410,7 +413,8 @@ type genericResource struct {
 	tfToCcNameMap            map[string]string    // Map of Terraform attribute name to Cloud Control property name
 	ccToTfNameMap            map[string]string    // Map of Cloud Control property name to Terraform attribute name
 	isImmutableType          bool                 // Resources cannot be updated and must be recreated
-	writeOnlyAttributePaths  []*path.Path         // Paths to any write-only attributes
+	writeOnlyPropertyPaths   []string             // Cloud Control JSON Pointer paths to any write-only properties
+	writeOnlyAttributePaths  []*path.Path         // Terraform attribute paths to any write-only attributes
 	readOnlyAttributePaths   []*path.Path         // Paths to any read-only attributes
 	createOnlyAttributePaths []*path.Path         // Paths to any create-only attributes
 	collectionIdentities     []CollectionIdentity // Identity metadata for unordered object collections
@@ -636,9 +640,24 @@ func (r *genericResource) Read(ctx context.Context, request resource.ReadRequest
 		Raw:    val,
 	}
 
+	if len(r.collectionIdentities) > 0 && len(r.writeOnlyPropertyPaths) > 0 {
+		response.State.Raw, err = r.restoreIdentityCollectionWriteOnlyValues(request.State.Raw, response.State.Raw)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Unable to restore unordered collection write-only values",
+				fmt.Sprintf("Unable to restore write-only values by collection identity. Original Error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
 	// Copy over any write-only values.
 	// They can only be in the current state.
-	for _, path := range r.writeOnlyAttributePaths {
+	for index, path := range r.writeOnlyAttributePaths {
+		if index < len(r.writeOnlyPropertyPaths) && r.writeOnlyPathBelongsToIdentityCollection(r.writeOnlyPropertyPaths[index]) {
+			continue
+		}
 		response.Diagnostics.Append(copyStateValueAtPath(ctx, &response.State, &request.State, *path)...)
 		if response.Diagnostics.HasError() {
 			return
