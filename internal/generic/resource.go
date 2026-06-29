@@ -422,6 +422,8 @@ type genericResource struct {
 	provider         tfcloudcontrol.Provider
 }
 
+var _ resource.ResourceWithModifyPlan = (*genericResource)(nil)
+
 var (
 	// Path to the "id" attribute which uniquely (for a specific resource type) identifies the resource.
 	// This attribute is required for acceptance testing.
@@ -440,6 +442,26 @@ func (r *genericResource) Configure(_ context.Context, request resource.Configur
 	if v := request.ProviderData; v != nil {
 		r.provider = v.(tfcloudcontrol.Provider)
 	}
+}
+
+// ModifyPlan reconciles unknown computed values in identity-bearing collections
+// with prior values. It never pairs unsafe identities or falls back to indexes,
+// so user changes remain in the plan.
+func (r *genericResource) ModifyPlan(ctx context.Context, request resource.ModifyPlanRequest, response *resource.ModifyPlanResponse) {
+	response.Plan = request.Plan
+
+	if len(r.collectionIdentities) == 0 || request.Plan.Raw.IsNull() || !request.Plan.Raw.IsKnown() ||
+		request.State.Raw.IsNull() || !request.State.Raw.IsKnown() {
+		return
+	}
+
+	plan, err := r.mergeIdentityCollectionPlans(request.Config.Raw, request.State.Raw, request.Plan.Raw)
+	if err != nil {
+		response.Diagnostics.AddError("Unable to merge unordered collection plan", err.Error())
+		return
+	}
+
+	response.Plan.Raw = plan
 }
 
 func (r *genericResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
