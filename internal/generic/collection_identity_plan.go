@@ -180,24 +180,26 @@ func mergeTerraformCollectionPlan(config, prior, planned tftypes.Value, identifi
 	if err != nil {
 		return planned, err
 	}
-	configByIdentity, err := indexTerraformElements(configElements, identifiers)
-	if err != nil {
-		return planned, err
-	}
 	priorByIdentity, err := indexTerraformElements(priorElements, identifiers)
 	if err != nil {
 		return planned, err
 	}
+	configByIdentity, configIndexErr := indexTerraformElements(configElements, identifiers)
+	configByIdentityOK := configIndexErr == nil
 
 	merged := make([]tftypes.Value, 0, len(plannedElements))
-	for _, plannedElement := range plannedElements {
+	for plannedIndex, plannedElement := range plannedElements {
 		key, err := terraformElementIdentity(plannedElement, identifiers)
 		if err != nil {
 			return planned, err
 		}
-		configElement, configured := configByIdentity[key]
 		priorElement, existed := priorByIdentity[key]
-		if !configured || !existed {
+		if !existed {
+			merged = append(merged, plannedElement)
+			continue
+		}
+		configElement, configured := configElementForPlannedIdentity(configElements, configByIdentity, configByIdentityOK, key, plannedIndex)
+		if !configured {
 			merged = append(merged, plannedElement)
 			continue
 		}
@@ -208,6 +210,25 @@ func mergeTerraformCollectionPlan(config, prior, planned tftypes.Value, identifi
 		merged = append(merged, mergedElement)
 	}
 	return tftypes.NewValue(planned.Type(), merged), nil
+}
+
+// configElementForPlannedIdentity returns the config element used for field
+// ownership checks, falling back to planned position only after identity pairing.
+func configElementForPlannedIdentity(
+	configElements []tftypes.Value,
+	configByIdentity map[string]tftypes.Value,
+	configByIdentityOK bool,
+	key string,
+	plannedIndex int,
+) (tftypes.Value, bool) {
+	if configByIdentityOK {
+		configElement, ok := configByIdentity[key]
+		return configElement, ok
+	}
+	if plannedIndex >= len(configElements) {
+		return tftypes.Value{}, false
+	}
+	return configElements[plannedIndex], true
 }
 
 // terraformCollectionElements decodes either a Terraform set or list without

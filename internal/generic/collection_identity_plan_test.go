@@ -58,6 +58,21 @@ func TestMergeTerraformCollectionPlan(t *testing.T) {
 				terraformPlanElement(elementType, "first", "explicit", "new"),
 			},
 		},
+		"multiset list can read config omission when create-only identity is read back": {
+			collectionType: tftypes.List{ElementType: elementType},
+			config: []tftypes.Value{
+				terraformPlanElement(elementType, nil, nil, "config"),
+			},
+			prior: []tftypes.Value{
+				terraformPlanElement(elementType, "same", nil, "old"),
+			},
+			planned: []tftypes.Value{
+				terraformPlanElement(elementType, "same", tftypes.UnknownValue, "config"),
+			},
+			want: []tftypes.Value{
+				terraformPlanElement(elementType, "same", nil, "config"),
+			},
+		},
 		"identity change remains a removal and addition": {
 			collectionType: tftypes.Set{ElementType: elementType},
 			config: []tftypes.Value{
@@ -120,7 +135,7 @@ func TestMergeTerraformCollectionPlanUnsafeIdentityPreservesPlan(t *testing.T) {
 	}
 }
 
-func terraformPlanElement(elementType tftypes.Object, identity string, computed, writable interface{}) tftypes.Value {
+func terraformPlanElement(elementType tftypes.Object, identity interface{}, computed, writable interface{}) tftypes.Value {
 	return tftypes.NewValue(elementType, map[string]tftypes.Value{
 		"identity": tftypes.NewValue(tftypes.String, identity),
 		"computed": tftypes.NewValue(tftypes.String, computed),
