@@ -222,8 +222,9 @@ func configElementForPlannedIdentity(
 	plannedIndex int,
 ) (tftypes.Value, bool) {
 	if configByIdentityOK {
-		configElement, ok := configByIdentity[key]
-		return configElement, ok
+		if configElement, ok := configByIdentity[key]; ok {
+			return configElement, true
+		}
 	}
 	if plannedIndex >= len(configElements) {
 		return tftypes.Value{}, false

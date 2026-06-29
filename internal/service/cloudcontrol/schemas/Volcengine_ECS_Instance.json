@@ -217,7 +217,8 @@
         "PrimaryIpAddress": {
           "description": "Instance primary IP address",
           "semantic": "privateIp",
-          "type": "string"
+          "type": "string",
+          "useStateForEmpty": true
         },
         "PrivateIpAddresses": {
           "description": "Instance private IP address.",
