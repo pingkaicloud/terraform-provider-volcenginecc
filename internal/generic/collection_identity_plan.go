@@ -231,6 +231,92 @@ func configElementForPlannedIdentity(
 	return configElements[plannedIndex], true
 }
 
+// alignIdentityCollectionState reorders remote readback collections to prior
+// identity order while preserving each complete remote element value.
+func (r *genericResource) alignIdentityCollectionState(prior, remote tftypes.Value) (tftypes.Value, error) {
+	result := remote
+	for _, identity := range r.collectionIdentities {
+		attributeNames, err := r.collectionAttributeNames(identity.PropertyPath)
+		if err != nil {
+			return remote, err
+		}
+		if len(attributeNames) != 1 {
+			continue
+		}
+		attributePath := terraformAttributePath(attributeNames)
+		priorCollection, err := terraformValueAtPath(prior, attributePath)
+		if err != nil {
+			return remote, fmt.Errorf("reading prior collection %q: %w", identity.PropertyPath, err)
+		}
+		remoteCollection, err := terraformValueAtPath(result, attributePath)
+		if err != nil {
+			return remote, fmt.Errorf("reading remote collection %q: %w", identity.PropertyPath, err)
+		}
+		identifierNames, err := r.identifierAttributeNames(identity.IdentifierPaths)
+		if err != nil {
+			return remote, err
+		}
+		aligned, err := alignTerraformCollectionState(priorCollection, remoteCollection, identifierNames)
+		if err != nil {
+			return remote, fmt.Errorf("aligning remote collection %q: %w", identity.PropertyPath, err)
+		}
+		result, err = replaceTerraformValueAtPath(result, attributePath, aligned)
+		if err != nil {
+			return remote, fmt.Errorf("setting remote collection %q: %w", identity.PropertyPath, err)
+		}
+	}
+	return result, nil
+}
+
+// alignTerraformCollectionState orders matched remote elements by prior
+// identity and appends remote-only elements without dropping remote readback.
+func alignTerraformCollectionState(prior, remote tftypes.Value, identifiers [][]string) (tftypes.Value, error) {
+	if prior.IsNull() || !prior.IsKnown() || remote.IsNull() || !remote.IsKnown() {
+		return remote, nil
+	}
+	priorElements, err := terraformCollectionElements(prior)
+	if err != nil {
+		return remote, err
+	}
+	remoteElements, err := terraformCollectionElements(remote)
+	if err != nil {
+		return remote, err
+	}
+	if _, err := indexTerraformElements(priorElements, identifiers); err != nil {
+		return remote, err
+	}
+	remoteByIdentity, err := indexTerraformElements(remoteElements, identifiers)
+	if err != nil {
+		return remote, err
+	}
+
+	aligned := make([]tftypes.Value, 0, len(remoteElements))
+	seen := make(map[string]struct{}, len(remoteElements))
+	for _, priorElement := range priorElements {
+		key, err := terraformElementIdentity(priorElement, identifiers)
+		if err != nil {
+			return remote, err
+		}
+		remoteElement, ok := remoteByIdentity[key]
+		if !ok {
+			continue
+		}
+		aligned = append(aligned, remoteElement)
+		seen[key] = struct{}{}
+	}
+	for _, remoteElement := range remoteElements {
+		key, err := terraformElementIdentity(remoteElement, identifiers)
+		if err != nil {
+			return remote, err
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		aligned = append(aligned, remoteElement)
+	}
+	return tftypes.NewValue(remote.Type(), aligned), nil
+}
+
 // terraformCollectionElements decodes either a Terraform set or list without
 // imposing index identity semantics.
 func terraformCollectionElements(value tftypes.Value) ([]tftypes.Value, error) {

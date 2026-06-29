@@ -619,6 +619,17 @@ func (r *genericResource) Read(ctx context.Context, request resource.ReadRequest
 
 		return
 	}
+	if len(r.collectionIdentities) > 0 && !request.State.Raw.IsNull() && request.State.Raw.IsKnown() {
+		val, err = r.alignIdentityCollectionState(request.State.Raw, val)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Unable to align unordered collection state",
+				fmt.Sprintf("Unable to align Cloud Control API readback with prior Terraform state by collection identity. Original Error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
 
 	response.State = tfsdk.State{
 		Schema: schema,
