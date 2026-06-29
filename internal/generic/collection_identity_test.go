@@ -68,7 +68,7 @@ func TestAlignCollectionByIdentity(t *testing.T) {
 			prior:           identityElements(identityElement("A", "one")),
 			remote:          identityElements(map[string]interface{}{"Value": "one"}),
 			identifierPaths: []string{"/Name"},
-			wantError:       "missing or null",
+			wantError:       "is missing",
 		},
 	}
 
@@ -95,6 +95,204 @@ func TestAlignCollectionByIdentity(t *testing.T) {
 			}
 			assertStringSliceEqual(t, got, test.wantNames)
 		})
+	}
+}
+
+func TestPairCollectionsByIdentity(t *testing.T) {
+	tests := map[string]struct {
+		left            []interface{}
+		right           []interface{}
+		identifierPaths []string
+		uniqueItems     bool
+		wantMatched     [][2]int
+		wantLeftOnly    []int
+		wantRightOnly   []int
+		wantError       string
+		wantDegraded    string
+	}{
+		"same order and identity": {
+			left:            identityElements(identityElement("A", "old"), identityElement("B", "old")),
+			right:           identityElements(identityElement("A", "old"), identityElement("B", "old")),
+			identifierPaths: []string{"/Name"},
+			uniqueItems:     true,
+			wantMatched:     [][2]int{{0, 0}, {1, 1}},
+		},
+		"reverse order and identity": {
+			left:            identityElements(identityElement("A", "old"), identityElement("B", "old")),
+			right:           identityElements(identityElement("B", "old"), identityElement("A", "old")),
+			identifierPaths: []string{"/Name"},
+			uniqueItems:     true,
+			wantMatched:     [][2]int{{0, 1}, {1, 0}},
+		},
+		"non identity field differs": {
+			left:            identityElements(identityElement("A", "old")),
+			right:           identityElements(identityElement("A", "new")),
+			identifierPaths: []string{"/Name"},
+			uniqueItems:     true,
+			wantMatched:     [][2]int{{0, 0}},
+		},
+		"composite identity": {
+			left: identityElements(
+				map[string]interface{}{"Zone": "z1", "Role": "primary"},
+				map[string]interface{}{"Zone": "z1", "Role": "readonly"},
+			),
+			right: identityElements(
+				map[string]interface{}{"Zone": "z1", "Role": "readonly"},
+				map[string]interface{}{"Zone": "z1", "Role": "primary"},
+			),
+			identifierPaths: []string{"/Zone", "/Role"},
+			wantMatched:     [][2]int{{0, 1}, {1, 0}},
+		},
+		"nested identity": {
+			left: identityElements(
+				map[string]interface{}{"Scope": map[string]interface{}{"Region": "cn-beijing"}},
+			),
+			right: identityElements(
+				map[string]interface{}{"Scope": map[string]interface{}{"Region": "cn-beijing"}},
+			),
+			identifierPaths: []string{"/Scope/Region"},
+			wantMatched:     [][2]int{{0, 0}},
+		},
+		"identity changed": {
+			left:            identityElements(identityElement("A", "same")),
+			right:           identityElements(identityElement("B", "same")),
+			identifierPaths: []string{"/Name"},
+			wantLeftOnly:    []int{0},
+			wantRightOnly:   []int{0},
+		},
+		"element added": {
+			left:            identityElements(identityElement("A", "one")),
+			right:           identityElements(identityElement("A", "one"), identityElement("B", "two")),
+			identifierPaths: []string{"/Name"},
+			wantMatched:     [][2]int{{0, 0}},
+			wantRightOnly:   []int{1},
+		},
+		"element removed": {
+			left:            identityElements(identityElement("A", "one"), identityElement("B", "two")),
+			right:           identityElements(identityElement("B", "two")),
+			identifierPaths: []string{"/Name"},
+			wantMatched:     [][2]int{{1, 0}},
+			wantLeftOnly:    []int{0},
+		},
+		"missing identity": {
+			left:            identityElements(map[string]interface{}{"Value": "one"}),
+			right:           identityElements(identityElement("A", "one")),
+			identifierPaths: []string{"/Name"},
+			wantError:       `identifier path "/Name" is missing`,
+		},
+		"null identity": {
+			left:            identityElements(map[string]interface{}{"Name": nil}),
+			right:           identityElements(identityElement("A", "one")),
+			identifierPaths: []string{"/Name"},
+			wantError:       `identifier path "/Name" is null`,
+		},
+		"unknown identity": {
+			left:            identityElements(map[string]interface{}{"Name": collectionIdentityUnknown}),
+			right:           identityElements(identityElement("A", "one")),
+			identifierPaths: []string{"/Name"},
+			wantError:       `identifier path "/Name" is unknown`,
+		},
+		"duplicate identity on left": {
+			left:            identityElements(identityElement("A", "one"), identityElement("A", "two")),
+			right:           identityElements(identityElement("A", "one")),
+			identifierPaths: []string{"/Name"},
+			wantError:       "indexing left collection: duplicate identity",
+		},
+		"duplicate identity on right": {
+			left:            identityElements(identityElement("A", "one")),
+			right:           identityElements(identityElement("A", "one"), identityElement("A", "two")),
+			identifierPaths: []string{"/Name"},
+			wantError:       "indexing right collection: duplicate identity",
+		},
+		"typed values do not collide": {
+			left:            identityElements(map[string]interface{}{"Name": 1}),
+			right:           identityElements(map[string]interface{}{"Name": "1"}),
+			identifierPaths: []string{"/Name"},
+			wantLeftOnly:    []int{0},
+			wantRightOnly:   []int{0},
+		},
+		"set and multiset use same configured identity core": {
+			left:            identityElements(identityElement("A", "old")),
+			right:           identityElements(identityElement("A", "new")),
+			identifierPaths: []string{"/Name"},
+			uniqueItems:     false,
+			wantMatched:     [][2]int{{0, 0}},
+		},
+		"missing identity metadata degrades without index fallback": {
+			left:         identityElements(identityElement("A", "one")),
+			right:        identityElements(identityElement("A", "one")),
+			uniqueItems:  true,
+			wantDegraded: "no elementIdentifier is configured",
+		},
+		"multiset duplicate without safe identity degrades": {
+			left: identityElements(
+				identityElement("A", "same"),
+				identityElement("A", "same"),
+			),
+			right: identityElements(
+				identityElement("A", "same"),
+				identityElement("A", "same"),
+			),
+			identifierPaths: []string{"/Name"},
+			uniqueItems:     false,
+			wantDegraded:    "multiset contains complete duplicate elements without a safe identity",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			pairing, err := pairCollectionsByIdentity(
+				test.left,
+				test.right,
+				test.identifierPaths,
+				test.uniqueItems,
+			)
+			if test.wantError != "" {
+				if err == nil || !strings.Contains(err.Error(), test.wantError) {
+					t.Fatalf("expected error containing %q, got %v", test.wantError, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if test.wantDegraded != "" {
+				if !pairing.Degraded || pairing.Reason != test.wantDegraded {
+					t.Fatalf("got degraded=%t reason=%q, want reason=%q", pairing.Degraded, pairing.Reason, test.wantDegraded)
+				}
+				return
+			}
+			if pairing.Degraded {
+				t.Fatalf("unexpected degradation: %s", pairing.Reason)
+			}
+			assertCollectionPairs(t, pairing.Matched, test.wantMatched)
+			assertCollectionReferences(t, pairing.LeftOnly, test.wantLeftOnly)
+			assertCollectionReferences(t, pairing.RightOnly, test.wantRightOnly)
+		})
+	}
+}
+
+func assertCollectionPairs(t *testing.T, got []collectionElementPair, want [][2]int) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("got pairs %#v, want indexes %#v", got, want)
+	}
+	for index := range want {
+		if got[index].LeftIndex != want[index][0] || got[index].RightIndex != want[index][1] {
+			t.Fatalf("got pairs %#v, want indexes %#v", got, want)
+		}
+	}
+}
+
+func assertCollectionReferences(t *testing.T, got []collectionElementReference, want []int) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("got references %#v, want indexes %#v", got, want)
+	}
+	for index := range want {
+		if got[index].Index != want[index] {
+			t.Fatalf("got references %#v, want indexes %#v", got, want)
+		}
 	}
 }
 

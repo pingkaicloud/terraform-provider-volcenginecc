@@ -14,42 +14,69 @@ type CollectionIdentity struct {
 	UniqueItems     bool
 }
 
+// collectionElementIdentityKey is a deterministic, type-preserving encoding of
+// all configured identifier values. Composite identifiers retain pointer order.
+type collectionElementIdentityKey string
+
+// collectionElementPair records the logical identity and original indexes of a
+// matched element. Indexes are never inferred as an identity fallback.
+type collectionElementPair struct {
+	Identity   collectionElementIdentityKey
+	LeftIndex  int
+	RightIndex int
+}
+
+// collectionElementReference records an unmatched element and its original index.
+type collectionElementReference struct {
+	Identity collectionElementIdentityKey
+	Index    int
+}
+
+// collectionPairing separates matched and one-sided elements without deciding
+// whether any non-identity field difference should be ignored.
+type collectionPairing struct {
+	Matched   []collectionElementPair
+	LeftOnly  []collectionElementReference
+	RightOnly []collectionElementReference
+	Degraded  bool
+	Reason    string
+}
+
+// unknownCollectionIdentityValue represents a Terraform unknown value before
+// phase C wires Framework values into the collection pairing helper.
+type unknownCollectionIdentityValue struct{}
+
+var collectionIdentityUnknown = unknownCollectionIdentityValue{}
+
+// indexedCollectionElement retains an element's original collection position.
+type indexedCollectionElement struct {
+	index int
+}
+
+// typedIdentityScalar preserves the Go value type in the canonical identity key.
+type typedIdentityScalar struct {
+	Type  string      `json:"type"`
+	Value interface{} `json:"value"`
+}
+
 // alignCollectionByIdentity orders remote elements by matching their identities
 // to prior elements. New remote elements are appended, while missing, duplicate,
 // or incomplete identities return an error instead of falling back to indexes.
 func alignCollectionByIdentity(prior, remote []interface{}, identifierPaths []string) ([]interface{}, error) {
-	if len(identifierPaths) == 0 {
-		return nil, fmt.Errorf("collection identity requires at least one identifier path")
-	}
-
-	priorByIdentity, priorOrder, err := indexCollectionByIdentity(prior, identifierPaths)
+	pairing, err := pairCollectionsByIdentity(prior, remote, identifierPaths, true)
 	if err != nil {
-		return nil, fmt.Errorf("indexing prior collection: %w", err)
+		return nil, err
 	}
-
-	remoteByIdentity, remoteOrder, err := indexCollectionByIdentity(remote, identifierPaths)
-	if err != nil {
-		return nil, fmt.Errorf("indexing remote collection: %w", err)
+	if pairing.Degraded {
+		return nil, fmt.Errorf("collection identity unavailable: %s", pairing.Reason)
 	}
 
 	aligned := make([]interface{}, 0, len(remote))
-	used := make(map[string]struct{}, len(remote))
-
-	for _, identity := range priorOrder {
-		if _, existed := priorByIdentity[identity]; !existed {
-			continue
-		}
-		if remoteElement, ok := remoteByIdentity[identity]; ok {
-			aligned = append(aligned, remoteElement)
-			used[identity] = struct{}{}
-		}
+	for _, pair := range pairing.Matched {
+		aligned = append(aligned, remote[pair.RightIndex])
 	}
-
-	for _, identity := range remoteOrder {
-		if _, ok := used[identity]; ok {
-			continue
-		}
-		aligned = append(aligned, remoteByIdentity[identity])
+	for _, reference := range pairing.RightOnly {
+		aligned = append(aligned, remote[reference.Index])
 	}
 
 	return aligned, nil
@@ -105,39 +132,82 @@ func normalizeIdentityCollections(current, planned string, identities []Collecti
 // appends current-only elements. This makes index-based JSON Patch operations
 // target the intended identity without hiding additions or removals.
 func alignCurrentToPlannedIdentity(current, planned []interface{}, identifierPaths []string) ([]interface{}, error) {
-	currentByIdentity, currentOrder, err := indexCollectionByIdentity(current, identifierPaths)
+	pairing, err := pairCollectionsByIdentity(planned, current, identifierPaths, true)
 	if err != nil {
-		return nil, fmt.Errorf("indexing current collection: %w", err)
+		return nil, err
 	}
-
-	_, plannedOrder, err := indexCollectionByIdentity(planned, identifierPaths)
-	if err != nil {
-		return nil, fmt.Errorf("indexing planned collection: %w", err)
+	if pairing.Degraded {
+		return nil, fmt.Errorf("collection identity unavailable: %s", pairing.Reason)
 	}
 
 	aligned := make([]interface{}, 0, len(current))
-	used := make(map[string]struct{}, len(current))
-	for _, identity := range plannedOrder {
-		if currentElement, ok := currentByIdentity[identity]; ok {
-			aligned = append(aligned, currentElement)
-			used[identity] = struct{}{}
-		}
+	for _, pair := range pairing.Matched {
+		aligned = append(aligned, current[pair.RightIndex])
 	}
-	for _, identity := range currentOrder {
-		if _, ok := used[identity]; ok {
-			continue
-		}
-		aligned = append(aligned, currentByIdentity[identity])
+	for _, reference := range pairing.RightOnly {
+		aligned = append(aligned, current[reference.Index])
 	}
 
 	return aligned, nil
 }
 
-// indexCollectionByIdentity extracts stable identity keys and rejects duplicate
+// pairCollectionsByIdentity pairs two unordered object collections by explicit
+// identity. It preserves left order for matches and removals, right order for
+// additions, and never falls back to array indexes.
+func pairCollectionsByIdentity(left, right []interface{}, identifierPaths []string, uniqueItems bool) (collectionPairing, error) {
+	if !uniqueItems && hasDuplicateCompleteElements(left, right) {
+		return collectionPairing{
+			Degraded: true,
+			Reason:   "multiset contains complete duplicate elements without a safe identity",
+		}, nil
+	}
+	if len(identifierPaths) == 0 {
+		return collectionPairing{Degraded: true, Reason: "no elementIdentifier is configured"}, nil
+	}
+
+	leftByIdentity, leftOrder, err := indexCollectionByIdentity(left, identifierPaths)
+	if err != nil {
+		return collectionPairing{}, fmt.Errorf("indexing left collection: %w", err)
+	}
+	rightByIdentity, rightOrder, err := indexCollectionByIdentity(right, identifierPaths)
+	if err != nil {
+		return collectionPairing{}, fmt.Errorf("indexing right collection: %w", err)
+	}
+
+	result := collectionPairing{}
+	for _, identity := range leftOrder {
+		leftElement := leftByIdentity[identity]
+		if rightElement, ok := rightByIdentity[identity]; ok {
+			result.Matched = append(result.Matched, collectionElementPair{
+				Identity:   identity,
+				LeftIndex:  leftElement.index,
+				RightIndex: rightElement.index,
+			})
+			continue
+		}
+		result.LeftOnly = append(result.LeftOnly, collectionElementReference{
+			Identity: identity,
+			Index:    leftElement.index,
+		})
+	}
+	for _, identity := range rightOrder {
+		if _, ok := leftByIdentity[identity]; ok {
+			continue
+		}
+		result.RightOnly = append(result.RightOnly, collectionElementReference{
+			Identity: identity,
+			Index:    rightByIdentity[identity].index,
+		})
+	}
+
+	return result, nil
+}
+
+// indexCollectionByIdentity extracts typed identity keys and rejects duplicate
 // or incomplete identities so callers never guess element correspondence.
-func indexCollectionByIdentity(collection []interface{}, identifierPaths []string) (map[string]interface{}, []string, error) {
-	byIdentity := make(map[string]interface{}, len(collection))
-	order := make([]string, 0, len(collection))
+func indexCollectionByIdentity(collection []interface{}, identifierPaths []string) (map[collectionElementIdentityKey]indexedCollectionElement, []collectionElementIdentityKey, error) {
+	byIdentity := make(map[collectionElementIdentityKey]indexedCollectionElement, len(collection))
+	order := make([]collectionElementIdentityKey, 0, len(collection))
 	for index, element := range collection {
 		identity, err := collectionElementIdentity(element, identifierPaths)
 		if err != nil {
@@ -146,7 +216,9 @@ func indexCollectionByIdentity(collection []interface{}, identifierPaths []strin
 		if _, exists := byIdentity[identity]; exists {
 			return nil, nil, fmt.Errorf("duplicate identity %s", identity)
 		}
-		byIdentity[identity] = element
+		byIdentity[identity] = indexedCollectionElement{
+			index: index,
+		}
 		order = append(order, identity)
 	}
 	return byIdentity, order, nil
@@ -154,29 +226,58 @@ func indexCollectionByIdentity(collection []interface{}, identifierPaths []strin
 
 // collectionElementIdentity builds a deterministic JSON key from all configured
 // identifier paths. Null, missing, collection, and object values are rejected
-// because they cannot safely identify an element in this prototype.
-func collectionElementIdentity(element interface{}, identifierPaths []string) (string, error) {
-	values := make([]interface{}, 0, len(identifierPaths))
+// because they cannot safely identify an element.
+func collectionElementIdentity(element interface{}, identifierPaths []string) (collectionElementIdentityKey, error) {
+	values := make([]typedIdentityScalar, 0, len(identifierPaths))
 	for _, identifierPath := range identifierPaths {
 		value, found, err := valueAtJSONPointer(element, identifierPath)
 		if err != nil {
 			return "", fmt.Errorf("identifier path %q: %w", identifierPath, err)
 		}
-		if !found || value == nil {
-			return "", fmt.Errorf("identifier path %q is missing or null", identifierPath)
+		if !found {
+			return "", fmt.Errorf("identifier path %q is missing", identifierPath)
+		}
+		if value == nil {
+			return "", fmt.Errorf("identifier path %q is null", identifierPath)
+		}
+		if _, unknown := value.(unknownCollectionIdentityValue); unknown {
+			return "", fmt.Errorf("identifier path %q is unknown", identifierPath)
 		}
 		switch value.(type) {
 		case []interface{}, map[string]interface{}:
 			return "", fmt.Errorf("identifier path %q does not resolve to a scalar", identifierPath)
 		}
-		values = append(values, value)
+		values = append(values, typedIdentityScalar{
+			Type:  fmt.Sprintf("%T", value),
+			Value: value,
+		})
 	}
 
 	identity, err := json.Marshal(values)
 	if err != nil {
 		return "", fmt.Errorf("marshalling identity: %w", err)
 	}
-	return string(identity), nil
+	return collectionElementIdentityKey(identity), nil
+}
+
+// hasDuplicateCompleteElements reports whether either side contains identical
+// complete objects, which a Multiset cannot safely pair without explicit identity.
+func hasDuplicateCompleteElements(collections ...[]interface{}) bool {
+	for _, collection := range collections {
+		seen := make(map[string]struct{}, len(collection))
+		for _, element := range collection {
+			encoded, err := json.Marshal(element)
+			if err != nil {
+				continue
+			}
+			key := string(encoded)
+			if _, ok := seen[key]; ok {
+				return true
+			}
+			seen[key] = struct{}{}
+		}
+	}
+	return false
 }
 
 // collectionAtJSONPointer returns the array at a JSON Pointer path.

@@ -404,16 +404,16 @@ func NewResource(_ context.Context, optFns ...ResourceOptionsFunc) (resource.Res
 
 // Implements resource.Resource.
 type genericResource struct {
-	ccTypeName               string            // Cloud Control type name for the resource type
-	tfSchema                 schema.Schema     // Terraform schema for the resource type
-	tfTypeName               string            // Terraform type name for resource type
-	tfToCcNameMap            map[string]string // Map of Terraform attribute name to Cloud Control property name
-	ccToTfNameMap            map[string]string // Map of Cloud Control property name to Terraform attribute name
-	isImmutableType          bool              // Resources cannot be updated and must be recreated
-	writeOnlyAttributePaths  []*path.Path      // Paths to any write-only attributes
-	readOnlyAttributePaths   []*path.Path      // Paths to any read-only attributes
-	createOnlyAttributePaths []*path.Path      // Paths to any create-only attributes
-	collectionIdentities     []CollectionIdentity
+	ccTypeName               string               // Cloud Control type name for the resource type
+	tfSchema                 schema.Schema        // Terraform schema for the resource type
+	tfTypeName               string               // Terraform type name for resource type
+	tfToCcNameMap            map[string]string    // Map of Terraform attribute name to Cloud Control property name
+	ccToTfNameMap            map[string]string    // Map of Cloud Control property name to Terraform attribute name
+	isImmutableType          bool                 // Resources cannot be updated and must be recreated
+	writeOnlyAttributePaths  []*path.Path         // Paths to any write-only attributes
+	readOnlyAttributePaths   []*path.Path         // Paths to any read-only attributes
+	createOnlyAttributePaths []*path.Path         // Paths to any create-only attributes
+	collectionIdentities     []CollectionIdentity // Identity metadata for unordered object collections
 
 	createTimeout    time.Duration              // Maximum wait time for resource creation
 	updateTimeout    time.Duration              // Maximum wait time for resource update
