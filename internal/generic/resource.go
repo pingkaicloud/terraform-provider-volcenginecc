@@ -818,6 +818,17 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 
 		return
 	}
+	if len(r.collectionIdentities) > 0 {
+		currentDesiredState, plannedDesiredState, err = normalizeIdentityCollections(currentDesiredState, plannedDesiredState, r.collectionIdentities)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Unable to normalize unordered collection update",
+				fmt.Sprintf("Unable to align Cloud Control API current and planned states by collection identity before JSON Patch generation. Original Error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
 	patchDocument, err := patchDocument(currentDesiredState, plannedDesiredState)
 
 	if err != nil {

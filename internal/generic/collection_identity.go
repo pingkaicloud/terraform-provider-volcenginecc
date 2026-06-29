@@ -98,13 +98,16 @@ func normalizeIdentityCollections(current, planned string, identities []Collecti
 	}
 
 	for _, identity := range identities {
-		currentCollection, err := collectionAtJSONPointer(currentRoot, identity.PropertyPath)
+		currentCollection, currentFound, err := optionalCollectionAtJSONPointer(currentRoot, identity.PropertyPath)
 		if err != nil {
 			return "", "", fmt.Errorf("reading current collection %q: %w", identity.PropertyPath, err)
 		}
-		plannedCollection, err := collectionAtJSONPointer(plannedRoot, identity.PropertyPath)
+		plannedCollection, plannedFound, err := optionalCollectionAtJSONPointer(plannedRoot, identity.PropertyPath)
 		if err != nil {
 			return "", "", fmt.Errorf("reading planned collection %q: %w", identity.PropertyPath, err)
+		}
+		if !currentFound || !plannedFound {
+			continue
 		}
 
 		alignedCurrent, err := alignCurrentToPlannedIdentity(currentCollection, plannedCollection, identity.IdentifierPaths)
@@ -280,20 +283,22 @@ func hasDuplicateCompleteElements(collections ...[]interface{}) bool {
 	return false
 }
 
-// collectionAtJSONPointer returns the array at a JSON Pointer path.
-func collectionAtJSONPointer(root interface{}, pointer string) ([]interface{}, error) {
+// optionalCollectionAtJSONPointer returns a collection when the path exists as
+// an array, and reports not found for missing or null paths so whole-field
+// additions and removals can be left to JSON Patch generation.
+func optionalCollectionAtJSONPointer(root interface{}, pointer string) ([]interface{}, bool, error) {
 	value, found, err := valueAtJSONPointer(root, pointer)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	if !found {
-		return nil, fmt.Errorf("path not found")
+	if !found || value == nil {
+		return nil, false, nil
 	}
 	collection, ok := value.([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("expected array, got %T", value)
+		return nil, false, fmt.Errorf("expected array, got %T", value)
 	}
-	return collection, nil
+	return collection, true, nil
 }
 
 // setCollectionAtJSONPointer replaces the array at a JSON Pointer path.

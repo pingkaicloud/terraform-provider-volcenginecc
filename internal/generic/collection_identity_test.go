@@ -334,6 +334,16 @@ func TestNormalizeIdentityCollectionsForPatch(t *testing.T) {
 			planned:       `{"Labels":[{"Name":"C","Value":"three"},{"Name":"A","Value":"one"}]}`,
 			wantFinalJSON: `{"Labels":[{"Name":"C","Value":"three"},{"Name":"A","Value":"one"}]}`,
 		},
+		"U6 missing planned collection is left to whole-field patch": {
+			current:       `{"Labels":[{"Name":"A","Value":"one"}]}`,
+			planned:       `{}`,
+			wantFinalJSON: `{}`,
+		},
+		"U7 null current collection is left to whole-field patch": {
+			current:       `{"Labels":null}`,
+			planned:       `{"Labels":[{"Name":"A","Value":"one"}]}`,
+			wantFinalJSON: `{"Labels":[{"Name":"A","Value":"one"}]}`,
+		},
 	}
 
 	for name, test := range tests {
