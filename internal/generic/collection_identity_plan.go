@@ -263,8 +263,9 @@ func terraformElementIdentity(element tftypes.Value, identifiers [][]string) (st
 	return strings.Join(parts, "\x00"), nil
 }
 
-// mergeTerraformElementPlan restores prior values only when a computed field
-// is unknown in plan and null in config, preserving explicit user values.
+// mergeTerraformElementPlan restores prior values when a computed field is
+// null in config. This also corrects values copied from the wrong Set element
+// by attribute modifiers before resource-level identity pairing runs.
 func mergeTerraformElementPlan(config, prior, planned tftypes.Value, computedFields map[string]bool) (tftypes.Value, error) {
 	var configObject, priorObject, plannedObject map[string]tftypes.Value
 	if err := config.As(&configObject); err != nil {
@@ -276,8 +277,8 @@ func mergeTerraformElementPlan(config, prior, planned tftypes.Value, computedFie
 	if err := planned.As(&plannedObject); err != nil {
 		return planned, err
 	}
-	for name, plannedValue := range plannedObject {
-		if !computedFields[name] || plannedValue.IsKnown() {
+	for name := range plannedObject {
+		if !computedFields[name] {
 			continue
 		}
 		configValue, configured := configObject[name]
