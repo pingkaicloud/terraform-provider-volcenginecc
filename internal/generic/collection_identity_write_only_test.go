@@ -1,6 +1,7 @@
 package generic
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -105,6 +106,65 @@ func TestRestoreTerraformCollectionWriteOnlyValuesRejectsDuplicateIdentity(t *te
 	}
 }
 
+func TestRestoreTerraformCollectionWriteOnlyValuesRejectsIncompleteIdentity(t *testing.T) {
+	t.Parallel()
+
+	elementType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"identity": tftypes.String,
+		"secret":   tftypes.String,
+		"value":    tftypes.String,
+	}}
+	collectionType := tftypes.List{ElementType: elementType}
+
+	tests := map[string]struct {
+		element   tftypes.Value
+		wantError string
+	}{
+		"null identity": {
+			element:   terraformWriteOnlyElement(elementType, "", nil, "value"),
+			wantError: "identity attribute is null or unknown",
+		},
+		"unknown identity": {
+			element: tftypes.NewValue(elementType, map[string]tftypes.Value{
+				"identity": tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+				"secret":   tftypes.NewValue(tftypes.String, nil),
+				"value":    tftypes.NewValue(tftypes.String, "value"),
+			}),
+			wantError: "identity attribute is null or unknown",
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			collection := tftypes.NewValue(collectionType, []tftypes.Value{test.element})
+			_, err := restoreTerraformCollectionWriteOnlyValues(collection, collection, [][]string{{"identity"}}, [][]string{{"secret"}})
+			if err == nil || !strings.Contains(err.Error(), test.wantError) {
+				t.Fatalf("restoreTerraformCollectionWriteOnlyValues() error = %v, want containing %q", err, test.wantError)
+			}
+		})
+	}
+}
+
+func TestRestoreTerraformCollectionWriteOnlyValuesRejectsMissingIdentity(t *testing.T) {
+	t.Parallel()
+
+	elementType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"secret": tftypes.String,
+		"value":  tftypes.String,
+	}}
+	collectionType := tftypes.List{ElementType: elementType}
+	collection := tftypes.NewValue(collectionType, []tftypes.Value{
+		tftypes.NewValue(elementType, map[string]tftypes.Value{
+			"secret": tftypes.NewValue(tftypes.String, nil),
+			"value":  tftypes.NewValue(tftypes.String, "value"),
+		}),
+	})
+
+	_, err := restoreTerraformCollectionWriteOnlyValues(collection, collection, [][]string{{"identity"}}, [][]string{{"secret"}})
+	if err == nil || !strings.Contains(err.Error(), `identity attribute "identity" is missing`) {
+		t.Fatalf("restoreTerraformCollectionWriteOnlyValues() error = %v, want missing identity", err)
+	}
+}
+
 func TestIdentityCollectionWriteOnlyAttributeNames(t *testing.T) {
 	t.Parallel()
 
@@ -143,8 +203,15 @@ func TestIdentityCollectionWriteOnlyAttributeNames(t *testing.T) {
 
 func terraformWriteOnlyElement(elementType tftypes.Object, identity string, secret interface{}, value string) tftypes.Value {
 	return tftypes.NewValue(elementType, map[string]tftypes.Value{
-		"identity": tftypes.NewValue(tftypes.String, identity),
+		"identity": tftypes.NewValue(tftypes.String, identityValue(identity)),
 		"secret":   tftypes.NewValue(tftypes.String, secret),
 		"value":    tftypes.NewValue(tftypes.String, value),
 	})
+}
+
+func identityValue(identity string) interface{} {
+	if identity == "" {
+		return nil
+	}
+	return identity
 }
