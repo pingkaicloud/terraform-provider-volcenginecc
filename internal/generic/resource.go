@@ -838,7 +838,7 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 		return
 	}
 	if len(r.collectionIdentities) > 0 {
-		currentDesiredState, plannedDesiredState, err = normalizeIdentityCollections(currentDesiredState, plannedDesiredState, r.collectionIdentities)
+		currentDesiredState, plannedDesiredState, err = normalizeIdentityCollections(currentDesiredState, plannedDesiredState, remoteDesiredState, r.collectionIdentities)
 		if err != nil {
 			response.Diagnostics.AddError(
 				"Unable to normalize unordered collection update",

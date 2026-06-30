@@ -82,11 +82,11 @@ func alignCollectionByIdentity(prior, remote []interface{}, identifierPaths []st
 	return aligned, nil
 }
 
-// normalizeIdentityCollections aligns current unordered collections to planned
-// identity order before JSON Patch generation. Current-only elements are kept at
-// the end so removals remain explicit, while planned-only elements remain absent
-// from current so additions remain explicit.
-func normalizeIdentityCollections(current, planned string, identities []CollectionIdentity) (string, string, error) {
+// normalizeIdentityCollections aligns current and planned unordered collections
+// to the real remote identity order before JSON Patch generation. The patch is
+// applied to the remote array, so using planned order as the index basis can
+// update the wrong element when Terraform set iteration differs from readback.
+func normalizeIdentityCollections(current, planned, remote string, identities []CollectionIdentity) (string, string, error) {
 	var currentRoot interface{}
 	if err := json.Unmarshal([]byte(current), &currentRoot); err != nil {
 		return "", "", fmt.Errorf("unmarshalling current desired state: %w", err)
@@ -95,6 +95,11 @@ func normalizeIdentityCollections(current, planned string, identities []Collecti
 	var plannedRoot interface{}
 	if err := json.Unmarshal([]byte(planned), &plannedRoot); err != nil {
 		return "", "", fmt.Errorf("unmarshalling planned desired state: %w", err)
+	}
+
+	var remoteRoot interface{}
+	if err := json.Unmarshal([]byte(remote), &remoteRoot); err != nil {
+		return "", "", fmt.Errorf("unmarshalling remote desired state: %w", err)
 	}
 
 	for _, identity := range identities {
@@ -106,16 +111,27 @@ func normalizeIdentityCollections(current, planned string, identities []Collecti
 		if err != nil {
 			return "", "", fmt.Errorf("reading planned collection %q: %w", identity.PropertyPath, err)
 		}
-		if !currentFound || !plannedFound {
+		remoteCollection, remoteFound, err := optionalCollectionAtJSONPointer(remoteRoot, identity.PropertyPath)
+		if err != nil {
+			return "", "", fmt.Errorf("reading remote collection %q: %w", identity.PropertyPath, err)
+		}
+		if !currentFound || !plannedFound || !remoteFound {
 			continue
 		}
 
-		alignedCurrent, err := alignCurrentToPlannedIdentity(currentCollection, plannedCollection, identity.IdentifierPaths)
+		alignedCurrent, err := alignCollectionByIdentity(remoteCollection, currentCollection, identity.IdentifierPaths)
 		if err != nil {
-			return "", "", fmt.Errorf("normalizing collection %q: %w", identity.PropertyPath, err)
+			return "", "", fmt.Errorf("normalizing current collection %q: %w", identity.PropertyPath, err)
 		}
 		if err := setCollectionAtJSONPointer(currentRoot, identity.PropertyPath, alignedCurrent); err != nil {
 			return "", "", fmt.Errorf("setting current collection %q: %w", identity.PropertyPath, err)
+		}
+		alignedPlanned, err := alignCollectionByIdentity(remoteCollection, plannedCollection, identity.IdentifierPaths)
+		if err != nil {
+			return "", "", fmt.Errorf("normalizing planned collection %q: %w", identity.PropertyPath, err)
+		}
+		if err := setCollectionAtJSONPointer(plannedRoot, identity.PropertyPath, alignedPlanned); err != nil {
+			return "", "", fmt.Errorf("setting planned collection %q: %w", identity.PropertyPath, err)
 		}
 	}
 
@@ -129,29 +145,6 @@ func normalizeIdentityCollections(current, planned string, identities []Collecti
 	}
 
 	return string(normalizedCurrent), string(normalizedPlanned), nil
-}
-
-// alignCurrentToPlannedIdentity orders current elements by planned identity and
-// appends current-only elements. This makes index-based JSON Patch operations
-// target the intended identity without hiding additions or removals.
-func alignCurrentToPlannedIdentity(current, planned []interface{}, identifierPaths []string) ([]interface{}, error) {
-	pairing, err := pairCollectionsByIdentity(planned, current, identifierPaths, true)
-	if err != nil {
-		return nil, err
-	}
-	if pairing.Degraded {
-		return nil, fmt.Errorf("collection identity unavailable: %s", pairing.Reason)
-	}
-
-	aligned := make([]interface{}, 0, len(current))
-	for _, pair := range pairing.Matched {
-		aligned = append(aligned, current[pair.RightIndex])
-	}
-	for _, reference := range pairing.RightOnly {
-		aligned = append(aligned, current[reference.Index])
-	}
-
-	return aligned, nil
 }
 
 // pairCollectionsByIdentity pairs two unordered object collections by explicit

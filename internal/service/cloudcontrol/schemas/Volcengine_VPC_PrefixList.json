@@ -153,6 +153,9 @@
     },
     "PrefixListEntries": {
       "description": "CIDR of the prefix list entry.",
+      "elementIdentifier": [
+        "/Cidr"
+      ],
       "insertionOrder": false,
       "items": {
         "$ref": "#/definitions/PrefixListEntry"

@@ -312,7 +312,7 @@ func TestNormalizeIdentityCollectionsForPatch(t *testing.T) {
 			current:       `{"Labels":[{"Name":"A","Value":"one"},{"Name":"B","Value":"two"}]}`,
 			planned:       `{"Labels":[{"Name":"B","Value":"two"},{"Name":"A","Value":"one"}]}`,
 			wantPatch:     `[]`,
-			wantFinalJSON: `{"Labels":[{"Name":"B","Value":"two"},{"Name":"A","Value":"one"}]}`,
+			wantFinalJSON: `{"Labels":[{"Name":"A","Value":"one"},{"Name":"B","Value":"two"}]}`,
 		},
 		"U2 update same identity": {
 			current:       `{"Labels":[{"Name":"A","Value":"old"},{"Name":"B","Value":"two"}]}`,
@@ -322,17 +322,17 @@ func TestNormalizeIdentityCollectionsForPatch(t *testing.T) {
 		"U3 reverse order and update correct identity": {
 			current:       `{"Labels":[{"Name":"A","Value":"old"},{"Name":"B","Value":"two"}]}`,
 			planned:       `{"Labels":[{"Name":"B","Value":"two"},{"Name":"A","Value":"new"}]}`,
-			wantFinalJSON: `{"Labels":[{"Name":"B","Value":"two"},{"Name":"A","Value":"new"}]}`,
+			wantFinalJSON: `{"Labels":[{"Name":"A","Value":"new"},{"Name":"B","Value":"two"}]}`,
 		},
 		"U4 add identity": {
 			current:       `{"Labels":[{"Name":"A","Value":"one"},{"Name":"B","Value":"two"}]}`,
 			planned:       `{"Labels":[{"Name":"A","Value":"one"},{"Name":"C","Value":"three"},{"Name":"B","Value":"two"}]}`,
-			wantFinalJSON: `{"Labels":[{"Name":"A","Value":"one"},{"Name":"C","Value":"three"},{"Name":"B","Value":"two"}]}`,
+			wantFinalJSON: `{"Labels":[{"Name":"A","Value":"one"},{"Name":"B","Value":"two"},{"Name":"C","Value":"three"}]}`,
 		},
 		"U5 remove identity": {
 			current:       `{"Labels":[{"Name":"A","Value":"one"},{"Name":"B","Value":"two"},{"Name":"C","Value":"three"}]}`,
 			planned:       `{"Labels":[{"Name":"C","Value":"three"},{"Name":"A","Value":"one"}]}`,
-			wantFinalJSON: `{"Labels":[{"Name":"C","Value":"three"},{"Name":"A","Value":"one"}]}`,
+			wantFinalJSON: `{"Labels":[{"Name":"A","Value":"one"},{"Name":"C","Value":"three"}]}`,
 		},
 		"U6 missing planned collection is left to whole-field patch": {
 			current:       `{"Labels":[{"Name":"A","Value":"one"}]}`,
@@ -348,7 +348,7 @@ func TestNormalizeIdentityCollectionsForPatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			normalizedCurrent, normalizedPlanned, err := normalizeIdentityCollections(test.current, test.planned, identity)
+			normalizedCurrent, normalizedPlanned, err := normalizeIdentityCollections(test.current, test.planned, test.current, identity)
 			if err != nil {
 				t.Fatalf("unexpected normalization error: %v", err)
 			}
@@ -370,7 +370,7 @@ func TestNormalizeIdentityCollectionsForPatch(t *testing.T) {
 			if name == "U2 update same identity" && !strings.Contains(patch, `/Labels/0/Value`) {
 				t.Fatalf("patch does not target A value: %s", patch)
 			}
-			if name == "U3 reverse order and update correct identity" && !strings.Contains(patch, `/Labels/1/Value`) {
+			if name == "U3 reverse order and update correct identity" && !strings.Contains(patch, `/Labels/0/Value`) {
 				t.Fatalf("patch does not target reordered A value: %s", patch)
 			}
 		})
@@ -407,7 +407,7 @@ func TestNormalizeIdentityCollectionsRejectsUnsafeIdentity(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, _, err := normalizeIdentityCollections(test.current, test.planned, identity)
+			_, _, err := normalizeIdentityCollections(test.current, test.planned, test.current, identity)
 			if err == nil || !strings.Contains(err.Error(), test.wantError) {
 				t.Fatalf("normalizeIdentityCollections() error = %v, want containing %q", err, test.wantError)
 			}
@@ -434,6 +434,7 @@ func TestNormalizeIdentityCollectionsForSetAndMultisetMetadata(t *testing.T) {
 			normalizedCurrent, normalizedPlanned, err := normalizeIdentityCollections(
 				`{"Labels":[{"Name":"A","Value":"old"},{"Name":"B","Value":"same"}]}`,
 				`{"Labels":[{"Name":"B","Value":"same"},{"Name":"A","Value":"new"}]}`,
+				`{"Labels":[{"Name":"A","Value":"old"},{"Name":"B","Value":"same"}]}`,
 				[]CollectionIdentity{identity},
 			)
 			if err != nil {
@@ -444,7 +445,7 @@ func TestNormalizeIdentityCollectionsForSetAndMultisetMetadata(t *testing.T) {
 			if err != nil {
 				t.Fatalf("patchDocument() error = %v", err)
 			}
-			if !strings.Contains(patch, `/Labels/1/Value`) {
+			if !strings.Contains(patch, `/Labels/0/Value`) {
 				t.Fatalf("patch does not target reordered A value: %s", patch)
 			}
 
@@ -452,9 +453,38 @@ func TestNormalizeIdentityCollectionsForSetAndMultisetMetadata(t *testing.T) {
 			if err != nil {
 				t.Fatalf("applying patch %s to %s: %v", patch, normalizedCurrent, err)
 			}
-			assertJSONEqual(t, applied, `{"Labels":[{"Name":"B","Value":"same"},{"Name":"A","Value":"new"}]}`)
+			assertJSONEqual(t, applied, `{"Labels":[{"Name":"A","Value":"new"},{"Name":"B","Value":"same"}]}`)
 		})
 	}
+}
+
+func TestNormalizeIdentityCollectionsUsesRemoteOrderForPatchIndexes(t *testing.T) {
+	identity := []CollectionIdentity{{
+		PropertyPath:    "/PrefixListEntries",
+		IdentifierPaths: []string{"/Cidr"},
+		UniqueItems:     true,
+	}}
+	current := `{"PrefixListEntries":[{"Cidr":"A","Description":"a"},{"Cidr":"B","Description":"b"}]}`
+	planned := `{"PrefixListEntries":[{"Cidr":"A","Description":"a"},{"Cidr":"B","Description":"b-updated"}]}`
+	remote := `{"PrefixListEntries":[{"Cidr":"B","Description":"b"},{"Cidr":"A","Description":"a"}]}`
+
+	normalizedCurrent, normalizedPlanned, err := normalizeIdentityCollections(current, planned, remote, identity)
+	if err != nil {
+		t.Fatalf("normalizeIdentityCollections() error = %v", err)
+	}
+	patch, err := patchDocument(normalizedCurrent, normalizedPlanned)
+	if err != nil {
+		t.Fatalf("patchDocument() error = %v", err)
+	}
+	if !strings.Contains(patch, `/PrefixListEntries/0/Description`) {
+		t.Fatalf("patch does not target remote B index: %s", patch)
+	}
+
+	applied, err := applyTestJSONPatch(remote, patch)
+	if err != nil {
+		t.Fatalf("applying patch %s to remote %s: %v", patch, remote, err)
+	}
+	assertJSONEqual(t, applied, `{"PrefixListEntries":[{"Cidr":"B","Description":"b-updated"},{"Cidr":"A","Description":"a"}]}`)
 }
 
 func identityElement(name, value string) map[string]interface{} {
