@@ -651,6 +651,10 @@ func scalingConfigurationResource(ctx context.Context) (resource.Resource, error
 		//
 		//	{
 		//	  "description": "Cloud disk",
+		//	  "elementIdentifier": [
+		//	    "/Size",
+		//	    "/VolumeType"
+		//	  ],
 		//	  "insertionOrder": false,
 		//	  "items": {
 		//	    "description": "Cloud disk",
@@ -860,6 +864,16 @@ func scalingConfigurationResource(ctx context.Context) (resource.Resource, error
 		"/properties/Password",
 		"/properties/ScalingGroupId",
 		"/properties/ProjectName",
+	})
+	opts = opts.WithCollectionIdentities([]generic.CollectionIdentity{
+		{
+			PropertyPath: "/Volumes",
+			IdentifierPaths: []string{
+				"/Size",
+				"/VolumeType",
+			},
+			UniqueItems: false,
+		},
 	})
 	opts = opts.WithCreateTimeoutInMinutes(0).WithDeleteTimeoutInMinutes(0)
 
