@@ -78,3 +78,72 @@ func copyStateValue(ctx context.Context, dst, src *tfsdk.State, p path.Path) dia
 
 	return diags
 }
+
+// copyKnownStateValue copies the value at a specified path only when the source value is known and non-null.
+func copyKnownStateValue(ctx context.Context, dst, src *tfsdk.State, p path.Path) diag.Diagnostics {
+	var diags diag.Diagnostics
+	var val attr.Value
+
+	diags.Append(src.GetAttribute(ctx, p, &val)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	if val.IsNull() || val.IsUnknown() {
+		return diags
+	}
+
+	diags.Append(dst.SetAttribute(ctx, p, val)...)
+	if diags.HasError() {
+		return diags
+	}
+
+	return diags
+}
+
+// copyKnownStateValueAtPath copies known, non-null values at a specified path from source State to destination State.
+// Skipping null values prevents SetAttribute on a child path from materializing an omitted optional parent object.
+func copyKnownStateValueAtPath(ctx context.Context, dst, src *tfsdk.State, p path.Path) diag.Diagnostics {
+	var diags diag.Diagnostics
+	var val attr.Value
+	currentPath := path.Empty()
+	currentPathList := []path.Path{currentPath}
+	steps := p.Steps()
+	for stepIdx, step := range steps {
+		stepNeedCopyList := make([]path.Path, 0)
+		for _, cur := range currentPathList {
+			currentPathTemp := cur.AtName(step.String())
+			diags = src.GetAttribute(ctx, currentPathTemp, &val)
+			if diags.HasError() {
+				return diags
+			}
+			switch v := val.(type) {
+			case types.List:
+				if v.IsNull() || v.IsUnknown() {
+					continue
+				}
+				for i := range v.Elements() {
+					subPath := currentPathTemp.AtListIndex(i)
+					stepNeedCopyList = append(stepNeedCopyList, subPath)
+				}
+			case types.Set:
+				if stepIdx == len(steps)-1 && !v.IsNull() && !v.IsUnknown() {
+					stepNeedCopyList = append(stepNeedCopyList, currentPathTemp)
+				}
+			default:
+				if val.IsNull() || val.IsUnknown() {
+					continue
+				}
+				stepNeedCopyList = append(stepNeedCopyList, currentPathTemp)
+			}
+		}
+		currentPathList = stepNeedCopyList
+	}
+	for _, copyPath := range currentPathList {
+		diags = copyKnownStateValue(ctx, dst, src, copyPath)
+		if diags.HasError() {
+			return diags
+		}
+	}
+	return diags
+}
