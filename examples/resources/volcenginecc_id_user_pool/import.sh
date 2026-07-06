@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_id_user_pool.example "uid"

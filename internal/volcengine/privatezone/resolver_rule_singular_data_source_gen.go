@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/volcengine/terraform-provider-volcenginecc/internal/generic"
 	"github.com/volcengine/terraform-provider-volcenginecc/internal/registry"
 )
@@ -53,6 +54,17 @@ func resolverRuleDataSource(ctx context.Context) (datasource.DataSource, error) 
 		//	}
 		"endpoint_id": schema.Int64Attribute{ /*START ATTRIBUTE*/
 			Description: "Endpoint ID. This parameter is only valid and required when the Type parameter is OUTBOUND",
+			Computed:    true,
+		}, /*END ATTRIBUTE*/
+		// Property: EndpointTrn
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "TRN of the endpoint",
+		//	  "type": "string"
+		//	}
+		"endpoint_trn": schema.StringAttribute{ /*START ATTRIBUTE*/
+			Description: "TRN of the endpoint",
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
 		// Property: ForwardIPs
@@ -288,6 +300,23 @@ func resolverRuleDataSource(ctx context.Context) (datasource.DataSource, error) 
 			Description: "VPC associated with the forwarding rule. The forwarding rule takes effect in the associated VPC. When the Type parameter is OUTBOUND, the VPC region must match the region of the endpoint",
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
+		// Property: VpcTrns
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "TRN of one or more VPCs associated with the domain name",
+		//	  "insertionOrder": false,
+		//	  "items": {
+		//	    "type": "string"
+		//	  },
+		//	  "type": "array",
+		//	  "uniqueItems": true
+		//	}
+		"vpc_trns": schema.SetAttribute{ /*START ATTRIBUTE*/
+			ElementType: types.StringType,
+			Description: "TRN of one or more VPCs associated with the domain name",
+			Computed:    true,
+		}, /*END ATTRIBUTE*/
 		// Property: ZoneName
 		// Cloud Control resource type schema:
 		//
@@ -320,6 +349,7 @@ func resolverRuleDataSource(ctx context.Context) (datasource.DataSource, error) 
 		"created_time":  "CreatedTime",
 		"enable":        "Enable",
 		"endpoint_id":   "EndpointID",
+		"endpoint_trn":  "EndpointTrn",
 		"forward_i_ps":  "ForwardIPs",
 		"ip":            "IP",
 		"key":           "Key",
@@ -337,6 +367,7 @@ func resolverRuleDataSource(ctx context.Context) (datasource.DataSource, error) 
 		"value":         "Value",
 		"vp_cs":         "VPCs",
 		"vpc_id":        "VpcId",
+		"vpc_trns":      "VpcTrns",
 		"zone_name":     "ZoneName",
 	})
 

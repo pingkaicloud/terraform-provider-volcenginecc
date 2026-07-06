@@ -1,0 +1,144 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/NamespaceName",
+    "/properties/ProjectName"
+  ],
+  "definitions": {
+    "Tag": {
+      "description": "Tag Key-Value Pair",
+      "properties": {
+        "Key": {
+          "description": "Tag Key",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "ID namespace is a resource isolation unit in permissions management. It can be used to organize associated entities, projects, and tags.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/NamespaceId",
+      "/properties/NamespaceName",
+      "/properties/Description",
+      "/properties/ProjectName",
+      "/properties/Trn",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "id:CreateNamespace",
+        "id:GetNamespace"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "id:GetNamespace",
+        "id:DeleteNamespace"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "id:ListNamespaces"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "id:GetNamespace"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "id:UntagResources",
+        "id:TagResources",
+        "id:UpdateNamespace",
+        "id:GetNamespace"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/NamespaceName"
+  ],
+  "properties": {
+    "Associates": {
+      "description": "Associated Entities List",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "CreateTime": {
+      "description": "Namespace Creation Time",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Namespace Description",
+      "semantic": "description",
+      "type": "string"
+    },
+    "NamespaceId": {
+      "description": "Namespace Unique ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "NamespaceName": {
+      "description": "Namespace Name",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "ProjectName": {
+      "description": "Project Associated with Namespace",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "Namespace Tag List",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "Trn": {
+      "description": "Namespace TRN",
+      "type": "string"
+    },
+    "UpdateTime": {
+      "description": "Namespace Update Time",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/NamespaceId",
+    "/properties/Trn",
+    "/properties/CreateTime",
+    "/properties/UpdateTime",
+    "/properties/Associates"
+  ],
+  "required": [
+    "NamespaceName"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::ID::PermissionNamespace"
+}

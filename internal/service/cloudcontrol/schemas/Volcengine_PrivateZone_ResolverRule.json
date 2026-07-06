@@ -4,7 +4,9 @@
     "/properties/EndpointID",
     "/properties/ProjectName",
     "/properties/Type",
-    "/properties/ZoneName"
+    "/properties/ZoneName",
+    "/properties/VpcTrns",
+    "/properties/EndpointTrn"
   ],
   "definitions": {
     "BindVPC": {
@@ -122,6 +124,10 @@
       "description": "Endpoint ID. This parameter is only valid and required when the Type parameter is OUTBOUND",
       "type": "integer"
     },
+    "EndpointTrn": {
+      "description": "TRN of the endpoint",
+      "type": "string"
+    },
     "ForwardIPs": {
       "description": "IP address and port of the external DNS server. You can add up to 10 IP addresses. This parameter is only valid and required when the Type parameter is OUTBOUND",
       "insertionOrder": false,
@@ -193,6 +199,15 @@
       "type": "array",
       "uniqueItems": true
     },
+    "VpcTrns": {
+      "description": "TRN of one or more VPCs associated with the domain name",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
     "ZoneName": {
       "description": "Domain name(s) associated with the forwarding rule. You can enter one or more domain names. Separate multiple domain names with English commas. Up to 500 domain names are supported. This parameter is only valid and required when the Type parameter is OUTBOUND. If you set this parameter to *, the forwarding rule applies to all domain names associated with the VPC",
       "type": "string"
@@ -216,5 +231,9 @@
     "tagUpdatable": true,
     "taggable": true
   },
-  "typeName": "Volcengine::PrivateZone::ResolverRule"
+  "typeName": "Volcengine::PrivateZone::ResolverRule",
+  "writeOnlyProperties": [
+    "/properties/VpcTrns",
+    "/properties/EndpointTrn"
+  ]
 }
