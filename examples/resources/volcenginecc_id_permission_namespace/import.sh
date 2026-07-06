@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_id_permission_namespace.example "namespace_name"

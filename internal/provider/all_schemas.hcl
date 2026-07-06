@@ -1044,10 +1044,42 @@ resource_schema "volcengine_fwcenter_control_policy" {
   cloudcontrol_type_name = "Volcengine::FWCenter::ControlPolicy"
 }
 
-resource_schema "volcengine_tls_alarm_webhook_integration_type" {
-  cloudcontrol_type_name = "Volcengine::TLS::AlarmWebhookIntegrationType"
+resource_schema "volcengine_fwcenter_nat_fire_wall_control_policy" {
+  cloudcontrol_type_name = "Volcengine::FWCenter::NatFireWallControlPolicy"
 }
 
 resource_schema "volcengine_fwcenter_vpc_fire_wall_acl_rule" {
   cloudcontrol_type_name = "Volcengine::FWCenter::VpcFireWallAclRule"
+}
+
+resource_schema "volcengine_id_auth_config" {
+  cloudcontrol_type_name = "Volcengine::ID::AuthConfig"
+}
+
+resource_schema "volcengine_id_permission_namespace" {
+  cloudcontrol_type_name = "Volcengine::ID::PermissionNamespace"
+}
+
+resource_schema "volcengine_id_user_pool" {
+  cloudcontrol_type_name = "Volcengine::ID::UserPool"
+}
+
+resource_schema "volcengine_id_workload_pool" {
+  cloudcontrol_type_name = "Volcengine::ID::WorkloadPool"
+}
+
+resource_schema "volcengine_kms_key_material" {
+  cloudcontrol_type_name = "Volcengine::KMS::KeyMaterial"
+}
+
+resource_schema "volcengine_rdsmysql_instance_readonly_node" {
+  cloudcontrol_type_name = "Volcengine::RDSMySQL::InstanceReadonlyNode"
+}
+
+resource_schema "volcengine_tls_alarm_webhook_integration_type" {
+  cloudcontrol_type_name = "Volcengine::TLS::AlarmWebhookIntegrationType"
+}
+
+resource_schema "volcengine_veenedge_cloud_server" {
+  cloudcontrol_type_name = "Volcengine::VeenEdge::CloudServer"
 }

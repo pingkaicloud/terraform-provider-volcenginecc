@@ -1,0 +1,203 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/ConfigName",
+    "/properties/AuthType"
+  ],
+  "definitions": {
+    "ApiKeyAuthConfig": {
+      "description": "ApiKey Authentication Configuration",
+      "properties": {
+        "ApiKey": {
+          "description": "ApiKey Value",
+          "type": "string"
+        },
+        "ApiKeyMetadata": {
+          "description": "ApiKey Metadata",
+          "insertionOrder": false,
+          "items": {
+            "$ref": "#/definitions/ApiKeyMetadata"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "ApiKeyName": {
+          "description": "ApiKey Name",
+          "type": "string"
+        },
+        "ExpiryTimestamp": {
+          "description": "Expiration Timestamp",
+          "format": "int64",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ApiKeyName"
+      ],
+      "type": "object"
+    },
+    "ApiKeyMetadata": {
+      "description": "ApiKey Metadata Item",
+      "properties": {
+        "Location": {
+          "description": "Parameter Location",
+          "type": "string"
+        },
+        "ParameterName": {
+          "description": "Parameter Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Location",
+        "ParameterName"
+      ],
+      "type": "object"
+    },
+    "JwtAuthConfig": {
+      "description": "JWT Authentication Configuration",
+      "properties": {
+        "AllowedAudiences": {
+          "description": "Allowed Audience List",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "AllowedClients": {
+          "description": "Allowed Client List",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "DiscoveryUrl": {
+          "description": "JWT Discovery URL。",
+          "type": "string"
+        }
+      },
+      "required": [
+        "DiscoveryUrl"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "Inbound Authentication Configuration",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/AuthType",
+      "/properties/InstanceId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "id:CreateInboundAuthConfig",
+        "id:GetInboundAuthConfig"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "id:GetInboundAuthConfig",
+        "id:DetachInboundAuthConfig",
+        "id:DeleteInboundAuthConfig"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "id:ListInboundAuthConfigs"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "id:GetInboundAuthConfig"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "id:UpdateInboundAuthConfig",
+        "id:DetachInboundAuthConfig",
+        "id:AttachInboundAuthConfig",
+        "id:CreateApiKey",
+        "id:DeleteApiKey",
+        "id:GetInboundAuthConfig"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/InboundAuthConfigId"
+  ],
+  "properties": {
+    "ApiKeyAuthConfigs": {
+      "description": "ApiKey Authentication Configuration",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/ApiKeyAuthConfig"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "AuthType": {
+      "description": "Authentication Type. Only Jwt or ApiKey is allowed",
+      "enum": [
+        "Jwt",
+        "ApiKey"
+      ],
+      "type": "string"
+    },
+    "ConfigName": {
+      "description": "Configuration Name",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "CreatedAt": {
+      "description": "Creation Time",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Configuration Description",
+      "semantic": "description",
+      "type": "string"
+    },
+    "InboundAuthConfigId": {
+      "description": "Inbound Authentication Configuration ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "InstanceId": {
+      "description": "Bound Instance ID",
+      "type": "string"
+    },
+    "JwtAuthConfig": {
+      "$ref": "#/definitions/JwtAuthConfig",
+      "description": "JWT Authentication Configuration"
+    },
+    "Trn": {
+      "description": "Resource TRN",
+      "type": "string"
+    },
+    "UpdatedAt": {
+      "description": "Update Time",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/InboundAuthConfigId",
+    "/properties/Trn",
+    "/properties/CreatedAt",
+    "/properties/UpdatedAt"
+  ],
+  "required": [
+    "AuthType"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::ID::AuthConfig"
+}

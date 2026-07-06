@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/volcengine/terraform-provider-volcenginecc/internal/generic"
 	"github.com/volcengine/terraform-provider-volcenginecc/internal/registry"
 	fwvalidators "github.com/volcengine/terraform-provider-volcenginecc/internal/validators"
@@ -75,6 +76,23 @@ func resolverRuleResource(ctx context.Context) (resource.Resource, error) {
 				int64planmodifier.UseStateForUnknown(),
 				int64planmodifier.RequiresReplaceIfConfigured(),
 			}, /*END PLAN MODIFIERS*/
+		}, /*END ATTRIBUTE*/
+		// Property: EndpointTrn
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "TRN of the endpoint",
+		//	  "type": "string"
+		//	}
+		"endpoint_trn": schema.StringAttribute{ /*START ATTRIBUTE*/
+			Description: "TRN of the endpoint",
+			Optional:    true,
+			Computed:    true,
+			PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
+				stringplanmodifier.UseStateForUnknown(),
+				stringplanmodifier.RequiresReplaceIfConfigured(),
+			}, /*END PLAN MODIFIERS*/
+			// EndpointTrn is a write-only property.
 		}, /*END ATTRIBUTE*/
 		// Property: ForwardIPs
 		// Cloud Control resource type schema:
@@ -382,6 +400,29 @@ func resolverRuleResource(ctx context.Context) (resource.Resource, error) {
 				setplanmodifier.UseStateForUnknown(),
 			}, /*END PLAN MODIFIERS*/
 		}, /*END ATTRIBUTE*/
+		// Property: VpcTrns
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "TRN of one or more VPCs associated with the domain name",
+		//	  "insertionOrder": false,
+		//	  "items": {
+		//	    "type": "string"
+		//	  },
+		//	  "type": "array",
+		//	  "uniqueItems": true
+		//	}
+		"vpc_trns": schema.SetAttribute{ /*START ATTRIBUTE*/
+			ElementType: types.StringType,
+			Description: "TRN of one or more VPCs associated with the domain name",
+			Optional:    true,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Set{ /*START PLAN MODIFIERS*/
+				setplanmodifier.UseStateForUnknown(),
+				setplanmodifier.RequiresReplaceIfConfigured(),
+			}, /*END PLAN MODIFIERS*/
+			// VpcTrns is a write-only property.
+		}, /*END ATTRIBUTE*/
 		// Property: ZoneName
 		// Cloud Control resource type schema:
 		//
@@ -424,6 +465,7 @@ func resolverRuleResource(ctx context.Context) (resource.Resource, error) {
 		"created_time":  "CreatedTime",
 		"enable":        "Enable",
 		"endpoint_id":   "EndpointID",
+		"endpoint_trn":  "EndpointTrn",
 		"forward_i_ps":  "ForwardIPs",
 		"ip":            "IP",
 		"key":           "Key",
@@ -441,7 +483,13 @@ func resolverRuleResource(ctx context.Context) (resource.Resource, error) {
 		"value":         "Value",
 		"vp_cs":         "VPCs",
 		"vpc_id":        "VpcId",
+		"vpc_trns":      "VpcTrns",
 		"zone_name":     "ZoneName",
+	})
+
+	opts = opts.WithWriteOnlyPropertyPaths([]string{
+		"/properties/VpcTrns",
+		"/properties/EndpointTrn",
 	})
 
 	opts = opts.WithReadOnlyPropertyPaths([]string{
@@ -459,6 +507,8 @@ func resolverRuleResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/ProjectName",
 		"/properties/Type",
 		"/properties/ZoneName",
+		"/properties/VpcTrns",
+		"/properties/EndpointTrn",
 	})
 	opts = opts.WithCreateTimeoutInMinutes(0).WithDeleteTimeoutInMinutes(0)
 

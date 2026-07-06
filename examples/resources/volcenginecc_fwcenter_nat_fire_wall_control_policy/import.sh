@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_fwcenter_nat_fire_wall_control_policy.example "nat_firewall_id|direction|rule_id"

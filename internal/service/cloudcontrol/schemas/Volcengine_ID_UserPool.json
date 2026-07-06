@@ -1,0 +1,279 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/ProjectName",
+    "/properties/SignInAttributes",
+    "/properties/RequiredSignUpAttributes"
+  ],
+  "definitions": {
+    "Brand": {
+      "description": "User pool brand display configuration",
+      "properties": {
+        "LogoUri": {
+          "description": "Brand logo URL",
+          "type": "string"
+        },
+        "Name": {
+          "description": "Brand name",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Tag": {
+      "description": "Tag key-value pair",
+      "properties": {
+        "Key": {
+          "description": "Tag key",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "The user pool is the core identity directory resource in the ID service for managing users, login methods, and identity connections",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/Uid",
+      "/properties/Name",
+      "/properties/Description",
+      "/properties/ProjectName",
+      "/properties/Trn",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "id:CreateUserPool",
+        "id:GetUserPool"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "id:DeleteUserPool",
+        "id:GetUserPool"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "id:ListUserPools"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "id:GetUserPool"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "id:UpdateUserPool",
+        "id:GetUserPool"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/Uid"
+  ],
+  "properties": {
+    "Brand": {
+      "$ref": "#/definitions/Brand",
+      "description": "User pool brand display configuration"
+    },
+    "CreateTime": {
+      "description": "Creation time",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "User pool description",
+      "semantic": "description",
+      "type": "string"
+    },
+    "DiscoveryUrl": {
+      "description": "OpenID Connect discovery URL",
+      "type": "string"
+    },
+    "Domain": {
+      "description": "User pool access domain",
+      "type": "string"
+    },
+    "EmailPasswordlessSignInEnabled": {
+      "description": "Email passwordless login enabled",
+      "type": "boolean"
+    },
+    "Enabled": {
+      "description": "User pool enabled",
+      "type": "boolean"
+    },
+    "IssuerUrl": {
+      "description": "Token issuer URL",
+      "type": "string"
+    },
+    "Name": {
+      "description": "User pool name",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "OauthLoginCallbackUrl": {
+      "description": "OAuth login callback URL",
+      "type": "string"
+    },
+    "OauthSignUpCallbackUrl": {
+      "description": "OAuth registration callback URL",
+      "type": "string"
+    },
+    "OidcLoginCallbackUrl": {
+      "description": "OIDC login callback URL",
+      "type": "string"
+    },
+    "OidcSignUpCallbackUrl": {
+      "description": "OIDC registration callback URL",
+      "type": "string"
+    },
+    "PasswordSignInEnabled": {
+      "description": "Password login enabled",
+      "type": "boolean"
+    },
+    "ProjectName": {
+      "description": "Project name",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "RequiredSignUpAttributes": {
+      "description": "Required registration attribute list",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "SamlLoginCallbackUrl": {
+      "description": "SAML login callback URL",
+      "type": "string"
+    },
+    "SamlSignUpCallbackUrl": {
+      "description": "SAML registration callback URL",
+      "type": "string"
+    },
+    "SelfAccountRecoveryEnabled": {
+      "description": "Allow account self-recovery",
+      "type": "boolean"
+    },
+    "SelfSignUpEnabled": {
+      "description": "Allow user self-registration",
+      "type": "boolean"
+    },
+    "SignInAttributes": {
+      "description": "Supported login attribute list",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "SignUpAutoVerificationEnabled": {
+      "description": "Registration auto-validation enabled",
+      "type": "boolean"
+    },
+    "SmsAnonymousSignUpEnabled": {
+      "description": "SMS anonymous registration enabled",
+      "type": "boolean"
+    },
+    "SmsPasswordlessSignInEnabled": {
+      "description": "SMS passwordless login enabled",
+      "type": "boolean"
+    },
+    "Tags": {
+      "description": "User pool tag list",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "TokenSigningKeyUrl": {
+      "description": "Token signature public key URL",
+      "type": "string"
+    },
+    "TokenUrl": {
+      "description": "Token endpoint URL",
+      "type": "string"
+    },
+    "TotalClients": {
+      "description": "Total clients in user pool",
+      "format": "int64",
+      "type": "integer"
+    },
+    "TotalConnections": {
+      "description": "Total connections and identity providers in user pool",
+      "format": "int64",
+      "type": "integer"
+    },
+    "TotalUsers": {
+      "description": "Total users in user pool",
+      "format": "int64",
+      "type": "integer"
+    },
+    "Trn": {
+      "description": "User pool TRN",
+      "type": "string"
+    },
+    "Uid": {
+      "description": "User pool unique identifier",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "UnconfirmedUserSignInEnabled": {
+      "description": "Allow unconfirmed users to log in",
+      "type": "boolean"
+    },
+    "UpdateTime": {
+      "description": "Update time",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/Uid",
+    "/properties/Enabled",
+    "/properties/Domain",
+    "/properties/DiscoveryUrl",
+    "/properties/IssuerUrl",
+    "/properties/TokenUrl",
+    "/properties/TokenSigningKeyUrl",
+    "/properties/OauthLoginCallbackUrl",
+    "/properties/OauthSignUpCallbackUrl",
+    "/properties/OidcLoginCallbackUrl",
+    "/properties/OidcSignUpCallbackUrl",
+    "/properties/SamlLoginCallbackUrl",
+    "/properties/SamlSignUpCallbackUrl",
+    "/properties/Trn",
+    "/properties/CreateTime",
+    "/properties/UpdateTime",
+    "/properties/TotalUsers",
+    "/properties/TotalClients",
+    "/properties/TotalConnections"
+  ],
+  "required": [
+    "Name"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::ID::UserPool"
+}

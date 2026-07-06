@@ -1,0 +1,92 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/KeyID",
+    "/properties/EncryptedKeyMaterial",
+    "/properties/ImportToken",
+    "/properties/ExpirationModel",
+    "/properties/ValidTo"
+  ],
+  "description": "Key Management Service (KMS) key material resource. Used to import user-provided (BYOK) encrypted key material into a specified master key with Origin=External. Users must obtain import parameters, encrypt the key material, and provide EncryptedKeyMaterial and ImportToken to the resource. The Provider then calls ImportKeyMaterial to complete the import.",
+  "handlers": {
+    "create": {
+      "permissions": [
+        "kms:ImportKeyMaterial",
+        "kms:DescribeKey"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "kms:DeleteKeyMaterial",
+        "kms:DescribeKey"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "kms:DescribeKey"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/KeyID"
+  ],
+  "properties": {
+    "EncryptedKeyMaterial": {
+      "description": "The key material obtained after the user encrypts using the import public key, encoded in Base64; this value is passed directly to the ImportKeyMaterial interface.",
+      "maxLength": 8192,
+      "minLength": 1,
+      "type": "string"
+    },
+    "ExpirationModel": {
+      "description": "Key material expiration type. Values: KEY_MATERIAL_DOES_NOT_EXPIRE (default), KEY_MATERIAL_EXPIRES.",
+      "type": "string"
+    },
+    "ImportToken": {
+      "description": "The import token obtained after the user calls the interface to retrieve import parameters; this value is passed directly to the ImportKeyMaterial interface.",
+      "type": "string"
+    },
+    "KeyID": {
+      "description": "Unique identifier of the target master key in UUID format; the Origin of this key must be External.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "KeyMaterialExpireTime": {
+      "description": "The expiration time of the key material recorded by the server after import; if the material does not expire, this field is an empty string.",
+      "type": "string"
+    },
+    "KeyState": {
+      "description": "Current status of the target master key. Values: Enable, Disable, PendingDelete, Archived, PendingImport, PendingReplicaDelete.",
+      "semantic": "status",
+      "type": "string"
+    },
+    "Origin": {
+      "description": "Source of the target master key. Values: CloudKMS, External, ExternalKeyStore. The KeyMaterial resource is only valid for keys with External origin.",
+      "type": "string"
+    },
+    "ValidTo": {
+      "description": "Key material expiration time, Unix timestamp in seconds; required when the ExpirationModel parameter is set to KEY_MATERIAL_EXPIRES. Must be a time after the current moment, based on server time.",
+      "format": "int64",
+      "type": "integer"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/KeyMaterialExpireTime",
+    "/properties/KeyState",
+    "/properties/Origin"
+  ],
+  "required": [
+    "KeyID",
+    "EncryptedKeyMaterial",
+    "ImportToken"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::KMS::KeyMaterial",
+  "writeOnlyProperties": [
+    "/properties/ExpirationModel",
+    "/properties/EncryptedKeyMaterial",
+    "/properties/ImportToken",
+    "/properties/ValidTo"
+  ]
+}

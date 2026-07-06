@@ -43,6 +43,7 @@ resource "volcenginecc_privatezone_resolver_rule" "PrivateZoneResolverRuleDemo" 
 ### Optional
 
 - `endpoint_id` (Number) Endpoint ID. This parameter is only valid and required when the Type parameter is OUTBOUND
+- `endpoint_trn` (String) TRN of the endpoint
 - `forward_i_ps` (Attributes Set) IP address and port of the external DNS server. You can add up to 10 IP addresses. This parameter is only valid and required when the Type parameter is OUTBOUND
  Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--forward_i_ps))
 - `line` (String) Carrier for the outbound IP address of the recursive DNS server. This parameter is only valid when the Type parameter is LINE. Supported values: Mobile: China Mobile, Telecom: China Telecom, Unicom: China Unicom
@@ -51,6 +52,7 @@ resource "volcenginecc_privatezone_resolver_rule" "PrivateZoneResolverRuleDemo" 
  Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--tags))
 - `vp_cs` (Attributes Set) VPC associated with the forwarding rule. The forwarding rule takes effect in the associated VPC. When the Type parameter is OUTBOUND, the VPC region must match the region of the endpoint
  Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--vp_cs))
+- `vpc_trns` (Set of String) TRN of one or more VPCs associated with the domain name
 - `zone_name` (String) Domain name(s) associated with the forwarding rule. You can enter one or more domain names. Separate multiple domain names with English commas. Up to 500 domain names are supported. This parameter is only valid and required when the Type parameter is OUTBOUND. If you set this parameter to *, the forwarding rule applies to all domain names associated with the VPC
 
 ### Read-Only

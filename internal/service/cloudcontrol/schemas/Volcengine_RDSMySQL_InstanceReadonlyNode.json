@@ -1,0 +1,150 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/InstanceId",
+    "/properties/ZoneId"
+  ],
+  "description": "Read-only node resources for RDS MySQL instances (NodeType=ReadOnly). Create, delete, or modify specifications using CreateDBNodes/DeleteDBNodes/ModifyDBNodeSpec; retrieve node details using DescribeDBInstanceHAConfig + DescribeReadOnlyNodeDelay; modify replication delay configuration using ModifyReadOnlyNodeDelayReplicationTime",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/InstanceId"
+    ],
+    "required": [
+      "/properties/InstanceId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "rds_mysql:CreateDBNodes",
+        "rds_mysql:DescribeDBInstanceHAConfig",
+        "rds_mysql:DescribeDBInstanceDetail",
+        "rds_mysql:ModifyReadOnlyNodeDelayReplicationTime",
+        "rds_mysql:DescribeReadOnlyNodeDelay"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "rds_mysql:DeleteDBNodes",
+        "rds_mysql:DescribeDBInstanceHAConfig",
+        "rds_mysql:DescribeReadOnlyNodeDelay",
+        "rds_mysql:DescribeDBInstanceDetail"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "rds_mysql:DescribeDBInstanceHAConfig"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "rds_mysql:DescribeDBInstanceHAConfig",
+        "rds_mysql:DescribeReadOnlyNodeDelay"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "rds_mysql:ModifyDBNodeSpec",
+        "rds_mysql:ModifyReadOnlyNodeDelayReplicationTime",
+        "rds_mysql:DescribeDBInstanceHAConfig",
+        "rds_mysql:DescribeReadOnlyNodeDelay",
+        "rds_mysql:DescribeDBInstanceDetail"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/InstanceId",
+    "/properties/NodeId"
+  ],
+  "properties": {
+    "CreateTime": {
+      "description": "Node creation time",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "DelayReplicationTime": {
+      "description": "Read-only node replication delay in seconds. Can be modified using ModifyReadOnlyNodeDelayReplicationTime",
+      "format": "int64",
+      "type": "integer"
+    },
+    "InstanceId": {
+      "description": "RDS MySQL instance ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "Memory": {
+      "description": "Node memory size in GiB",
+      "type": "integer"
+    },
+    "NodeId": {
+      "description": "Read-only node ID",
+      "type": "string"
+    },
+    "NodeSpec": {
+      "description": "Node specification",
+      "type": "string"
+    },
+    "NodeStatus": {
+      "description": "Node status",
+      "semantic": "status",
+      "type": "string"
+    },
+    "NodeType": {
+      "description": "Node type, fixed as ReadOnly",
+      "type": "string"
+    },
+    "RegionId": {
+      "description": "Node region ID",
+      "type": "string"
+    },
+    "SyncDelay": {
+      "description": "Read-only node synchronization delay in seconds",
+      "format": "int64",
+      "type": "integer"
+    },
+    "UpdateEndpointIds": {
+      "description": "List of connection endpoint IDs to be synchronously updated when applying replication delay changes (optional, write-only, passed through to ModifyReadOnlyNodeDelayReplicationTime during Update)",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "UpdateTime": {
+      "description": "Node update time",
+      "semantic": "updatedTime",
+      "type": "string"
+    },
+    "VCPU": {
+      "description": "Node vCPU count",
+      "type": "integer"
+    },
+    "ZoneId": {
+      "description": "Node availability zone ID",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/NodeId",
+    "/properties/NodeType",
+    "/properties/NodeStatus",
+    "/properties/Memory",
+    "/properties/VCPU",
+    "/properties/SyncDelay",
+    "/properties/CreateTime",
+    "/properties/UpdateTime",
+    "/properties/RegionId"
+  ],
+  "required": [
+    "InstanceId",
+    "NodeSpec"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::RDSMySQL::InstanceReadonlyNode",
+  "writeOnlyProperties": [
+    "/properties/UpdateEndpointIds"
+  ]
+}

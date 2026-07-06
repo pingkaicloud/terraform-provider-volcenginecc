@@ -1,0 +1,146 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/WorkloadPoolName",
+    "/properties/ProjectName"
+  ],
+  "definitions": {
+    "Tag": {
+      "properties": {
+        "Key": {
+          "description": "Tag key",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "Workload pool",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/ProjectName",
+      "/properties/WorkloadPoolId",
+      "/properties/WorkloadPoolName",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "id:CreateWorkloadPool",
+        "id:GetWorkloadPool"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "id:DeleteWorkloadPool",
+        "id:GetWorkloadPool"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "id:ListWorkloadPools"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "id:GetWorkloadPool"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "id:UpdateWorkloadPool",
+        "id:UntagResources",
+        "id:TagResources",
+        "id:GetWorkloadPool"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/WorkloadPoolName"
+  ],
+  "properties": {
+    "CreatedAt": {
+      "description": "Workload pool creation time",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Workload pool description",
+      "semantic": "description",
+      "type": "string"
+    },
+    "DiscoveryUrl": {
+      "description": "OIDC discovery endpoint",
+      "type": "string"
+    },
+    "ProjectName": {
+      "description": "Project name",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "Resource tags. You can categorize instances by tags to facilitate instance search and resource aggregation.",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "TotalCredentials": {
+      "description": "Number of associated credentials",
+      "format": "int64",
+      "type": "integer"
+    },
+    "TotalWorkloads": {
+      "description": "Number of workloads",
+      "format": "int64",
+      "type": "integer"
+    },
+    "Trn": {
+      "description": "Workload pool Trn",
+      "type": "string"
+    },
+    "UpdatedAt": {
+      "description": "Workload pool update time",
+      "semantic": "updatedTime",
+      "type": "string"
+    },
+    "WorkloadPoolId": {
+      "description": "Workload pool ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "WorkloadPoolName": {
+      "description": "Workload pool name",
+      "semantic": "resourceName",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/WorkloadPoolId",
+    "/properties/Trn",
+    "/properties/DiscoveryUrl",
+    "/properties/TotalCredentials",
+    "/properties/TotalWorkloads",
+    "/properties/CreatedAt",
+    "/properties/UpdatedAt"
+  ],
+  "required": [
+    "WorkloadPoolName"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::ID::WorkloadPool"
+}

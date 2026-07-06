@@ -24,6 +24,7 @@ Data Source schema for Volcengine::PrivateZone::ResolverRule
 - `created_time` (String) Creation time of the forwarding rule
 - `enable` (Boolean) Whether the forwarding rule is enabled. true: enabled. false: disabled
 - `endpoint_id` (Number) Endpoint ID. This parameter is only valid and required when the Type parameter is OUTBOUND
+- `endpoint_trn` (String) TRN of the endpoint
 - `forward_i_ps` (Attributes Set) IP address and port of the external DNS server. You can add up to 10 IP addresses. This parameter is only valid and required when the Type parameter is OUTBOUND (see [below for nested schema](#nestedatt--forward_i_ps))
 - `last_operator` (String) Account ID of the last update to the forwarding rule
 - `line` (String) Carrier for the outbound IP address of the recursive DNS server. This parameter is only valid when the Type parameter is LINE. Supported values: Mobile: China Mobile, Telecom: China Telecom, Unicom: China Unicom
@@ -34,6 +35,7 @@ Data Source schema for Volcengine::PrivateZone::ResolverRule
 - `type` (String) Forwarding rule type. OUTBOUND: Forward to external DNS server. LINE: Carrier for the outbound IP address of the custom public recursive DNS server
 - `updated_time` (String) Update time of the forwarding rule
 - `vp_cs` (Attributes Set) VPC associated with the forwarding rule. The forwarding rule takes effect in the associated VPC. When the Type parameter is OUTBOUND, the VPC region must match the region of the endpoint (see [below for nested schema](#nestedatt--vp_cs))
+- `vpc_trns` (Set of String) TRN of one or more VPCs associated with the domain name
 - `zone_name` (String) Domain name(s) associated with the forwarding rule. You can enter one or more domain names. Separate multiple domain names with English commas. Up to 500 domain names are supported. This parameter is only valid and required when the Type parameter is OUTBOUND. If you set this parameter to *, the forwarding rule applies to all domain names associated with the VPC
 
 <a id="nestedatt--forward_i_ps"></a>

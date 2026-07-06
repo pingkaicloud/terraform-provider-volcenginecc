@@ -6,8 +6,10 @@ resource "volcenginecc_transitrouter_peer_attachment" "TransitRouterPeerAttachme
   peer_transit_router_region_id       = "cn-xx"
   transit_router_bandwidth_package_id = "tbp-13f34rxxxx"
   bandwidth                           = 2
-  tags {
-    key   = "env"
-    value = "test"
-  }
+  tags = [
+    {
+      key   = "env"
+      value = "test"
+    }
+  ]
 }

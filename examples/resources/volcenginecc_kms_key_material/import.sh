@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_kms_key_material.example "key_id"

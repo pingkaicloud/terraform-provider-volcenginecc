@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_id_workload_pool.example "workload_pool_name"
