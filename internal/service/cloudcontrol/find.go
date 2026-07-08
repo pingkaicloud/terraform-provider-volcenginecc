@@ -80,7 +80,7 @@ func NormalizeResourceDescription(desc *cloudcontrol.ResourceDescriptionForGetRe
 			for _, item := range tagsArr {
 				if tagMap, ok := item.(map[string]interface{}); ok {
 					key, keyOk := tagMap["Key"].(string)
-					value, valueOk := tagMap["Value"].(string)
+					_, valueOk := tagMap["Value"].(string)
 
 					if !keyOk || !valueOk {
 						cleanedArr = append(cleanedArr, tagMap)
@@ -91,8 +91,9 @@ func NormalizeResourceDescription(desc *cloudcontrol.ResourceDescriptionForGetRe
 						continue
 					}
 					cleaned := make(map[string]interface{})
-					cleaned["Key"] = key
-					cleaned["Value"] = value
+					for k, v := range tagMap {
+						cleaned[k] = v
+					}
 					if len(cleaned) > 0 {
 						cleanedArr = append(cleanedArr, cleaned)
 					}
