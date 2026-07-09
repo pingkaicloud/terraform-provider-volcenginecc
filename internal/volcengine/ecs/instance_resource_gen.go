@@ -250,6 +250,193 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 			}, /*END PLAN MODIFIERS*/
 			// CreditSpecification is a write-only property.
 		}, /*END ATTRIBUTE*/
+		// Property: DataVolumes
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Instance data disks. Supports up to 15 data disks. When creating, data disks are created together with the system disk via RunInstances. When querying, cloud disk details are completed through the Elastic Block Storage DescribeVolumes API.",
+		//	  "insertionOrder": false,
+		//	  "items": {
+		//	    "description": "Instance volumes.",
+		//	    "properties": {
+		//	      "DeleteWithInstance": {
+		//	        "default": true,
+		//	        "description": "Whether the attached resources are deleted along with the instance.",
+		//	        "type": "boolean"
+		//	      },
+		//	      "ExtraPerformanceIOPS": {
+		//	        "description": "Additional performance IOPS for the instance",
+		//	        "maximum": 50000,
+		//	        "minimum": 0,
+		//	        "type": "integer"
+		//	      },
+		//	      "ExtraPerformanceThroughputMB": {
+		//	        "description": "The additional performance throughput of the instance, in MB.",
+		//	        "maximum": 650,
+		//	        "minimum": 0,
+		//	        "type": "integer"
+		//	      },
+		//	      "ExtraPerformanceTypeId": {
+		//	        "description": "Type of additional performance. Values:\nBalance: Balanced additional performance\nIOPS: IOPS additional performance\nThroughput: Throughput additional performance",
+		//	        "enum": [
+		//	          "",
+		//	          "Balance",
+		//	          "IOPS",
+		//	          "Throughput"
+		//	        ],
+		//	        "type": "string"
+		//	      },
+		//	      "Size": {
+		//	        "description": "Instance size, in GiB",
+		//	        "maximum": 32768,
+		//	        "minimum": 10,
+		//	        "type": "integer"
+		//	      },
+		//	      "SnapshotId": {
+		//	        "description": "Instance snapshot ID",
+		//	        "type": "string"
+		//	      },
+		//	      "VolumeId": {
+		//	        "description": "Instance volume ID.",
+		//	        "type": "string"
+		//	      },
+		//	      "VolumeType": {
+		//	        "description": "Cloud disk type. Values:\nPTSSD: Performance SSD.\nESSD_PL0: Ultra SSD disk, PL0 specification.\nESSD_FlexPL: Ultra SSD disk, FlexPL specification.\nTSSD_TL0: Throughput SSD disk.",
+		//	        "enum": [
+		//	          "ESSD_PL0",
+		//	          "ESSD_FlexPL",
+		//	          "TSSD_TL0",
+		//	          "PL0ESSD_FlexPL"
+		//	        ],
+		//	        "type": "string"
+		//	      }
+		//	    },
+		//	    "type": "object"
+		//	  },
+		//	  "maxItems": 15,
+		//	  "type": "array",
+		//	  "uniqueItems": false
+		//	}
+		"data_volumes": schema.ListNestedAttribute{ /*START ATTRIBUTE*/
+			NestedObject: schema.NestedAttributeObject{ /*START NESTED OBJECT*/
+				Attributes: map[string]schema.Attribute{ /*START SCHEMA*/
+					// Property: DeleteWithInstance
+					"delete_with_instance": schema.BoolAttribute{ /*START ATTRIBUTE*/
+						Description: "Whether the attached resources are deleted along with the instance.",
+						Optional:    true,
+						Computed:    true,
+						Default:     booldefault.StaticBool(true),
+						PlanModifiers: []planmodifier.Bool{ /*START PLAN MODIFIERS*/
+							boolplanmodifier.UseStateForUnknown(),
+							boolplanmodifier.RequiresReplaceIfConfigured(),
+						}, /*END PLAN MODIFIERS*/
+					}, /*END ATTRIBUTE*/
+					// Property: ExtraPerformanceIOPS
+					"extra_performance_iops": schema.Int64Attribute{ /*START ATTRIBUTE*/
+						Description: "Additional performance IOPS for the instance",
+						Optional:    true,
+						Computed:    true,
+						Validators: []validator.Int64{ /*START VALIDATORS*/
+							int64validator.Between(0, 50000),
+						}, /*END VALIDATORS*/
+						PlanModifiers: []planmodifier.Int64{ /*START PLAN MODIFIERS*/
+							int64planmodifier.UseStateForUnknown(),
+							int64planmodifier.RequiresReplaceIfConfigured(),
+						}, /*END PLAN MODIFIERS*/
+					}, /*END ATTRIBUTE*/
+					// Property: ExtraPerformanceThroughputMB
+					"extra_performance_throughput_mb": schema.Int64Attribute{ /*START ATTRIBUTE*/
+						Description: "The additional performance throughput of the instance, in MB.",
+						Optional:    true,
+						Computed:    true,
+						Validators: []validator.Int64{ /*START VALIDATORS*/
+							int64validator.Between(0, 650),
+						}, /*END VALIDATORS*/
+						PlanModifiers: []planmodifier.Int64{ /*START PLAN MODIFIERS*/
+							int64planmodifier.UseStateForUnknown(),
+							int64planmodifier.RequiresReplaceIfConfigured(),
+						}, /*END PLAN MODIFIERS*/
+					}, /*END ATTRIBUTE*/
+					// Property: ExtraPerformanceTypeId
+					"extra_performance_type_id": schema.StringAttribute{ /*START ATTRIBUTE*/
+						Description: "Type of additional performance. Values:\n  Balance: Balanced additional performance\n  IOPS: IOPS additional performance\n  Throughput: Throughput additional performance",
+						Optional:    true,
+						Computed:    true,
+						Validators: []validator.String{ /*START VALIDATORS*/
+							stringvalidator.OneOf(
+								"",
+								"Balance",
+								"IOPS",
+								"Throughput",
+							),
+						}, /*END VALIDATORS*/
+						PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
+							stringplanmodifier.UseStateForUnknown(),
+							stringplanmodifier.RequiresReplaceIfConfigured(),
+						}, /*END PLAN MODIFIERS*/
+					}, /*END ATTRIBUTE*/
+					// Property: Size
+					"size": schema.Int64Attribute{ /*START ATTRIBUTE*/
+						Description: "Instance size, in GiB",
+						Optional:    true,
+						Computed:    true,
+						Validators: []validator.Int64{ /*START VALIDATORS*/
+							int64validator.Between(10, 32768),
+						}, /*END VALIDATORS*/
+						PlanModifiers: []planmodifier.Int64{ /*START PLAN MODIFIERS*/
+							int64planmodifier.UseStateForUnknown(),
+							int64planmodifier.RequiresReplaceIfConfigured(),
+						}, /*END PLAN MODIFIERS*/
+					}, /*END ATTRIBUTE*/
+					// Property: SnapshotId
+					"snapshot_id": schema.StringAttribute{ /*START ATTRIBUTE*/
+						Description: "Instance snapshot ID",
+						Optional:    true,
+						Computed:    true,
+						PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
+							stringplanmodifier.UseStateForUnknown(),
+							stringplanmodifier.RequiresReplaceIfConfigured(),
+						}, /*END PLAN MODIFIERS*/
+					}, /*END ATTRIBUTE*/
+					// Property: VolumeId
+					"volume_id": schema.StringAttribute{ /*START ATTRIBUTE*/
+						Description: "Instance volume ID.",
+						Computed:    true,
+						PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
+							stringplanmodifier.UseStateForUnknown(),
+						}, /*END PLAN MODIFIERS*/
+					}, /*END ATTRIBUTE*/
+					// Property: VolumeType
+					"volume_type": schema.StringAttribute{ /*START ATTRIBUTE*/
+						Description: "Cloud disk type. Values:\n  PTSSD: Performance SSD.\n  ESSD_PL0: Ultra SSD disk, PL0 specification.\n  ESSD_FlexPL: Ultra SSD disk, FlexPL specification.\n  TSSD_TL0: Throughput SSD disk.",
+						Optional:    true,
+						Computed:    true,
+						Validators: []validator.String{ /*START VALIDATORS*/
+							stringvalidator.OneOf(
+								"ESSD_PL0",
+								"ESSD_FlexPL",
+								"TSSD_TL0",
+								"PL0ESSD_FlexPL",
+							),
+						}, /*END VALIDATORS*/
+						PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
+							stringplanmodifier.UseStateForUnknown(),
+							stringplanmodifier.RequiresReplaceIfConfigured(),
+						}, /*END PLAN MODIFIERS*/
+					}, /*END ATTRIBUTE*/
+				}, /*END SCHEMA*/
+			}, /*END NESTED OBJECT*/
+			Description: "Instance data disks. Supports up to 15 data disks. When creating, data disks are created together with the system disk via RunInstances. When querying, cloud disk details are completed through the Elastic Block Storage DescribeVolumes API.\n Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability.",
+			Optional:    true,
+			Computed:    true,
+			Validators: []validator.List{ /*START VALIDATORS*/
+				listvalidator.SizeAtMost(15),
+			}, /*END VALIDATORS*/
+			PlanModifiers: []planmodifier.List{ /*START PLAN MODIFIERS*/
+				generic.Multiset(),
+				listplanmodifier.UseStateForUnknown(),
+			}, /*END PLAN MODIFIERS*/
+		}, /*END ATTRIBUTE*/
 		// Property: DeletionProtection
 		// Cloud Control resource type schema:
 		//
@@ -2099,6 +2286,7 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		"cpu_number":                      "CpuNumber",
 		"created_at":                      "CreatedAt",
 		"credit_specification":            "CreditSpecification",
+		"data_volumes":                    "DataVolumes",
 		"dedicated_host_cluster_id":       "DedicatedHostClusterId",
 		"dedicated_host_id":               "DedicatedHostId",
 		"delete_with_instance":            "DeleteWithInstance",
@@ -2237,6 +2425,7 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/SecondaryNetworkInterfaces/*/NetworkInterfaceId",
 		"/properties/SecondaryNetworkInterfaces/*/VpcId",
 		"/properties/SystemVolume/VolumeId",
+		"/properties/DataVolumes/*/VolumeId",
 		"/properties/KeyPair/KeyPairId",
 		"/properties/OperationSystem",
 		"/properties/VpcId",
@@ -2267,6 +2456,13 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/SystemVolume/ExtraPerformanceThroughputMB",
 		"/properties/SystemVolume/ExtraPerformanceTypeId",
 		"/properties/SystemVolume/SnapshotId",
+		"/properties/DataVolumes/*/VolumeType",
+		"/properties/DataVolumes/*/Size",
+		"/properties/DataVolumes/*/DeleteWithInstance",
+		"/properties/DataVolumes/*/ExtraPerformanceIOPS",
+		"/properties/DataVolumes/*/ExtraPerformanceThroughputMB",
+		"/properties/DataVolumes/*/ExtraPerformanceTypeId",
+		"/properties/DataVolumes/*/SnapshotId",
 		"/properties/CpuMaxFrequency",
 		"/properties/DeploymentSetGroupNumber",
 		"/properties/Placement",

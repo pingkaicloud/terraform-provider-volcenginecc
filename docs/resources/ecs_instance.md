@@ -106,6 +106,8 @@ resource "volcenginecc_ecs_instance" "EcsInstanceDemo" {
   **Note:**
     - This parameter is only effective when `InstanceTypeId` is set to ecs.t2 series, i.e., burstable instances.
     - If not specified or left empty, burstable instances default to `Standard` mode.
+- `data_volumes` (Attributes List) Instance data disks. Supports up to 15 data disks. When creating, data disks are created together with the system disk via RunInstances. When querying, cloud disk details are completed through the Elastic Block Storage DescribeVolumes API.
+ Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--data_volumes))
 - `deletion_protection` (Boolean) Instance deletion protection attribute, specifies whether the instance can be deleted via the console or API. Values:
     - true: Enable instance deletion protection
     - false (default): Disable instance deletion protection
@@ -245,6 +247,31 @@ Read-Only:
 
 <a id="nestedatt--system_volume"></a>
 ### Nested Schema for `system_volume`
+
+Optional:
+
+- `delete_with_instance` (Boolean) Whether the attached resources are deleted along with the instance.
+- `extra_performance_iops` (Number) Additional performance IOPS for the instance
+- `extra_performance_throughput_mb` (Number) The additional performance throughput of the instance, in MB.
+- `extra_performance_type_id` (String) Type of additional performance. Values:
+  Balance: Balanced additional performance
+  IOPS: IOPS additional performance
+  Throughput: Throughput additional performance
+- `size` (Number) Instance size, in GiB
+- `snapshot_id` (String) Instance snapshot ID
+- `volume_type` (String) Cloud disk type. Values:
+  PTSSD: Performance SSD.
+  ESSD_PL0: Ultra SSD disk, PL0 specification.
+  ESSD_FlexPL: Ultra SSD disk, FlexPL specification.
+  TSSD_TL0: Throughput SSD disk.
+
+Read-Only:
+
+- `volume_id` (String) Instance volume ID.
+
+
+<a id="nestedatt--data_volumes"></a>
+### Nested Schema for `data_volumes`
 
 Optional:
 
