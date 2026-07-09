@@ -598,6 +598,95 @@ func TestCopyValueAtPath(t *testing.T) {
 	}
 }
 
+func TestCopyKnownStateValueAtPath(t *testing.T) {
+	eipType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"allocation_id": tftypes.String,
+			"charge_type":   tftypes.String,
+		},
+	}
+	rootType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"eip_address": eipType,
+		},
+	}
+	eipSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"eip_address": schema.SingleNestedAttribute{
+				Attributes: map[string]schema.Attribute{
+					"allocation_id": schema.StringAttribute{
+						Computed: true,
+					},
+					"charge_type": schema.StringAttribute{
+						Optional: true,
+						Computed: true,
+					},
+				},
+				Optional: true,
+				Computed: true,
+			},
+		},
+	}
+
+	testCases := map[string]struct {
+		SrcEip   tftypes.Value
+		DstEip   tftypes.Value
+		Expected tftypes.Value
+	}{
+		"skips null nested source value without materializing parent object": {
+			SrcEip:   tftypes.NewValue(eipType, nil),
+			DstEip:   tftypes.NewValue(eipType, nil),
+			Expected: tftypes.NewValue(eipType, nil),
+		},
+		"copies concrete nested source value": {
+			SrcEip: tftypes.NewValue(eipType, map[string]tftypes.Value{
+				"allocation_id": tftypes.NewValue(tftypes.String, nil),
+				"charge_type":   tftypes.NewValue(tftypes.String, "PayByTraffic"),
+			}),
+			DstEip: tftypes.NewValue(eipType, map[string]tftypes.Value{
+				"allocation_id": tftypes.NewValue(tftypes.String, "eip-123"),
+				"charge_type":   tftypes.NewValue(tftypes.String, nil),
+			}),
+			Expected: tftypes.NewValue(eipType, map[string]tftypes.Value{
+				"allocation_id": tftypes.NewValue(tftypes.String, "eip-123"),
+				"charge_type":   tftypes.NewValue(tftypes.String, "PayByTraffic"),
+			}),
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			srcState := tfsdk.State{
+				Raw: tftypes.NewValue(rootType, map[string]tftypes.Value{
+					"eip_address": testCase.SrcEip,
+				}),
+				Schema: eipSchema,
+			}
+			dstState := tfsdk.State{
+				Raw: tftypes.NewValue(rootType, map[string]tftypes.Value{
+					"eip_address": testCase.DstEip,
+				}),
+				Schema: eipSchema,
+			}
+			expectedState := tfsdk.State{
+				Raw: tftypes.NewValue(rootType, map[string]tftypes.Value{
+					"eip_address": testCase.Expected,
+				}),
+				Schema: eipSchema,
+			}
+
+			diags := copyKnownStateValueAtPath(context.TODO(), &dstState, &srcState, path.Root("eip_address").AtName("charge_type"))
+			if diags.HasError() {
+				t.Fatalf("unexpected error from copyKnownStateValueAtPath: %s", diags)
+			}
+
+			if diff := cmp.Diff(dstState, expectedState); diff != "" {
+				t.Errorf("unexpected diff (+wanted, -got): %s", diff)
+			}
+		})
+	}
+}
+
 func makeSimpleTestPlan() tfsdk.Plan {
 	return tfsdk.Plan{
 		Raw: tftypes.NewValue(tftypes.Object{

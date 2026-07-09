@@ -580,10 +580,10 @@ func (r *genericResource) Read(ctx context.Context, request resource.ReadRequest
 		Raw:    val,
 	}
 
-	// Copy over any write-only values.
-	// They can only be in the current state.
+	// Copy over concrete write-only values.
+	// Null write-only children are skipped so omitted optional nested parents remain null after readback.
 	for _, path := range r.writeOnlyAttributePaths {
-		response.Diagnostics.Append(copyStateValueAtPath(ctx, &response.State, &request.State, *path)...)
+		response.Diagnostics.Append(copyKnownStateValueAtPath(ctx, &response.State, &request.State, *path)...)
 		if response.Diagnostics.HasError() {
 			return
 		}
