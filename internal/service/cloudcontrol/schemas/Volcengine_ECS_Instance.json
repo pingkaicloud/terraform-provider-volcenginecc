@@ -25,6 +25,13 @@
     "/properties/SystemVolume/ExtraPerformanceThroughputMB",
     "/properties/SystemVolume/ExtraPerformanceTypeId",
     "/properties/SystemVolume/SnapshotId",
+    "/properties/DataVolumes/*/VolumeType",
+    "/properties/DataVolumes/*/Size",
+    "/properties/DataVolumes/*/DeleteWithInstance",
+    "/properties/DataVolumes/*/ExtraPerformanceIOPS",
+    "/properties/DataVolumes/*/ExtraPerformanceThroughputMB",
+    "/properties/DataVolumes/*/ExtraPerformanceTypeId",
+    "/properties/DataVolumes/*/SnapshotId",
     "/properties/CpuMaxFrequency",
     "/properties/DeploymentSetGroupNumber",
     "/properties/Placement",
@@ -467,7 +474,8 @@
         "ecs:AssociateInstancesIamRole",
         "ecs:DescribeInstances",
         "ecs:DescribeUserData",
-        "ecs:DescribeInstancesIamRoles"
+        "ecs:DescribeInstancesIamRoles",
+        "storage_ebs:DescribeVolumes"
       ]
     },
     "delete": {
@@ -485,7 +493,8 @@
       "permissions": [
         "ecs:DescribeInstances",
         "ecs:DescribeUserData",
-        "ecs:DescribeInstancesIamRoles"
+        "ecs:DescribeInstancesIamRoles",
+        "storage_ebs:DescribeVolumes"
       ]
     },
     "update": {
@@ -505,7 +514,8 @@
         "ecs:UntagResources",
         "ecs:DescribeInstances",
         "ecs:DescribeUserData",
-        "ecs:DescribeInstancesIamRoles"
+        "ecs:DescribeInstancesIamRoles",
+        "storage_ebs:DescribeVolumes"
       ]
     }
   },
@@ -562,6 +572,16 @@
         "Unlimited"
       ],
       "type": "string"
+    },
+    "DataVolumes": {
+      "description": "Instance data disks. Supports up to 15 data disks. When creating, data disks are created together with the system disk via RunInstances. When querying, cloud disk details are completed through the Elastic Block Storage DescribeVolumes API.",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Volume"
+      },
+      "maxItems": 15,
+      "type": "array",
+      "uniqueItems": false
     },
     "DeletionProtection": {
       "description": "Instance deletion protection attribute, specifies whether the instance can be deleted via the console or API. Values:\n- true: Enable instance deletion protection\n- false (default): Disable instance deletion protection\nWhen deletion protection is enabled, attempts to delete the instance via the console or API will return a deletion failure error code. To delete the instance, disable deletion protection first",
@@ -845,6 +865,7 @@
     "/properties/SecondaryNetworkInterfaces/*/NetworkInterfaceId",
     "/properties/SecondaryNetworkInterfaces/*/VpcId",
     "/properties/SystemVolume/VolumeId",
+    "/properties/DataVolumes/*/VolumeId",
     "/properties/KeyPair/KeyPairId",
     "/properties/OperationSystem",
     "/properties/VpcId"
