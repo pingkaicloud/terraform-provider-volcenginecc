@@ -1,0 +1,239 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/AlarmContentTemplateName"
+  ],
+  "definitions": {
+    "DingTalkContentTemplateInfo": {
+      "description": "DingTalk notification content template",
+      "properties": {
+        "Content": {
+          "description": "Alert notification content. Supports plain text format, content variables, and content functions. Note: The maximum length of the notification content after variable rendering is 8 KB. Content exceeding this limit will be truncated. If the body is left blank, the default content will be used.",
+          "type": "string"
+        },
+        "Locale": {
+          "description": "The language for fixed content in alert notifications. Available values: zh-CN, en-US.",
+          "type": "string"
+        },
+        "Title": {
+          "description": "Alert notification subject",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "EmailContentTemplateInfo": {
+      "description": "Email notification content template",
+      "properties": {
+        "Content": {
+          "description": "Alert notification content. Supports plain text format, content variables, and content functions. Note: The maximum length of the notification content after variable rendering is 8 KB. Content exceeding this limit will be truncated. If the body is left blank, the default content will be used.",
+          "type": "string"
+        },
+        "Locale": {
+          "description": "The language for fixed content in alert notifications. Available values: zh-CN, en-US.",
+          "type": "string"
+        },
+        "Subject": {
+          "description": "Email notification subject",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "LarkContentTemplateInfo": {
+      "description": "Feishu notification content template",
+      "properties": {
+        "Content": {
+          "description": "Alert notification content. Supports plain text format, content variables, and content functions. Note: The maximum length of the notification content after variable rendering is 8 KB. Content exceeding this limit will be truncated. If the body is left blank, the default content will be used.",
+          "type": "string"
+        },
+        "Locale": {
+          "description": "The language for fixed content in alert notifications. Available values: zh-CN, en-US.",
+          "type": "string"
+        },
+        "Title": {
+          "description": "Alert notification subject",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SmsContentTemplateInfo": {
+      "description": "SMS notification content template",
+      "properties": {
+        "Content": {
+          "description": "Alert notification content. Supports plain text format, content variables, and content functions. Note: The maximum length of the notification content after variable rendering is 8 KB. Content exceeding this limit will be truncated. If the body is left blank, the default content will be used.",
+          "type": "string"
+        },
+        "Locale": {
+          "description": "The language for fixed content in alert notifications. Available values: zh-CN, en-US.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "VmsContentTemplateInfo": {
+      "description": "Voice notification content template",
+      "properties": {
+        "Content": {
+          "description": "Alert notification content. Supports plain text format, content variables, and content functions. Note: The maximum length of the notification content after variable rendering is 8 KB. Content exceeding this limit will be truncated. If the body is left blank, the default content will be used.",
+          "type": "string"
+        },
+        "Locale": {
+          "description": "The language for fixed content in alert notifications. Available values: zh-CN, en-US.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "WeChatContentTemplateInfo": {
+      "description": "WeCom notification content template",
+      "properties": {
+        "Content": {
+          "description": "Alert notification content. Supports plain text format, content variables, and content functions. Note: The maximum length of the notification content after variable rendering is 8 KB. Content exceeding this limit will be truncated. If the body is left blank, the default content will be used.",
+          "type": "string"
+        },
+        "Locale": {
+          "description": "The language for fixed content in alert notifications. Available values: zh-CN, en-US.",
+          "type": "string"
+        },
+        "Title": {
+          "description": "Alert notification subject",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "WebhookContentTemplateInfo": {
+      "description": "Custom Webhook alert notification content template",
+      "properties": {
+        "Content": {
+          "description": "Alert notification content, usually in JSON format. Supports content variables and content functions. Note: The maximum length of the notification content after variable rendering is 8 KB. Content exceeding this limit will be truncated. If the body is left blank, the default content will be used.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "TLS alert content template",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/AlarmContentTemplateId",
+      "/properties/AlarmContentTemplateName"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "TLS:CreateAlarmContentTemplate",
+        "TLS:DescribeAlarmContentTemplates"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "TLS:DeleteAlarmContentTemplate",
+        "TLS:DescribeAlarmContentTemplates"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "TLS:DescribeAlarmContentTemplates"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "TLS:DescribeAlarmContentTemplates"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "TLS:ModifyAlarmContentTemplate",
+        "TLS:DescribeAlarmContentTemplates"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/AlarmContentTemplateId"
+  ],
+  "properties": {
+    "AlarmContentTemplateId": {
+      "description": "Alert notification template ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "AlarmContentTemplateName": {
+      "description": "Name of the alert notification content template",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "CreateTime": {
+      "description": "Creation time of the alert notification content template",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "DingTalk": {
+      "$ref": "#/definitions/DingTalkContentTemplateInfo",
+      "description": "DingTalk notification content template",
+      "type": "object"
+    },
+    "Email": {
+      "$ref": "#/definitions/EmailContentTemplateInfo",
+      "description": "Email notification content template",
+      "type": "object"
+    },
+    "IsDefault": {
+      "description": "Is default template",
+      "type": "boolean"
+    },
+    "Lark": {
+      "$ref": "#/definitions/LarkContentTemplateInfo",
+      "description": "Feishu notification content template",
+      "type": "object"
+    },
+    "ModifyTime": {
+      "description": "Last modified time of the alert notification content template",
+      "semantic": "updatedTime",
+      "type": "string"
+    },
+    "NeedValidContent": {
+      "description": "Whether to validate the content template",
+      "type": "boolean"
+    },
+    "Sms": {
+      "$ref": "#/definitions/SmsContentTemplateInfo",
+      "description": "SMS notification content template",
+      "type": "object"
+    },
+    "Vms": {
+      "$ref": "#/definitions/VmsContentTemplateInfo",
+      "description": "Voice notification content template",
+      "type": "object"
+    },
+    "WeChat": {
+      "$ref": "#/definitions/WeChatContentTemplateInfo",
+      "description": "WeCom notification content template",
+      "type": "object"
+    },
+    "Webhook": {
+      "$ref": "#/definitions/WebhookContentTemplateInfo",
+      "description": "Custom Webhook alert notification content template",
+      "type": "object"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/AlarmContentTemplateId",
+    "/properties/IsDefault",
+    "/properties/CreateTime",
+    "/properties/ModifyTime"
+  ],
+  "required": [
+    "AlarmContentTemplateName"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::TLS::AlarmContentTemplateType",
+  "writeOnlyProperties": [
+    "/properties/NeedValidContent"
+  ]
+}

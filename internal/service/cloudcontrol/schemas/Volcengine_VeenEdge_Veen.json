@@ -1,0 +1,774 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/BandwidthPeakLimitIspConfigs",
+    "/properties/BillingConfig",
+    "/properties/CloudServerIdentity",
+    "/properties/CreateInstanceTimeout",
+    "/properties/InstanceAreaNums",
+    "/properties/LimitMode"
+  ],
+  "definitions": {
+    "AdvancedConfiguration": {
+      "description": "Edge instance advanced configuration, such as deletion protection.",
+      "properties": {
+        "DeleteProtection": {
+          "description": "Whether deletion protection is enabled for the edge instance. true: enabled. false: not enabled.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "BandwidthPeakConfigRatio": {
+      "properties": {
+        "EnhancedRatio": {
+          "description": "Bandwidth ratio in enhanced/burst mode",
+          "type": "integer"
+        },
+        "NormalRatio": {
+          "description": "Bandwidth ratio in standard mode",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "BandwidthPeakLimitIspConfig": {
+      "properties": {
+        "BandwidthPeakLimit": {
+          "description": "Bandwidth throttling value for this carrier.",
+          "type": "string"
+        },
+        "Isp": {
+          "description": "Carrier. Value range: CMCC: China Mobile; CTCC: China Telecom; CUCC: China Unicom",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Billing": {
+      "description": "Billing configuration for edge instances.",
+      "properties": {
+        "BandwidthBillingMethod": {
+          "description": "Bandwidth billing method: MonthlyP95: Billed by monthly 95th percentile. DailyPeak: Billed by daily peak. If you require daily peak billing or other billing methods, please submit a ticket.",
+          "type": "string"
+        },
+        "ComputingBillingMethod": {
+          "description": "Compute billing method: MonthlyPeak: monthly peak billing. DailyPeak: daily peak billing. If you require daily peak billing or other billing methods, please submit a ticket. PrePaid: yearly/monthly subscription.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BillingConfig": {
+      "description": "Billing configuration for subscription instances. This parameter must be specified when the billing method is subscription",
+      "properties": {
+        "AutoRenew": {
+          "description": "Enable auto-renewal. Value options: true: enable auto-renewal. false (default): disable auto-renewal.",
+          "type": "boolean"
+        },
+        "PrePaidPeriod": {
+          "description": "Unit of resource purchase duration. This parameter must be used together with the pre_paid_period_number parameter. Valid values: monthly: month",
+          "type": "string"
+        },
+        "PrePaidPeriodNumber": {
+          "description": "Resource purchase duration. This parameter must be used together with the pre_paid_period parameter. Valid values: 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Cluster": {
+      "properties": {
+        "Alias": {
+          "description": "Node alias.",
+          "type": "string"
+        },
+        "City": {
+          "description": "City where the node is located.",
+          "type": "string"
+        },
+        "ClusterName": {
+          "description": "Name of the node",
+          "type": "string"
+        },
+        "Country": {
+          "description": "Country where the node is located.",
+          "type": "string"
+        },
+        "Isp": {
+          "description": "Network carrier of the node.",
+          "type": "string"
+        },
+        "Level": {
+          "description": "Node billing category: 1: Beijing, Shanghai, Guangzhou; 2: regional centers; 3: general cities",
+          "type": "string"
+        },
+        "Province": {
+          "description": "Province where the node is located.",
+          "type": "string"
+        },
+        "Region": {
+          "description": "Region where the node is located.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CustomData": {
+      "description": "User data is injected at instance startup. It can be updated after creation.",
+      "properties": {
+        "Data": {
+          "description": "Original user data content. When IsBase64 is true, the data should be Base64 encoded.",
+          "type": "string"
+        },
+        "IsBase64": {
+          "description": "Whether the data uses Base64 encoding",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "Disk": {
+      "description": "System disk.",
+      "properties": {
+        "Capacity": {
+          "description": "Disk capacity. Unit: GB.",
+          "type": "string"
+        },
+        "DeleteWithInstance": {
+          "description": "Release disk when instance is deleted. true: delete disk with instance; false: retain disk independently.",
+          "type": "boolean"
+        },
+        "DiskIdentity": {
+          "description": "Unique disk ID, the primary key of the cloud disk resource.",
+          "type": "string"
+        },
+        "LocalDiskClass": {
+          "description": "Local disk specification type. Applies only to local disk instances; cloud disk instances leave this blank.",
+          "type": "string"
+        },
+        "LocalDiskResourceName": {
+          "description": "Local disk resource name, exclusive identifier for local disk instances. Not required for cloud disk instances",
+          "type": "string"
+        },
+        "StorageType": {
+          "description": "Disk type: CloudBlockHDD: HDD cloud disk. CloudBlockSSD: SSD cloud disk.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Gpu": {
+      "description": "Edge instance GPU configuration",
+      "properties": {
+        "Gpus": {
+          "description": "GPU specification information",
+          "items": {
+            "$ref": "#/definitions/GpuItem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GpuItem": {
+      "description": "GPU specification information",
+      "properties": {
+        "GpuSpec": {
+          "$ref": "#/definitions/GpuSpec",
+          "description": "GPU specification",
+          "type": "object"
+        },
+        "Num": {
+          "description": "GPU quantity.",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "GpuSpec": {
+      "description": "GPU specification",
+      "properties": {
+        "GpuType": {
+          "description": "GPU type.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Image": {
+      "properties": {
+        "DisableVga": {
+          "description": "Whether to disable VGA. Value range: true: disable VGA; false: enable VGA.",
+          "type": "boolean"
+        },
+        "ImageBootMode": {
+          "description": "Image boot mode: BIOS, UEFI",
+          "type": "string"
+        },
+        "ImageIdentity": {
+          "description": "Image ID.",
+          "type": "string"
+        },
+        "ImageName": {
+          "description": "Image name.",
+          "type": "string"
+        },
+        "Property": {
+          "description": "Image attributes: BENBuildImage: image created from edge instance. LocalImage: local image. PublicBaseImage: public image. UrlImage: image uploaded via URL",
+          "type": "string"
+        },
+        "SystemArch": {
+          "description": "Operating system architecture.",
+          "type": "string"
+        },
+        "SystemBit": {
+          "description": "Operating system bitness.",
+          "type": "string"
+        },
+        "SystemType": {
+          "description": "Type of operating system.",
+          "type": "string"
+        },
+        "SystemVersion": {
+          "description": "Operating system version.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "InstanceAreaNum": {
+      "properties": {
+        "AreaName": {
+          "description": "Region name. You can use the ListAvailableResourceInfo API to query supported regions, cities, carriers, and node information for instance types",
+          "type": "string"
+        },
+        "ClusterName": {
+          "description": "Node name. Specify the node where you want to deploy the edge service. You can query the supported regions, cities, carriers, and node information for instance types through the ListAvailableResourceInfo API.",
+          "type": "string"
+        },
+        "DefaultIsp": {
+          "description": "Default ISP. This parameter is only applicable to multi-line nodes. When specifying the default ISP, ensure it is within the range of node ISPs. Only one ISP can be specified as the default. Note: When the value of external_network_mode is single_interface_cmcc_ip, single_interface_cucc_ip, or single_interface_ctcc_ip, the ISP specified in default_isp must be the same as the ISP specified in external_network_mode. For example, when external_network_mode is set to single_interface_cmcc_ip, the value of default_isp must be set to CMCC. When external_network_mode is set to single_interface_multi_ip or multi_interface_multi_ip, the default_isp parameter must be specified, and the value can be set to CMCC, CUCC, or CTCC as needed. When external_network_mode is set to single_interface_single_ip or no_interface, default_isp does not need to be specified.",
+          "type": "string"
+        },
+        "ExternalNetworkMode": {
+          "description": "Public network configuration. This parameter applies only to multi-line nodes. Value options: single_interface_multi_ip: single NIC with multiple IPs. If you are a new user of multi-line nodes, you must submit a ticket to enable the relevant permissions. single_interface_cmcc_ip: single NIC with China Mobile IP. You must submit a ticket to enable the relevant permissions. single_interface_cucc_ip: single NIC with China Unicom IP. You must submit a ticket to enable the relevant permissions.\nsingle_interface_ctcc_ip: single NIC with China Telecom IP. You must submit a ticket to enable the relevant permissions. multi_interface_multi_ip: multiple NICs with multiple IPs. You must submit a ticket to enable the relevant permissions. single_interface_single_ip: single NIC with a single IP. In this mode, the system randomly assigns a public IP address from an available carrier. no_interface: no public network NIC. You must submit a ticket to enable the relevant permissions. Default values: When a public network NIC is available:\nSingle NIC multi-IP permission enabled: single_interface_multi_ip (single NIC with multiple IPs) is used by default. Single NIC multi-IP permission disabled: single_interface_single_ip (single NIC with a single IP) is used by default. When no public network NIC is available, no_interface is used by default.",
+          "type": "string"
+        },
+        "HostNameList": {
+          "description": "The host name list to assign to the created instances.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "Isp": {
+          "description": "Carrier. You can use the ListAvailableResourceInfo API to query supported regions, cities, carriers, and node information for instance types",
+          "type": "string"
+        },
+        "MultiInterfaceNameConfig": {
+          "$ref": "#/definitions/MultiInterfaceNameConfig",
+          "description": "NIC name for edge instances of private network type with multiple public NICs. You can use this parameter to set the names of public and private NICs. When using this parameter, note the following: Usage restrictions: This parameter applies only to edge instances of private network type. You must submit a ticket to enable this feature before you can use this parameter; otherwise, the parameter value is invalid. Effect: If you set the NIC name using the custom_internal_interface_name or custom_external_interface_name parameter in the edge service network_config struct, and also set the NIC name using the multi_interface_name_config parameter, only the latter takes effect.\nIf you set the public NIC name only through the custom_external_interface_name parameter in the edge service network_config struct, the name cannot be eth2, eth3, Ethernet2, or Ethernet3. The name you set will be used as the name for the China Telecom public NIC. The China Unicom and China Mobile public NICs will use the default values. If you do not set the NIC name, the following default values apply: Linux edge instance: The default name for the private NIC is eth0. The default name for the China Telecom public NIC is eth1. The default name for the China Unicom public NIC is eth2. The default name for the China Mobile public NIC is eth3. Windows edge instance: The default name for the private NIC is Ethernet0. The default name for the China Telecom public NIC is Ethernet1. The default name for the China Unicom public NIC is Ethernet2. The default name for the China Mobile public NIC is Ethernet3.",
+          "type": "object"
+        },
+        "Num": {
+          "description": "Number of instances.",
+          "type": "integer"
+        },
+        "SingleInterfaceNameConfig": {
+          "$ref": "#/definitions/SingleInterfaceNameConfig",
+          "description": "Name of the network interface for a private network type edge instance configured with a single public network interface. You can use this parameter to set the names of both the public and private network interfaces. It is recommended to set both the public and private network interface names. Please note the following when using this parameter: Usage restrictions: This parameter is only applicable to private network type edge instances. You must submit a ticket to enable the related feature before this parameter can be used; otherwise, the parameter value is invalid. Effectiveness: If you set the network interface name using the custom_internal_interface_name or custom_external_interface_name parameter in the network_config structure of the edge service, and also set the network interface name using the single_interface_name_config parameter, only the latter takes effect. If you do not set the network interface name, the default values are used: For Linux edge instances: the default name for the private network interface is eth0, and for the public network interface is eth1. For Windows edge instances: the default name for the private network interface is Ethernet0, and for the public network interface is Ethernet1.",
+          "type": "object"
+        },
+        "SubnetIdentity": {
+          "description": "Subnet ID. If you specify a custom private network, you must also set subnet_identity to specify the subnet.",
+          "type": "string"
+        },
+        "VpcIdentity": {
+          "description": "Private network ID. This parameter specifies the private network where the edge service is deployed. If vpc_identity is set, cluster_name must also be set. If you specify a custom private network, subnet_identity must also be set to specify the subnet",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "MonitorAgent": {
+      "description": "Monitoring agent information",
+      "properties": {
+        "AgentStatus": {
+          "description": "Status of the monitoring Agent: running: running. stopped: not running. If the return value is an empty string, it means the Agent is not running.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "MultiInterfaceNameConfig": {
+      "properties": {
+        "CmccExternalInterfaceName": {
+          "description": "Name of the mobile public network interface. Naming rules: 3–15 characters allowed. Uppercase and lowercase letters, numbers, hyphens (-), and underscores (_) are allowed. The network interface name must be unique within the same edge instance.",
+          "type": "string"
+        },
+        "CtccExternalInterfaceName": {
+          "description": "Telecom public network NIC name. Naming rules: 3–15 characters allowed. Uppercase and lowercase letters, numbers allowed. Hyphens (-) and underscores (_) allowed. NIC names must be unique within the same edge instance",
+          "type": "string"
+        },
+        "CuccExternalInterfaceName": {
+          "description": "Public network interface name for Unicom. Naming rules: 3–15 characters allowed. Uppercase and lowercase letters, numbers, hyphens (-), and underscores (_) are permitted. Interface names must be unique within the same edge instance",
+          "type": "string"
+        },
+        "InternalInterfaceName": {
+          "description": "Private network interface name. Naming rules: 3–15 characters allowed. Uppercase and lowercase letters, numbers, hyphens (-), and underscores (_) are permitted. Interface names must be unique within the same edge instance",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Network": {
+      "properties": {
+        "ActualSecondaryIpNum": {
+          "description": "Number of allocated auxiliary private IP addresses",
+          "type": "integer"
+        },
+        "BandwidthPeakConfigRatio": {
+          "$ref": "#/definitions/BandwidthPeakConfigRatio",
+          "description": "Percentile peak bandwidth, no fixed bandwidth value.",
+          "type": "object"
+        },
+        "BandwidthPeakUpdateStatus": {
+          "description": "Bandwidth peak update status: updating: updating. ready: update complete.",
+          "type": "string"
+        },
+        "DefaultIsp": {
+          "description": "Default carrier",
+          "type": "string"
+        },
+        "DisableIpv4": {
+          "description": "Disable IPv4: true: IPv4 disabled. false: IPv4 enabled",
+          "type": "boolean"
+        },
+        "DnsList": {
+          "description": "DNS list. The first IP address is the primary DNS, and the subsequent IP addresses are backup DNS servers",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "DnsType": {
+          "description": "DNS type: default: Default DNS. Default DNS configuration: Preferred DNS is 114.114.114.114, alternate DNS is 180.184.1.1. custom: Custom DNS.",
+          "type": "string"
+        },
+        "EnableIpv6": {
+          "description": "Enable IPv6: true: enable IPv6. false: disable IPv6.",
+          "type": "boolean"
+        },
+        "ExternalNetworkMode": {
+          "description": "Public network configuration for multi-line nodes. single_interface_multi_ip: single NIC, multiple IPs. single_interface_cmcc_ip: single NIC, China Mobile IP. single_interface_cucc_ip: single NIC, China Unicom IP. single_interface_ctcc_ip: single NIC, China Telecom IP. multi_interface_multi_ip: multiple NICs, multiple IPs. no_interface: no public NIC.",
+          "type": "string"
+        },
+        "LimitMode": {
+          "description": "Bandwidth throttling mode. shared: shared throttling. Bandwidth resources are shared among carriers. isp: throttling by carrier. You set the bandwidth peak for each carrier separately.",
+          "type": "string"
+        },
+        "TcpTimeout": {
+          "description": "Edge instance TCP session timeout. Unit: seconds.",
+          "type": "integer"
+        },
+        "UdpTimeout": {
+          "description": "UDP session timeout for the edge instance. Unit: seconds.",
+          "type": "integer"
+        },
+        "VfPassthrough": {
+          "description": "Whether it is a VF passthrough type: true: VF passthrough type. false: non-VF passthrough type.",
+          "type": "boolean"
+        },
+        "VlanVfPassthrough": {
+          "description": "Whether it is a VLAN VF passthrough type: true: VLAN VF passthrough type. false: Non-VLAN VF passthrough type.",
+          "type": "boolean"
+        },
+        "WantedSecondaryIpNum": {
+          "description": "Number of required auxiliary private network IP addresses",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Secret": {
+      "description": "Password configuration for the edge instance",
+      "properties": {
+        "SecretType": {
+          "description": "Edge instance login password type: 2: custom password. 3: SSH Key password. 4: do not inject login credentials.",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "SingleInterfaceNameConfig": {
+      "properties": {
+        "ExternalInterfaceName": {
+          "description": "Public network interface card name. Naming rules: 3–15 characters allowed. Uppercase and lowercase letters, numbers, hyphens (-), and underscores (_) are permitted. The network interface card name must be unique within the same edge instance.",
+          "type": "string"
+        },
+        "InternalInterfaceName": {
+          "description": "Private network interface name. Naming rules: 3–15 characters allowed. Uppercase and lowercase letters, numbers, hyphens (-), and underscores (_) are permitted. Interface names must be unique within the same edge instance",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Storage": {
+      "properties": {
+        "DataDisk": {
+          "$ref": "#/definitions/Disk",
+          "description": "Data disk. This parameter is used to add a single data disk",
+          "type": "object"
+        },
+        "DataDiskList": {
+          "description": "Data disk list",
+          "insertionOrder": false,
+          "items": {
+            "$ref": "#/definitions/Disk"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "SystemDisk": {
+          "$ref": "#/definitions/Disk",
+          "description": "System disk",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "Tag": {
+      "properties": {
+        "Key": {
+          "description": "Tag key.",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "An edge instance is a cloud-based computing server that includes CPU, memory, storage, and network resources",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/InstanceIdentity",
+      "/properties/InstanceUuid",
+      "/properties/InstanceName",
+      "/properties/CloudServerIdentity",
+      "/properties/Status",
+      "/properties/Project",
+      "/properties/VpcIdentity",
+      "/properties/Spec",
+      "/properties/SubnetCidr",
+      "/properties/Cluster/ClusterName",
+      "/properties/Cluster/Country",
+      "/properties/Cluster/City",
+      "/properties/Cluster/Region",
+      "/properties/Cluster/Isp",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "veenedge:CreateInstance",
+        "veenedge:GetInstance",
+        "veenedge:SetInstanceName",
+        "veenedge:SetInstanceCustomData",
+        "veenedge:SetInstanceDeleteProtection"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "veenedge:OfflineInstances",
+        "veenedge:GetInstance"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "veenedge:ListInstances"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "veenedge:GetInstance"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "veenedge:GetInstance",
+        "veenedge:SetInstanceName",
+        "veenedge:SetInstanceCustomData",
+        "veenedge:SetInstanceDeleteProtection",
+        "veenedge:TagResourcesV2",
+        "veenedge:UntagResourcesV2"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/InstanceIdentity"
+  ],
+  "properties": {
+    "AdvancedConfiguration": {
+      "$ref": "#/definitions/AdvancedConfiguration",
+      "description": "Advanced configuration for the edge instance, such as deletion protection",
+      "type": "object"
+    },
+    "Arch": {
+      "description": "Edge instance architecture: arm: ARM, x86: x86, bare_metal: bare metal.",
+      "type": "string"
+    },
+    "BandwidthPeakLimitIspConfigs": {
+      "$ref": "#/definitions/BandwidthPeakLimitIspConfig",
+      "description": "Rate-limited bandwidth configured by carrier. When you select rate limiting by carrier (isp) mode, the parameter values take effect. Mobile public bandwidth peak: default equals public bandwidth peak. Value must be a multiple of 5. Unit: Mbps. Unicom public bandwidth peak: default is 0. Value must be a multiple of 5. Unit: Mbps. Telecom public bandwidth peak: default is 0. Value must be a multiple of 5. Unit: Mbps",
+      "type": "object"
+    },
+    "BareMetalPackage": {
+      "description": "Bare metal package name (only for bare metal instances)",
+      "type": "string"
+    },
+    "Billing": {
+      "$ref": "#/definitions/Billing",
+      "description": "Billing configuration for edge instances.",
+      "type": "object"
+    },
+    "BillingConfig": {
+      "$ref": "#/definitions/BillingConfig",
+      "description": "Billing configuration for edge instances.",
+      "type": "object"
+    },
+    "ClassicNetworkIdentity": {
+      "description": "Edge instance classic network identifier.",
+      "type": "string"
+    },
+    "ClassicSubnetIdentity": {
+      "description": "Edge instance classic subnet identifier.",
+      "type": "string"
+    },
+    "CloudServerIdentity": {
+      "description": "Edge service ID.",
+      "type": "string"
+    },
+    "CloudServerName": {
+      "description": "Edge service name.",
+      "type": "string"
+    },
+    "Cluster": {
+      "$ref": "#/definitions/Cluster",
+      "description": "Information about the node where the edge instance is located.",
+      "type": "object"
+    },
+    "Cpu": {
+      "description": "Number of CPU cores for the edge instance",
+      "type": "string"
+    },
+    "CreateInstanceTimeout": {
+      "description": "Note: This parameter applies only to postpaid instances. Edge instance creation timeout. Unit: seconds. Minimum value: 120. If the creation time of the edge instance exceeds the set value, the creation fails and its status changes to open_fail. You can delete the relevant instance via the console or API. If this parameter is not specified, there is no limit on the instance creation time.",
+      "type": "integer"
+    },
+    "CreateTime": {
+      "description": "Creation time of the edge instance.",
+      "semantic": "createdTime",
+      "type": "integer"
+    },
+    "CreateTimestamp": {
+      "description": "Edge instance creation time, string timestamp format.",
+      "type": "string"
+    },
+    "Creator": {
+      "description": "Creator of the edge instance",
+      "type": "string"
+    },
+    "CustomData": {
+      "$ref": "#/definitions/CustomData",
+      "description": "User data is injected when the instance starts. Can be updated after creation",
+      "type": "object"
+    },
+    "EndTime": {
+      "description": "End time of the edge instance operation",
+      "type": "integer"
+    },
+    "Gpu": {
+      "$ref": "#/definitions/Gpu",
+      "description": "Edge instance GPU configuration",
+      "type": "object"
+    },
+    "HostName": {
+      "description": "Hostname of the edge instance.",
+      "type": "string"
+    },
+    "Image": {
+      "$ref": "#/definitions/Image",
+      "description": "Edge instance image configuration.",
+      "type": "object"
+    },
+    "InstanceAreaNums": {
+      "description": "Region information for the edge instance",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/InstanceAreaNum"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "InstanceDesc": {
+      "description": "Description of the edge instance",
+      "semantic": "description",
+      "type": "string"
+    },
+    "InstanceIdentity": {
+      "description": "Edge instance ID. You can obtain the edge instance ID through the ListInstances API.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "InstanceName": {
+      "description": "Name of the edge instance.",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "InstanceUuid": {
+      "description": "UUID of the edge instance.",
+      "type": "string"
+    },
+    "LimitMode": {
+      "description": "Rate limiting mode. When using multi-line nodes, you can configure the rate limiting mode for edge instances. Options: shared (default): shared rate limiting. All carriers share bandwidth resources; total public bandwidth usage does not exceed the value set for bandwidth_peak (public bandwidth peak). isp: rate limiting by carrier. You can set bandwidth peak for each carrier separately",
+      "enum": [
+        "shared",
+        "isp"
+      ],
+      "type": "string"
+    },
+    "LoadType": {
+      "description": "Edge instance types: virtual_machine: virtual machine. bare_metal: bare metal",
+      "type": "string"
+    },
+    "Mem": {
+      "description": "Edge instance memory size. Unit: GB.",
+      "type": "string"
+    },
+    "MonitorAgent": {
+      "$ref": "#/definitions/MonitorAgent",
+      "description": "Monitoring agent information",
+      "type": "object"
+    },
+    "Network": {
+      "$ref": "#/definitions/Network",
+      "description": "Network configuration of the edge instance.",
+      "type": "object"
+    },
+    "Project": {
+      "description": "Project to which the edge instance belongs.",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "Secret": {
+      "$ref": "#/definitions/Secret",
+      "description": "Password configuration for the edge instance",
+      "type": "object"
+    },
+    "Spec": {
+      "description": "Edge instance specifications",
+      "type": "string"
+    },
+    "SpecDisplay": {
+      "description": "Chinese name of the instance specification.",
+      "type": "string"
+    },
+    "StartTime": {
+      "description": "Edge instance start time",
+      "type": "integer"
+    },
+    "Status": {
+      "description": "Edge instance status: opening: creating. starting: starting. running: running. stopping: stopping. stop: stopped. rebooting: rebooting. terminating: deleting. open_fail: creation failed",
+      "semantic": "status",
+      "type": "string"
+    },
+    "Storage": {
+      "$ref": "#/definitions/Storage",
+      "description": "Storage configuration of the edge instance.",
+      "type": "object"
+    },
+    "SubnetCidr": {
+      "description": "Subnet CIDR.",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "Bound tags",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "UpdateTime": {
+      "description": "Edge instance update time",
+      "semantic": "updatedTime",
+      "type": "integer"
+    },
+    "VpcIdentity": {
+      "description": "Private network ID",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/Arch",
+    "/properties/BareMetalPackage",
+    "/properties/Billing",
+    "/properties/ClassicNetworkIdentity",
+    "/properties/ClassicSubnetIdentity",
+    "/properties/CloudServerName",
+    "/properties/Cluster",
+    "/properties/Cpu",
+    "/properties/CreateTime",
+    "/properties/CreateTimestamp",
+    "/properties/Creator",
+    "/properties/EndTime",
+    "/properties/Gpu",
+    "/properties/HostName",
+    "/properties/Image",
+    "/properties/InstanceDesc",
+    "/properties/InstanceIdentity",
+    "/properties/InstanceUuid",
+    "/properties/LoadType",
+    "/properties/Mem",
+    "/properties/MonitorAgent",
+    "/properties/Network",
+    "/properties/Project",
+    "/properties/Secret",
+    "/properties/Spec",
+    "/properties/SpecDisplay",
+    "/properties/StartTime",
+    "/properties/Status",
+    "/properties/Storage",
+    "/properties/SubnetCidr",
+    "/properties/UpdateTime",
+    "/properties/VpcIdentity"
+  ],
+  "required": [
+    "CloudServerIdentity"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::VeenEdge::Veen",
+  "writeOnlyProperties": [
+    "/properties/BandwidthPeakLimitIspConfigs",
+    "/properties/BillingConfig",
+    "/properties/CreateInstanceTimeout",
+    "/properties/CustomData",
+    "/properties/InstanceAreaNums"
+  ]
+}

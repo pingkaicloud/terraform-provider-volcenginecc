@@ -12,7 +12,7 @@ A bucket is a container for storing objects. All objects must belong to a bucket
 ## Example Usage
 
 ```terraform
-resource "volcenginecc_tos_bucket" "BucketDemo" {
+resource "volcenginecc_tos_bucket" "Example" {
   name                  = "bucket-demo"
   storage_class         = "STANDARD"
   enable_version_status = "Enabled"
@@ -37,7 +37,7 @@ resource "volcenginecc_tos_bucket" "BucketDemo" {
       }
       lifecycle_rule_id = "bucketdemo"
       prefix            = "prefix"
-    status = "Enabled" }
+      status = "Enabled" }
   ]
   object_lock_configuration = {
     object_lock_enabled = "Enabled"
