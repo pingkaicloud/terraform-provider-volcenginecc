@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_veenedge_veen.example "instance_identity"

@@ -38,11 +38,16 @@ resource "volcenginecc_kms_secret" "KMSSecretDemo" {
 ### Optional
 
 - `automatic_rotation` (Boolean) Whether to enable automatic rotation. Applies only to credentials of type IAM|RDS|Redis|ECS
+- `cancel_secret_deletion` (Boolean) Trigger: When set to true, calls the KMS CancelSecretDeletion API to cancel the scheduled deletion of the credential.
 - `description` (String) Credential description, length: 0 ~ 8192 characters
 - `encryption_key` (String) KMS key TRN for encrypting credential value. If not specified, the default key of Credential Manager is used
 - `extended_config` (String) Credential extension configuration, used to specify properties for non-Generic credentials
+- `pending_window_in_days` (Number) Credential pre-deletion period. During this time, you can revoke the deletion of credentials in pending deletion status; after the pre-deletion period, deletion cannot be revoked. Value range: 7 ~ 30. Unit: days. Default: 7. To cancel, use CancelSecretDeletion.
 - `project_name` (String) Credential project name. Default value: default
 - `rotation_interval` (String) Automatic rotation interval. Range: 1 ~ 365 days. Format: integer[unit], where integer is the duration and unit is the time unit. Unit value: d (days). For example: 7d means a 7-day interval
+- `secret_backup` (Boolean) Trigger: When set to true, calls the KMS BackupSecret API to back up the credential. The backup result is written to SecretRestoreRead. Please keep it safe.
+- `secret_restore` (Attributes) Credential restore parameters. Only effective during creation. If provided, calls the KMS RestoreSecret API to restore the credential from backup data. Other creation parameters such as SecretValue, SecretType, and SecretName will not take effect. (see [below for nested schema](#nestedatt--secret_restore))
+- `secret_rotate` (Boolean) Trigger: When set to true, calls the KMS RotateSecret API to manually rotate the credential.
 - `version_name` (String) Version alias. Valid characters: [a-zA-Z0-9/_+=.@-]
 
 ### Read-Only
@@ -57,10 +62,42 @@ resource "volcenginecc_kms_secret" "KMSSecretDemo" {
 - `schedule_delete_time` (String) Credential Scheduled Deletion Time
 - `schedule_rotation_time` (String) Credential next rotation time
 - `secret_id` (String) Credential unique identifier, UUID format
+- `secret_restore_read` (Attributes) Credential restore parameters. Returned only during backup. (see [below for nested schema](#nestedatt--secret_restore_read))
 - `secret_state` (String) Credential status. Enable: enabled, Disable: disabled, PendingDelete: scheduled for deletion
+- `secret_versions` (Attributes Set) Credential version information.
+ Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--secret_versions))
 - `trn` (String) Credential resource name. Format: trn:kms:${Region}:${AccountID}:secrets/${secret}
 - `uid` (String) Credential tenant ID
 - `updated_time` (Number) Credential update date
+
+<a id="nestedatt--secret_restore"></a>
+### Nested Schema for `secret_restore`
+
+Optional:
+
+- `backup_data` (String) Complete credential data returned by backup, in JSON format.
+- `secret_data_key` (String) Encrypted data key returned by backup, Base64 encoded.
+- `signature` (String) Signature of the backup data, Base64 encoded.
+
+
+<a id="nestedatt--secret_restore_read"></a>
+### Nested Schema for `secret_restore_read`
+
+Read-Only:
+
+- `backup_data` (String) Complete credential data returned by backup, in JSON format.
+- `secret_data_key` (String) Encrypted data key returned by backup, Base64 encoded.
+- `signature` (String) Signature of the backup data, Base64 encoded.
+
+
+<a id="nestedatt--secret_versions"></a>
+### Nested Schema for `secret_versions`
+
+Read-Only:
+
+- `creation_date` (Number) Credential version creation time.
+- `version_id` (String) Unique identifier for the credential version, in UUID format.
+- `version_stage` (String) Credential version tags.
 
 ## Import
 

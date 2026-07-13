@@ -33,6 +33,17 @@ func secretDataSource(ctx context.Context) (datasource.DataSource, error) {
 			Description: "Whether to enable automatic rotation. Applies only to credentials of type IAM|RDS|Redis|ECS",
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
+		// Property: CancelSecretDeletion
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Trigger: When set to true, calls the KMS CancelSecretDeletion API to cancel the scheduled deletion of the credential.",
+		//	  "type": "boolean"
+		//	}
+		"cancel_secret_deletion": schema.BoolAttribute{ /*START ATTRIBUTE*/
+			Description: "Trigger: When set to true, calls the KMS CancelSecretDeletion API to cancel the scheduled deletion of the credential.",
+			Computed:    true,
+		}, /*END ATTRIBUTE*/
 		// Property: CreatedTime
 		// Cloud Control resource type schema:
 		//
@@ -112,6 +123,17 @@ func secretDataSource(ctx context.Context) (datasource.DataSource, error) {
 			Description: "Managed Cloud Service",
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
+		// Property: PendingWindowInDays
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Credential pre-deletion period. During this time, you can revoke the deletion of credentials in pending deletion status; after the pre-deletion period, deletion cannot be revoked. Value range: 7 ~ 30. Unit: days. Default: 7. To cancel, use CancelSecretDeletion.",
+		//	  "type": "integer"
+		//	}
+		"pending_window_in_days": schema.Int64Attribute{ /*START ATTRIBUTE*/
+			Description: "Credential pre-deletion period. During this time, you can revoke the deletion of credentials in pending deletion status; after the pre-deletion period, deletion cannot be revoked. Value range: 7 ~ 30. Unit: days. Default: 7. To cancel, use CancelSecretDeletion.",
+			Computed:    true,
+		}, /*END ATTRIBUTE*/
 		// Property: ProjectName
 		// Cloud Control resource type schema:
 		//
@@ -178,6 +200,17 @@ func secretDataSource(ctx context.Context) (datasource.DataSource, error) {
 			Description: "Credential next rotation time",
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
+		// Property: SecretBackup
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Trigger: When set to true, calls the KMS BackupSecret API to back up the credential. The backup result is written to SecretRestoreRead. Please keep it safe.",
+		//	  "type": "boolean"
+		//	}
+		"secret_backup": schema.BoolAttribute{ /*START ATTRIBUTE*/
+			Description: "Trigger: When set to true, calls the KMS BackupSecret API to back up the credential. The backup result is written to SecretRestoreRead. Please keep it safe.",
+			Computed:    true,
+		}, /*END ATTRIBUTE*/
 		// Property: SecretID
 		// Cloud Control resource type schema:
 		//
@@ -198,6 +231,111 @@ func secretDataSource(ctx context.Context) (datasource.DataSource, error) {
 		//	}
 		"secret_name": schema.StringAttribute{ /*START ATTRIBUTE*/
 			Description: "Credential name. Valid characters: [a-zA-Z0-9/_+=.@-]",
+			Computed:    true,
+		}, /*END ATTRIBUTE*/
+		// Property: SecretRestore
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Credential restore parameters. Only effective during creation. If provided, calls the KMS RestoreSecret API to restore the credential from backup data. Other creation parameters such as SecretValue, SecretType, and SecretName will not take effect.",
+		//	  "properties": {
+		//	    "BackupData": {
+		//	      "description": "Complete credential data returned by backup, in JSON format.",
+		//	      "type": "string"
+		//	    },
+		//	    "SecretDataKey": {
+		//	      "description": "Encrypted data key returned by backup, Base64 encoded.",
+		//	      "type": "string"
+		//	    },
+		//	    "Signature": {
+		//	      "description": "Signature of the backup data, Base64 encoded.",
+		//	      "type": "string"
+		//	    }
+		//	  },
+		//	  "required": [
+		//	    "BackupData",
+		//	    "Signature",
+		//	    "SecretDataKey"
+		//	  ],
+		//	  "type": "object"
+		//	}
+		"secret_restore": schema.SingleNestedAttribute{ /*START ATTRIBUTE*/
+			Attributes: map[string]schema.Attribute{ /*START SCHEMA*/
+				// Property: BackupData
+				"backup_data": schema.StringAttribute{ /*START ATTRIBUTE*/
+					Description: "Complete credential data returned by backup, in JSON format.",
+					Computed:    true,
+				}, /*END ATTRIBUTE*/
+				// Property: SecretDataKey
+				"secret_data_key": schema.StringAttribute{ /*START ATTRIBUTE*/
+					Description: "Encrypted data key returned by backup, Base64 encoded.",
+					Computed:    true,
+				}, /*END ATTRIBUTE*/
+				// Property: Signature
+				"signature": schema.StringAttribute{ /*START ATTRIBUTE*/
+					Description: "Signature of the backup data, Base64 encoded.",
+					Computed:    true,
+				}, /*END ATTRIBUTE*/
+			}, /*END SCHEMA*/
+			Description: "Credential restore parameters. Only effective during creation. If provided, calls the KMS RestoreSecret API to restore the credential from backup data. Other creation parameters such as SecretValue, SecretType, and SecretName will not take effect.",
+			Computed:    true,
+		}, /*END ATTRIBUTE*/
+		// Property: SecretRestoreRead
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Credential restore parameters. Returned only during backup.",
+		//	  "properties": {
+		//	    "BackupData": {
+		//	      "description": "Complete credential data returned by backup, in JSON format.",
+		//	      "type": "string"
+		//	    },
+		//	    "SecretDataKey": {
+		//	      "description": "Encrypted data key returned by backup, Base64 encoded.",
+		//	      "type": "string"
+		//	    },
+		//	    "Signature": {
+		//	      "description": "Signature of the backup data, Base64 encoded.",
+		//	      "type": "string"
+		//	    }
+		//	  },
+		//	  "required": [
+		//	    "BackupData",
+		//	    "Signature",
+		//	    "SecretDataKey"
+		//	  ],
+		//	  "type": "object"
+		//	}
+		"secret_restore_read": schema.SingleNestedAttribute{ /*START ATTRIBUTE*/
+			Attributes: map[string]schema.Attribute{ /*START SCHEMA*/
+				// Property: BackupData
+				"backup_data": schema.StringAttribute{ /*START ATTRIBUTE*/
+					Description: "Complete credential data returned by backup, in JSON format.",
+					Computed:    true,
+				}, /*END ATTRIBUTE*/
+				// Property: SecretDataKey
+				"secret_data_key": schema.StringAttribute{ /*START ATTRIBUTE*/
+					Description: "Encrypted data key returned by backup, Base64 encoded.",
+					Computed:    true,
+				}, /*END ATTRIBUTE*/
+				// Property: Signature
+				"signature": schema.StringAttribute{ /*START ATTRIBUTE*/
+					Description: "Signature of the backup data, Base64 encoded.",
+					Computed:    true,
+				}, /*END ATTRIBUTE*/
+			}, /*END SCHEMA*/
+			Description: "Credential restore parameters. Returned only during backup.",
+			Computed:    true,
+		}, /*END ATTRIBUTE*/
+		// Property: SecretRotate
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Trigger: When set to true, calls the KMS RotateSecret API to manually rotate the credential.",
+		//	  "type": "boolean"
+		//	}
+		"secret_rotate": schema.BoolAttribute{ /*START ATTRIBUTE*/
+			Description: "Trigger: When set to true, calls the KMS RotateSecret API to manually rotate the credential.",
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
 		// Property: SecretState
@@ -231,6 +369,56 @@ func secretDataSource(ctx context.Context) (datasource.DataSource, error) {
 		//	}
 		"secret_value": schema.StringAttribute{ /*START ATTRIBUTE*/
 			Description: "Credential value. When SecretType is Generic, users can customize it. It is recommended to use JSON key-value pairs",
+			Computed:    true,
+		}, /*END ATTRIBUTE*/
+		// Property: SecretVersions
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Credential version information.",
+		//	  "insertionOrder": false,
+		//	  "items": {
+		//	    "properties": {
+		//	      "CreationDate": {
+		//	        "description": "Credential version creation time.",
+		//	        "format": "int64",
+		//	        "type": "integer"
+		//	      },
+		//	      "VersionID": {
+		//	        "description": "Unique identifier for the credential version, in UUID format.",
+		//	        "type": "string"
+		//	      },
+		//	      "VersionStage": {
+		//	        "description": "Credential version tags.",
+		//	        "type": "string"
+		//	      }
+		//	    },
+		//	    "type": "object"
+		//	  },
+		//	  "type": "array",
+		//	  "uniqueItems": true
+		//	}
+		"secret_versions": schema.SetNestedAttribute{ /*START ATTRIBUTE*/
+			NestedObject: schema.NestedAttributeObject{ /*START NESTED OBJECT*/
+				Attributes: map[string]schema.Attribute{ /*START SCHEMA*/
+					// Property: CreationDate
+					"creation_date": schema.Int64Attribute{ /*START ATTRIBUTE*/
+						Description: "Credential version creation time.",
+						Computed:    true,
+					}, /*END ATTRIBUTE*/
+					// Property: VersionID
+					"version_id": schema.StringAttribute{ /*START ATTRIBUTE*/
+						Description: "Unique identifier for the credential version, in UUID format.",
+						Computed:    true,
+					}, /*END ATTRIBUTE*/
+					// Property: VersionStage
+					"version_stage": schema.StringAttribute{ /*START ATTRIBUTE*/
+						Description: "Credential version tags.",
+						Computed:    true,
+					}, /*END ATTRIBUTE*/
+				}, /*END SCHEMA*/
+			}, /*END NESTED OBJECT*/
+			Description: "Credential version information.",
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
 		// Property: Trn
@@ -296,28 +484,41 @@ func secretDataSource(ctx context.Context) (datasource.DataSource, error) {
 	opts = opts.WithTerraformSchema(schema)
 	opts = opts.WithAttributeNameMap(map[string]string{
 		"automatic_rotation":     "AutomaticRotation",
+		"backup_data":            "BackupData",
+		"cancel_secret_deletion": "CancelSecretDeletion",
 		"created_time":           "CreatedTime",
+		"creation_date":          "CreationDate",
 		"description":            "Description",
 		"encryption_key":         "EncryptionKey",
 		"extended_config":        "ExtendedConfig",
 		"last_rotation_time":     "LastRotationTime",
 		"managed":                "Managed",
 		"owning_service":         "OwningService",
+		"pending_window_in_days": "PendingWindowInDays",
 		"project_name":           "ProjectName",
 		"rotation_interval":      "RotationInterval",
 		"rotation_interval_read": "RotationIntervalRead",
 		"rotation_state":         "RotationState",
 		"schedule_delete_time":   "ScheduleDeleteTime",
 		"schedule_rotation_time": "ScheduleRotationTime",
+		"secret_backup":          "SecretBackup",
+		"secret_data_key":        "SecretDataKey",
 		"secret_id":              "SecretID",
 		"secret_name":            "SecretName",
+		"secret_restore":         "SecretRestore",
+		"secret_restore_read":    "SecretRestoreRead",
+		"secret_rotate":          "SecretRotate",
 		"secret_state":           "SecretState",
 		"secret_type":            "SecretType",
 		"secret_value":           "SecretValue",
+		"secret_versions":        "SecretVersions",
+		"signature":              "Signature",
 		"trn":                    "Trn",
 		"uid":                    "UID",
 		"updated_time":           "UpdatedTime",
+		"version_id":             "VersionID",
 		"version_name":           "VersionName",
+		"version_stage":          "VersionStage",
 	})
 
 	v, err := generic.NewSingularDataSource(ctx, opts...)

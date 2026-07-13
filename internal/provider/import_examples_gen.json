@@ -1285,9 +1285,9 @@
         "path": "./examples/resources/volcenginecc_fwcenter_control_policy/import.sh"
     },
     {
-        "resource": "volcenginecc_fwcenter_nat_fire_wall_control_policy",
-        "identifier": ["NatFirewallId","Direction","RuleId"],
-        "path": "./examples/resources/volcenginecc_fwcenter_nat_fire_wall_control_policy/import.sh"
+        "resource": "volcenginecc_tls_alarm_webhook_integration_type",
+        "identifier": ["WebhookID"],
+        "path": "./examples/resources/volcenginecc_tls_alarm_webhook_integration_type/import.sh"
     },
     {
         "resource": "volcenginecc_fwcenter_vpc_fire_wall_acl_rule",
@@ -1295,24 +1295,19 @@
         "path": "./examples/resources/volcenginecc_fwcenter_vpc_fire_wall_acl_rule/import.sh"
     },
     {
-        "resource": "volcenginecc_id_auth_config",
-        "identifier": ["InboundAuthConfigId"],
-        "path": "./examples/resources/volcenginecc_id_auth_config/import.sh"
+        "resource": "volcenginecc_rdsmysql_instance_readonly_node",
+        "identifier": ["InstanceId","NodeId"],
+        "path": "./examples/resources/volcenginecc_rdsmysql_instance_readonly_node/import.sh"
     },
     {
-        "resource": "volcenginecc_id_permission_namespace",
-        "identifier": ["NamespaceName"],
-        "path": "./examples/resources/volcenginecc_id_permission_namespace/import.sh"
+        "resource": "volcenginecc_veenedge_cloud_server",
+        "identifier": ["CloudServerIdentity"],
+        "path": "./examples/resources/volcenginecc_veenedge_cloud_server/import.sh"
     },
     {
-        "resource": "volcenginecc_id_user_pool",
-        "identifier": ["Uid"],
-        "path": "./examples/resources/volcenginecc_id_user_pool/import.sh"
-    },
-    {
-        "resource": "volcenginecc_id_workload_pool",
-        "identifier": ["WorkloadPoolName"],
-        "path": "./examples/resources/volcenginecc_id_workload_pool/import.sh"
+        "resource": "volcenginecc_fwcenter_nat_fire_wall_control_policy",
+        "identifier": ["NatFirewallId","Direction","RuleId"],
+        "path": "./examples/resources/volcenginecc_fwcenter_nat_fire_wall_control_policy/import.sh"
     },
     {
         "resource": "volcenginecc_kms_key_material",
@@ -1320,18 +1315,43 @@
         "path": "./examples/resources/volcenginecc_kms_key_material/import.sh"
     },
     {
-        "resource": "volcenginecc_rdsmysql_instance_readonly_node",
-        "identifier": ["InstanceId","NodeId"],
-        "path": "./examples/resources/volcenginecc_rdsmysql_instance_readonly_node/import.sh"
+        "resource": "volcenginecc_id_user_pool",
+        "identifier": ["Uid"],
+        "path": "./examples/resources/volcenginecc_id_user_pool/import.sh"
     },
     {
-        "resource": "volcenginecc_tls_alarm_webhook_integration_type",
-        "identifier": ["WebhookID"],
-        "path": "./examples/resources/volcenginecc_tls_alarm_webhook_integration_type/import.sh"
+        "resource": "volcenginecc_id_permission_namespace",
+        "identifier": ["NamespaceName"],
+        "path": "./examples/resources/volcenginecc_id_permission_namespace/import.sh"
     },
     {
-        "resource": "volcenginecc_veenedge_cloud_server",
-        "identifier": ["CloudServerIdentity"],
-        "path": "./examples/resources/volcenginecc_veenedge_cloud_server/import.sh"
+        "resource": "volcenginecc_id_workload_pool",
+        "identifier": ["WorkloadPoolName"],
+        "path": "./examples/resources/volcenginecc_id_workload_pool/import.sh"
+    },
+    {
+        "resource": "volcenginecc_id_auth_config",
+        "identifier": ["InboundAuthConfigId"],
+        "path": "./examples/resources/volcenginecc_id_auth_config/import.sh"
+    },
+    {
+        "resource": "volcenginecc_tos_object",
+        "identifier": ["Bucket","Key"],
+        "path": "./examples/resources/volcenginecc_tos_object/import.sh"
+    },
+    {
+        "resource": "volcenginecc_tls_alarm_content_template_type",
+        "identifier": ["AlarmContentTemplateId"],
+        "path": "./examples/resources/volcenginecc_tls_alarm_content_template_type/import.sh"
+    },
+    {
+        "resource": "volcenginecc_veenedge_veen",
+        "identifier": ["InstanceIdentity"],
+        "path": "./examples/resources/volcenginecc_veenedge_veen/import.sh"
+    },
+    {
+        "resource": "volcenginecc_id_oauth2_credential_provider",
+        "identifier": ["Name","PoolName"],
+        "path": "./examples/resources/volcenginecc_id_oauth2_credential_provider/import.sh"
     }
 ]

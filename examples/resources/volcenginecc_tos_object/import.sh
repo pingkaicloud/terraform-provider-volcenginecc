@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_tos_object.example "bucket|key"

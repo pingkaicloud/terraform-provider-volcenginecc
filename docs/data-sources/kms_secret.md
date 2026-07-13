@@ -22,6 +22,7 @@ Data Source schema for Volcengine::KMS::Secret
 ### Read-Only
 
 - `automatic_rotation` (Boolean) Whether to enable automatic rotation. Applies only to credentials of type IAM|RDS|Redis|ECS
+- `cancel_secret_deletion` (Boolean) Trigger: When set to true, calls the KMS CancelSecretDeletion API to cancel the scheduled deletion of the credential.
 - `created_time` (Number) Credential creation time
 - `description` (String) Credential description, length: 0 ~ 8192 characters
 - `encryption_key` (String) KMS key TRN for encrypting credential value. If not specified, the default key of Credential Manager is used
@@ -29,18 +30,53 @@ Data Source schema for Volcengine::KMS::Secret
 - `last_rotation_time` (String) Credential last rotation time
 - `managed` (Boolean) Is managed credential
 - `owning_service` (String) Managed Cloud Service
+- `pending_window_in_days` (Number) Credential pre-deletion period. During this time, you can revoke the deletion of credentials in pending deletion status; after the pre-deletion period, deletion cannot be revoked. Value range: 7 ~ 30. Unit: days. Default: 7. To cancel, use CancelSecretDeletion.
 - `project_name` (String) Credential project name. Default value: default
 - `rotation_interval` (String) Automatic rotation interval. Range: 1 ~ 365 days. Format: integer[unit], where integer is the duration and unit is the time unit. Unit value: d (days). For example: 7d means a 7-day interval
 - `rotation_interval_read` (Number) Automatic rotation interval, unit: seconds
 - `rotation_state` (String) Rotation status: Enable: automatic rotation enabled, Disable: automatic rotation disabled, Rotating: automatic rotation in progress, None: automatic rotation not supported
 - `schedule_delete_time` (String) Credential Scheduled Deletion Time
 - `schedule_rotation_time` (String) Credential next rotation time
+- `secret_backup` (Boolean) Trigger: When set to true, calls the KMS BackupSecret API to back up the credential. The backup result is written to SecretRestoreRead. Please keep it safe.
 - `secret_id` (String) Credential unique identifier, UUID format
 - `secret_name` (String) Credential name. Valid characters: [a-zA-Z0-9/_+=.@-]
+- `secret_restore` (Attributes) Credential restore parameters. Only effective during creation. If provided, calls the KMS RestoreSecret API to restore the credential from backup data. Other creation parameters such as SecretValue, SecretType, and SecretName will not take effect. (see [below for nested schema](#nestedatt--secret_restore))
+- `secret_restore_read` (Attributes) Credential restore parameters. Returned only during backup. (see [below for nested schema](#nestedatt--secret_restore_read))
+- `secret_rotate` (Boolean) Trigger: When set to true, calls the KMS RotateSecret API to manually rotate the credential.
 - `secret_state` (String) Credential status. Enable: enabled, Disable: disabled, PendingDelete: scheduled for deletion
 - `secret_type` (String) Credential type. Currently supports Generic|IAM|RDS|Redis|ECS|PGSQL|SQLServer
 - `secret_value` (String) Credential value. When SecretType is Generic, users can customize it. It is recommended to use JSON key-value pairs
+- `secret_versions` (Attributes Set) Credential version information. (see [below for nested schema](#nestedatt--secret_versions))
 - `trn` (String) Credential resource name. Format: trn:kms:${Region}:${AccountID}:secrets/${secret}
 - `uid` (String) Credential tenant ID
 - `updated_time` (Number) Credential update date
 - `version_name` (String) Version alias. Valid characters: [a-zA-Z0-9/_+=.@-]
+
+<a id="nestedatt--secret_restore"></a>
+### Nested Schema for `secret_restore`
+
+Read-Only:
+
+- `backup_data` (String) Complete credential data returned by backup, in JSON format.
+- `secret_data_key` (String) Encrypted data key returned by backup, Base64 encoded.
+- `signature` (String) Signature of the backup data, Base64 encoded.
+
+
+<a id="nestedatt--secret_restore_read"></a>
+### Nested Schema for `secret_restore_read`
+
+Read-Only:
+
+- `backup_data` (String) Complete credential data returned by backup, in JSON format.
+- `secret_data_key` (String) Encrypted data key returned by backup, Base64 encoded.
+- `signature` (String) Signature of the backup data, Base64 encoded.
+
+
+<a id="nestedatt--secret_versions"></a>
+### Nested Schema for `secret_versions`
+
+Read-Only:
+
+- `creation_date` (Number) Credential version creation time.
+- `version_id` (String) Unique identifier for the credential version, in UUID format.
+- `version_stage` (String) Credential version tags.

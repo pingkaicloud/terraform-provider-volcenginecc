@@ -1,0 +1,263 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/Bucket",
+    "/properties/Key"
+  ],
+  "definitions": {
+    "AccountACL": {
+      "description": "Object account-level ACL authorization.",
+      "properties": {
+        "ACLType": {
+          "description": "Authorized principal type. Currently, only CanonicalUser is supported.",
+          "type": "string"
+        },
+        "AccountId": {
+          "description": "Authorized account ID.",
+          "type": "string"
+        },
+        "Permission": {
+          "description": "Authorization permission type. Includes FULL_CONTROL, READ, READ_ACP, WRITE, WRITE_ACP.",
+          "enum": [
+            "FULL_CONTROL",
+            "READ",
+            "READ_ACP",
+            "WRITE",
+            "WRITE_ACP"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "AccountId",
+        "Permission"
+      ],
+      "type": "object"
+    },
+    "Tag": {
+      "description": "Object tags.",
+      "properties": {
+        "Key": {
+          "description": "Tag key.",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key",
+        "Value"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "TOS objects are the basic data units in a bucket. This resource is used to manage JSON, text, and XML objects via CCAPI; images or other arbitrary binary objects are not supported.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/Bucket",
+      "/properties/Key"
+    ],
+    "required": [
+      "/properties/Bucket"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "tos:HeadObject",
+        "tos:PutObject",
+        "tos:GetObjectACL",
+        "tos:PutObjectACL",
+        "tos:PutObjectTagging",
+        "tos:GetObject",
+        "tos:GetObjectTagging",
+        "tos:ListObjectVersions",
+        "tos:PreSignedURL"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "tos:ListObjectVersions",
+        "tos:DeleteObject",
+        "tos:HeadObject"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "tos:ListObjectsV2"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "tos:GetObject",
+        "tos:GetObjectACL",
+        "tos:GetObjectTagging",
+        "tos:ListObjectVersions",
+        "tos:PreSignedURL"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "tos:PutObject",
+        "tos:GetObjectACL",
+        "tos:PutObjectACL",
+        "tos:PutObjectTagging",
+        "tos:DeleteObjectTagging",
+        "tos:GetObject",
+        "tos:GetObjectTagging",
+        "tos:ListObjectVersions",
+        "tos:PreSignedURL"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/Bucket",
+    "/properties/Key"
+  ],
+  "properties": {
+    "AccountACL": {
+      "description": "Object account-level ACL authorization, aligned with Terraform account_acl.",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/AccountACL",
+        "type": "object"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "Bucket": {
+      "description": "Name of the bucket to which the object belongs.",
+      "maxLength": 63,
+      "minLength": 3,
+      "type": "string"
+    },
+    "Content": {
+      "description": "Object content. Only JSON, text, or XML strings are supported. Images or other binary content are not supported. If the content exceeds 10 MB, it will not be returned.",
+      "type": "string"
+    },
+    "ContentLength": {
+      "description": "Object content length, in bytes.",
+      "format": "int64",
+      "type": "integer"
+    },
+    "ContentType": {
+      "description": "Object Content-Type. Only JSON, text, or XML types are supported, such as application/json, text/plain, application/xml, text/xml, and may include a charset parameter.",
+      "type": "string"
+    },
+    "ETag": {
+      "description": "Object ETag.",
+      "type": "string"
+    },
+    "HashCrc32c": {
+      "description": "Object CRC32C checksum value.",
+      "type": "string"
+    },
+    "HashCrc64ecma": {
+      "description": "Object CRC64 checksum.",
+      "type": "string"
+    },
+    "IsDefault": {
+      "description": "Whether the object inherits the bucket ACL by default.",
+      "type": "boolean"
+    },
+    "Key": {
+      "description": "Full key name of the object in the bucket.",
+      "minLength": 1,
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "LastModified": {
+      "description": "Object last modified time.",
+      "semantic": "updatedTime",
+      "type": "string"
+    },
+    "Metadata": {
+      "description": "User-defined object metadata. Both key and value are strings.",
+      "insertionOrder": true,
+      "items": {
+        "$ref": "#/definitions/Tag",
+        "type": "object"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "ObjectType": {
+      "description": "Object type.",
+      "type": "string"
+    },
+    "PublicACL": {
+      "description": "Object public access control permissions, aligned with Terraform public_acl. default means the object inherits the bucket ACL by default. private: Private. The object owner has all permissions; other users have no access to the object. public-read: Public read. The object owner has all permissions; other users have read-only access. public-read-write: Public read/write. All users have read access to the object. authenticated-read: The object owner has all permissions; authenticated users have read access. bucket-owner-read: The object owner has all permissions; the bucket owner has read access to the object.",
+      "enum": [
+        "private",
+        "public-read",
+        "public-read-write",
+        "authenticated-read",
+        "bucket-owner-read",
+        "default"
+      ],
+      "type": "string"
+    },
+    "ServerSideEncryption": {
+      "description": "Set the encryption method for the target object. If not set, the object is not encrypted by default. The available options are as follows: AES256: Uses SSE-TOS encryption with the AES256 algorithm. SM4: Uses SSE-TOS encryption with the SM4 algorithm. kms: Uses SSE-KMS encryption. For details about SSE-TOS and SSE-KMS encryption methods, see Server-Side Encryption Overview. Note: Using SSE-KMS for server-side encryption incurs API call fees. Creating a KMS key incurs key management fees, which are charged by KMS. For more information, see KMS Billing.",
+      "type": "string"
+    },
+    "StorageClass": {
+      "description": "Object storage class. Includes STANDARD, IA, ARCHIVE_FR, INTELLIGENT_TIERING, ARCHIVE, COLD_ARCHIVE, and DEEP_COLD_ARCHIVE. Note: Currently, COLD_ARCHIVE is only supported in North China 2 (Beijing), East China 2 (Shanghai), and South China 1 (Guangzhou). DEEP_COLD_ARCHIVE is also only supported in these regions and is in invite-only preview. To use this storage class, contact your account manager.",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "Object tag information.",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag",
+        "type": "object"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "Url": {
+      "description": "Presigned URL for downloading the object.",
+      "type": "string"
+    },
+    "VersionID": {
+      "description": "Object version ID. This field is read-only and not used as a resource key. Layered buckets are not supported.",
+      "type": "string"
+    },
+    "VersionIDs": {
+      "description": "List of all object version IDs. In buckets with versioning enabled, deleting a resource will clean up these historical versions. Layered buckets are not supported.",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/VersionID",
+    "/properties/VersionIDs",
+    "/properties/IsDefault",
+    "/properties/ETag",
+    "/properties/ContentLength",
+    "/properties/LastModified",
+    "/properties/HashCrc64ecma",
+    "/properties/HashCrc32c",
+    "/properties/ObjectType",
+    "/properties/Url"
+  ],
+  "required": [
+    "Bucket",
+    "Key",
+    "Content",
+    "ContentType"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::TOS::Object"
+}
