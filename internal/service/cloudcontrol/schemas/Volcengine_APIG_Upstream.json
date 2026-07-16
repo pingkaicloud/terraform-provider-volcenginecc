@@ -409,6 +409,7 @@
     "create": {
       "permissions": [
         "apig:CreateUpstream",
+        "apig:CreateUpstreamVersion",
         "apig:GetUpstream"
       ]
     },
@@ -431,6 +432,9 @@
     "update": {
       "permissions": [
         "apig:UpdateUpstream",
+        "apig:CreateUpstreamVersion",
+        "apig:UpdateUpstreamVersion",
+        "apig:DeleteUpstreamVersion",
         "apig:GetUpstream"
       ]
     }
@@ -525,7 +529,7 @@
     "/properties/BackendTargets",
     "/properties/CreatedTime",
     "/properties/UpdatedTime",
-    "/properties/VersionDetails"
+    "/properties/VersionDetails/*/UpdateTime"
   ],
   "required": [
     "GatewayId",

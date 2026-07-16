@@ -1,0 +1,106 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/InstanceId",
+    "/properties/Type"
+  ],
+  "definitions": {
+    "Group": {
+      "description": "Custom group IP allowlist",
+      "properties": {
+        "AllowList": {
+          "description": "Custom group IP allowlist list cannot be empty; to configure multiple IPs, use commas (,)",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "Name": {
+          "description": "Custom group name",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "IP allowlist information",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/InstanceId",
+      "/properties/Type"
+    ],
+    "required": [
+      "/properties/InstanceId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ESCloud:ModifyIpAllowListV2",
+        "ESCloud:DescribeIpAllowList"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ESCloud:ModifyIpAllowListV2",
+        "ESCloud:DescribeIpAllowList"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ESCloud:DescribeIpAllowList"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ESCloud:ModifyIpAllowListV2",
+        "ESCloud:DescribeIpAllowList"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/InstanceId",
+    "/properties/Type"
+  ],
+  "properties": {
+    "AllowList": {
+      "description": "Default group IP allowlist list; separate multiple IPs with commas (,)",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "Groups": {
+      "description": "Custom group IP allowlist",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Group"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "InstanceId": {
+      "description": "Instance ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "Type": {
+      "description": "Network type\n\n- PRIVATE_ES: Instance private network access\n- PRIVATE_KIBANA: Kibana private network access\n- PUBLIC_ES: Instance public network access\n- PUBLIC_KIBANA: Kibana public network access",
+      "type": "string"
+    }
+  },
+  "required": [
+    "InstanceId",
+    "Type",
+    "AllowList",
+    "Groups"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::ESCloud::IpAllowList"
+}

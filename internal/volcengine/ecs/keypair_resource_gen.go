@@ -120,6 +120,20 @@ func keypairResource(ctx context.Context) (resource.Resource, error) {
 				stringplanmodifier.RequiresReplace(),
 			}, /*END PLAN MODIFIERS*/
 		}, /*END ATTRIBUTE*/
+		// Property: PrivateKey
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Private key information for the key pair. Only returned when creating the key pair.",
+		//	  "type": "string"
+		//	}
+		"private_key": schema.StringAttribute{ /*START ATTRIBUTE*/
+			Description: "Private key information for the key pair. Only returned when creating the key pair.",
+			Computed:    true,
+			PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
+				stringplanmodifier.UseStateForUnknown(),
+			}, /*END PLAN MODIFIERS*/
+		}, /*END ATTRIBUTE*/
 		// Property: ProjectName
 		// Cloud Control resource type schema:
 		//
@@ -254,6 +268,7 @@ func keypairResource(ctx context.Context) (resource.Resource, error) {
 		"key":           "Key",
 		"key_pair_id":   "KeyPairId",
 		"key_pair_name": "KeyPairName",
+		"private_key":   "PrivateKey",
 		"project_name":  "ProjectName",
 		"public_key":    "PublicKey",
 		"tags":          "Tags",
@@ -270,6 +285,7 @@ func keypairResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/FingerPrint",
 		"/properties/KeyPairId",
 		"/properties/UpdatedTime",
+		"/properties/PrivateKey",
 	})
 
 	opts = opts.WithCreateOnlyPropertyPaths([]string{

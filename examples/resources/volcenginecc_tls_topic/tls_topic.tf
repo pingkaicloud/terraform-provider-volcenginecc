@@ -19,4 +19,6 @@ resource "volcenginecc_tls_topic" "TlsTopicDemo" {
   project_id     = "c6fef4c1-041f-434e-b0f4-d5e9*****"
   enable_hot_ttl = false
   allow_consume  = false
+  split_shard_id = 0
+  split_number   = 2
 }

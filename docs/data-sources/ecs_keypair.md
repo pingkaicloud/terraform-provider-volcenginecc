@@ -27,6 +27,7 @@ Data Source schema for Volcengine::ECS::Keypair
 - `instance_ids` (Set of String) Instance ID for the operation.
 - `key_pair_id` (String) Unique ID of the key pair.
 - `key_pair_name` (String) Key pair name. Must not duplicate existing names. Length must be between 2 and 64 characters. Periods ('.') can be used to separate the name into segments. Each segment can contain uppercase and lowercase letters, numbers, or hyphens ('-'). The name cannot start or end with '-' or '.', and cannot contain consecutive '-' or '.'.
+- `private_key` (String) Private key information for the key pair. Only returned when creating the key pair.
 - `project_name` (String) Project to which the resource belongs. Each resource can belong to only one project. Can only contain letters, numbers, underscore ('_'), period ('.'), and hyphen ('-'). Length must not exceed 64 characters.
 - `public_key` (String) Public key information of the key pair.
 - `tags` (Attributes Set) Tags of the key pair. (see [below for nested schema](#nestedatt--tags))
