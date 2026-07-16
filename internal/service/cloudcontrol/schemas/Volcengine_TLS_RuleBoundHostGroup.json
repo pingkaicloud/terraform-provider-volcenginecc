@@ -1,0 +1,146 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/RuleId",
+    "/properties/HostGroupId"
+  ],
+  "definitions": {
+    "HostGroupInfo": {
+      "properties": {
+        "AbnormalHeartbeatStatusCount": {
+          "description": "Number of machines with abnormal heartbeat status",
+          "format": "int64",
+          "type": "integer"
+        },
+        "AgentLatestVersion": {
+          "description": "Latest LogCollector version number available for upgrade",
+          "type": "string"
+        },
+        "AutoUpdate": {
+          "description": "Enable LogCollector auto upgrade on machine group servers. true: The log service will check upgrade conditions during the specified time period each day. If conditions are met, LogCollector will be upgraded automatically without manual intervention. false (default): LogCollector will not upgrade automatically. To use a newer version, refer to the LogCollector upgrade procedure.",
+          "type": "boolean"
+        },
+        "CreateTime": {
+          "description": "Machine group creation time",
+          "type": "string"
+        },
+        "HostCount": {
+          "description": "Number of machines in the machine group",
+          "format": "int64",
+          "type": "integer"
+        },
+        "HostGroupId": {
+          "description": "Machine group ID",
+          "type": "string"
+        },
+        "HostGroupName": {
+          "description": "Machine group name",
+          "type": "string"
+        },
+        "HostGroupType": {
+          "description": "Machine group type. IP: machine IP. Label: machine label.",
+          "type": "string"
+        },
+        "HostIdentifier": {
+          "description": "Machine identifier",
+          "type": "string"
+        },
+        "IamProjectName": {
+          "description": "IAM project associated with the machine group",
+          "type": "string"
+        },
+        "ModifyTime": {
+          "description": "Machine group modification time",
+          "type": "string"
+        },
+        "NormalHeartbeatStatusCount": {
+          "description": "Number of machines with normal heartbeat status",
+          "format": "int64",
+          "type": "integer"
+        },
+        "RuleCount": {
+          "description": "Number of collection configurations bound to the machine group",
+          "format": "int64",
+          "type": "integer"
+        },
+        "ServiceLogging": {
+          "description": "Enable LogCollector service log feature. true: enabled. false (default): disabled.",
+          "type": "boolean"
+        },
+        "UpdateEndTime": {
+          "description": "LogCollector auto upgrade end time",
+          "type": "string"
+        },
+        "UpdateStartTime": {
+          "description": "LogCollector auto upgrade start time. Note: Only required when AutoUpdate is set to true. It is recommended to schedule auto upgrade during off-peak hours. LogCollector may restart during the upgrade process, but logs will not be lost.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "Resource representing the binding relationship between collection configuration and machine group",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/RuleId"
+    ],
+    "required": [
+      "/properties/RuleId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "TLS:ApplyRuleToHostGroups",
+        "TLS:DescribeBoundHostGroups"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "TLS:DeleteRuleFromHostGroups",
+        "TLS:DescribeBoundHostGroups"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "TLS:DescribeBoundHostGroups"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "TLS:DescribeBoundHostGroups"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/RuleId",
+    "/properties/HostGroupId"
+  ],
+  "properties": {
+    "HostGroup": {
+      "$ref": "#/definitions/HostGroupInfo",
+      "description": "Bound machine group configuration information",
+      "type": "object"
+    },
+    "HostGroupId": {
+      "description": "Machine group ID",
+      "type": "string"
+    },
+    "RuleId": {
+      "description": "Collection configuration ID",
+      "semantic": "resourceId",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/HostGroup"
+  ],
+  "required": [
+    "RuleId",
+    "HostGroupId"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::TLS::RuleBoundHostGroup"
+}

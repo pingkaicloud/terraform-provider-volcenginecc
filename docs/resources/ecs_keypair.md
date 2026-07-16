@@ -47,6 +47,7 @@ resource "volcenginecc_ecs_keypair" "ECSKeypairDemo" {
 - `finger_print` (String) Fingerprint of the key pair. The public key fingerprint format is defined by RFC4716 and uses the MD5 hash algorithm.
 - `id` (String) Uniquely identifies the resource.
 - `key_pair_id` (String) Unique ID of the key pair.
+- `private_key` (String) Private key information for the key pair. Only returned when creating the key pair.
 - `updated_time` (String) Update time of the key pair.
 
 <a id="nestedatt--tags"></a>

@@ -1076,6 +1076,28 @@ resource_schema "volcengine_id_permission_namespace" {
   cloudcontrol_type_name = "Volcengine::ID::PermissionNamespace"
 }
 
+resource_schema "volcengine_veenedge_cloud_server" {
+  cloudcontrol_type_name = "Volcengine::VeenEdge::CloudServer"
+}
+
+resource_schema "volcengine_tos_bucket_replication" {
+  cloudcontrol_type_name = "Volcengine::TOS::BucketReplication"
+}
+
+resource_schema "volcengine_tls_download_task" {
+  cloudcontrol_type_name = "Volcengine::TLS::DownloadTask"
+}
+
+resource_schema "volcengine_tls_rule_bound_host_group" {
+  cloudcontrol_type_name = "Volcengine::TLS::RuleBoundHostGroup"
+}
+
+resource_schema "volcengine_escloud_ip_allow_list" {
+  cloudcontrol_type_name = "Volcengine::ESCloud::IpAllowList"
+}
+
+resource_schema "volcengine_vmp_integration_task" {
+  cloudcontrol_type_name = "Volcengine::VMP::IntegrationTask"
 resource_schema "volcengine_id_workload_pool" {
   cloudcontrol_type_name = "Volcengine::ID::WorkloadPool"
 }

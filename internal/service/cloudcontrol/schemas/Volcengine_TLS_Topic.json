@@ -5,6 +5,35 @@
     "/properties/ShardCount"
   ],
   "definitions": {
+    "Shard": {
+      "properties": {
+        "ExclusiveEndKey": {
+          "description": "Ending key value of the partition",
+          "type": "string"
+        },
+        "InclusiveBeginKey": {
+          "description": "Starting key value of the partition",
+          "type": "string"
+        },
+        "ModifyTime": {
+          "description": "Last modified time of the partition",
+          "type": "string"
+        },
+        "ShardId": {
+          "description": "Partition ID of the log topic",
+          "type": "integer"
+        },
+        "Status": {
+          "description": "Partition status: readwrite means read/write, readonly means read-only",
+          "type": "string"
+        },
+        "StopWriteTime": {
+          "description": "Time when the partition stopped writing, that is, the last time logs were written to this partition",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "Tag": {
       "properties": {
         "Key": {
@@ -37,6 +66,8 @@
       "permissions": [
         "TLS:CreateTopic",
         "TLS:OpenKafkaConsumer",
+        "TLS:ManualShardSplit",
+        "TLS:DescribeShards",
         "TLS:DescribeTopic"
       ]
     },
@@ -54,6 +85,7 @@
     "read": {
       "permissions": [
         "TLS:DescribeTopic",
+        "TLS:DescribeShards",
         "TLS:DescribeKafkaConsumer"
       ]
     },
@@ -61,6 +93,8 @@
       "permissions": [
         "TLS:DescribeTopic",
         "TLS:ModifyTopic",
+        "TLS:ManualShardSplit",
+        "TLS:DescribeShards",
         "TLS:OpenKafkaConsumer",
         "TLS:CloseKafkaConsumer",
         "TLS:AddTagsToResource",
@@ -135,6 +169,24 @@
       "description": "Number of log partitions. By default, 1 partition is created; value range: 1–10. Each partition provides write capacity of 5 MiB/s, 500 ops/s, and read capacity of 20 MiB/s, 100 ops/s. Plan partitions appropriately when creating a log topic; partition count cannot be modified after creation.",
       "type": "integer"
     },
+    "Shards": {
+      "description": "Partition list of the log topic",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Shard",
+        "type": "object"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "SplitNumber": {
+      "description": "Number of splits for the partition. The split number must be a non-zero even number, such as 2, 4, 8, or 16. After splitting, the total number of readwrite partitions must not exceed 256. Must be used together with SplitShardId",
+      "type": "integer"
+    },
+    "SplitShardId": {
+      "description": "Partition ID to be manually split. Must be used together with SplitNumber. Only partitions with readwrite status can be split",
+      "type": "integer"
+    },
     "Tags": {
       "description": "Tag list.",
       "insertionOrder": false,
@@ -180,7 +232,8 @@
     "/properties/TopicID",
     "/properties/ConsumeTopic",
     "/properties/CreatedTime",
-    "/properties/UpdatedTime"
+    "/properties/UpdatedTime",
+    "/properties/Shards"
   ],
   "required": [
     "TopicName",
@@ -193,5 +246,9 @@
     "tagUpdatable": true,
     "taggable": true
   },
-  "typeName": "Volcengine::TLS::Topic"
+  "typeName": "Volcengine::TLS::Topic",
+  "writeOnlyProperties": [
+    "/properties/SplitNumber",
+    "/properties/SplitShardId"
+  ]
 }

@@ -95,6 +95,17 @@ func keypairDataSource(ctx context.Context) (datasource.DataSource, error) {
 			Description: "Key pair name. Must not duplicate existing names. Length must be between 2 and 64 characters. Periods ('.') can be used to separate the name into segments. Each segment can contain uppercase and lowercase letters, numbers, or hyphens ('-'). The name cannot start or end with '-' or '.', and cannot contain consecutive '-' or '.'.",
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
+		// Property: PrivateKey
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Private key information for the key pair. Only returned when creating the key pair.",
+		//	  "type": "string"
+		//	}
+		"private_key": schema.StringAttribute{ /*START ATTRIBUTE*/
+			Description: "Private key information for the key pair. Only returned when creating the key pair.",
+			Computed:    true,
+		}, /*END ATTRIBUTE*/
 		// Property: ProjectName
 		// Cloud Control resource type schema:
 		//
@@ -195,6 +206,7 @@ func keypairDataSource(ctx context.Context) (datasource.DataSource, error) {
 		"key":           "Key",
 		"key_pair_id":   "KeyPairId",
 		"key_pair_name": "KeyPairName",
+		"private_key":   "PrivateKey",
 		"project_name":  "ProjectName",
 		"public_key":    "PublicKey",
 		"tags":          "Tags",

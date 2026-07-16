@@ -258,6 +258,117 @@ func topicResource(ctx context.Context) (resource.Resource, error) {
 				int64planmodifier.RequiresReplace(),
 			}, /*END PLAN MODIFIERS*/
 		}, /*END ATTRIBUTE*/
+		// Property: Shards
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Partition list of the log topic",
+		//	  "insertionOrder": false,
+		//	  "items": {
+		//	    "properties": {
+		//	      "ExclusiveEndKey": {
+		//	        "description": "Ending key value of the partition",
+		//	        "type": "string"
+		//	      },
+		//	      "InclusiveBeginKey": {
+		//	        "description": "Starting key value of the partition",
+		//	        "type": "string"
+		//	      },
+		//	      "ModifyTime": {
+		//	        "description": "Last modified time of the partition",
+		//	        "type": "string"
+		//	      },
+		//	      "ShardId": {
+		//	        "description": "Partition ID of the log topic",
+		//	        "type": "integer"
+		//	      },
+		//	      "Status": {
+		//	        "description": "Partition status: readwrite means read/write, readonly means read-only",
+		//	        "type": "string"
+		//	      },
+		//	      "StopWriteTime": {
+		//	        "description": "Time when the partition stopped writing, that is, the last time logs were written to this partition",
+		//	        "type": "string"
+		//	      }
+		//	    },
+		//	    "type": "object"
+		//	  },
+		//	  "type": "array",
+		//	  "uniqueItems": true
+		//	}
+		"shards": schema.SetNestedAttribute{ /*START ATTRIBUTE*/
+			NestedObject: schema.NestedAttributeObject{ /*START NESTED OBJECT*/
+				Attributes: map[string]schema.Attribute{ /*START SCHEMA*/
+					// Property: ExclusiveEndKey
+					"exclusive_end_key": schema.StringAttribute{ /*START ATTRIBUTE*/
+						Description: "Ending key value of the partition",
+						Computed:    true,
+					}, /*END ATTRIBUTE*/
+					// Property: InclusiveBeginKey
+					"inclusive_begin_key": schema.StringAttribute{ /*START ATTRIBUTE*/
+						Description: "Starting key value of the partition",
+						Computed:    true,
+					}, /*END ATTRIBUTE*/
+					// Property: ModifyTime
+					"modify_time": schema.StringAttribute{ /*START ATTRIBUTE*/
+						Description: "Last modified time of the partition",
+						Computed:    true,
+					}, /*END ATTRIBUTE*/
+					// Property: ShardId
+					"shard_id": schema.Int64Attribute{ /*START ATTRIBUTE*/
+						Description: "Partition ID of the log topic",
+						Computed:    true,
+					}, /*END ATTRIBUTE*/
+					// Property: Status
+					"status": schema.StringAttribute{ /*START ATTRIBUTE*/
+						Description: "Partition status: readwrite means read/write, readonly means read-only",
+						Computed:    true,
+					}, /*END ATTRIBUTE*/
+					// Property: StopWriteTime
+					"stop_write_time": schema.StringAttribute{ /*START ATTRIBUTE*/
+						Description: "Time when the partition stopped writing, that is, the last time logs were written to this partition",
+						Computed:    true,
+					}, /*END ATTRIBUTE*/
+				}, /*END SCHEMA*/
+			}, /*END NESTED OBJECT*/
+			Description: "Partition list of the log topic\n Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability.",
+			Computed:    true,
+			PlanModifiers: []planmodifier.Set{ /*START PLAN MODIFIERS*/
+				setplanmodifier.UseStateForUnknown(),
+			}, /*END PLAN MODIFIERS*/
+		}, /*END ATTRIBUTE*/
+		// Property: SplitNumber
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Number of splits for the partition. The split number must be a non-zero even number, such as 2, 4, 8, or 16. After splitting, the total number of readwrite partitions must not exceed 256. Must be used together with SplitShardId",
+		//	  "type": "integer"
+		//	}
+		"split_number": schema.Int64Attribute{ /*START ATTRIBUTE*/
+			Description: "Number of splits for the partition. The split number must be a non-zero even number, such as 2, 4, 8, or 16. After splitting, the total number of readwrite partitions must not exceed 256. Must be used together with SplitShardId",
+			Optional:    true,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Int64{ /*START PLAN MODIFIERS*/
+				int64planmodifier.UseStateForUnknown(),
+			}, /*END PLAN MODIFIERS*/
+			// SplitNumber is a write-only property.
+		}, /*END ATTRIBUTE*/
+		// Property: SplitShardId
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Partition ID to be manually split. Must be used together with SplitNumber. Only partitions with readwrite status can be split",
+		//	  "type": "integer"
+		//	}
+		"split_shard_id": schema.Int64Attribute{ /*START ATTRIBUTE*/
+			Description: "Partition ID to be manually split. Must be used together with SplitNumber. Only partitions with readwrite status can be split",
+			Optional:    true,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Int64{ /*START PLAN MODIFIERS*/
+				int64planmodifier.UseStateForUnknown(),
+			}, /*END PLAN MODIFIERS*/
+			// SplitShardId is a write-only property.
+		}, /*END ATTRIBUTE*/
 		// Property: Tags
 		// Cloud Control resource type schema:
 		//
@@ -429,29 +540,43 @@ func topicResource(ctx context.Context) (resource.Resource, error) {
 	opts = opts.WithCloudControlTypeName("Volcengine::TLS::Topic").WithTerraformTypeName("volcenginecc_tls_topic")
 	opts = opts.WithTerraformSchema(schema)
 	opts = opts.WithAttributeNameMap(map[string]string{
-		"allow_consume":   "AllowConsume",
-		"archive_ttl":     "ArchiveTtl",
-		"auto_split":      "AutoSplit",
-		"cold_ttl":        "ColdTtl",
-		"consume_topic":   "ConsumeTopic",
-		"created_time":    "CreatedTime",
-		"description":     "Description",
-		"enable_hot_ttl":  "EnableHotTtl",
-		"enable_tracking": "EnableTracking",
-		"hot_ttl":         "HotTtl",
-		"key":             "Key",
-		"log_public_ip":   "LogPublicIP",
-		"max_split_shard": "MaxSplitShard",
-		"project_id":      "ProjectId",
-		"shard_count":     "ShardCount",
-		"tags":            "Tags",
-		"time_format":     "TimeFormat",
-		"time_key":        "TimeKey",
-		"topic_id":        "TopicID",
-		"topic_name":      "TopicName",
-		"ttl":             "Ttl",
-		"updated_time":    "UpdatedTime",
-		"value":           "Value",
+		"allow_consume":       "AllowConsume",
+		"archive_ttl":         "ArchiveTtl",
+		"auto_split":          "AutoSplit",
+		"cold_ttl":            "ColdTtl",
+		"consume_topic":       "ConsumeTopic",
+		"created_time":        "CreatedTime",
+		"description":         "Description",
+		"enable_hot_ttl":      "EnableHotTtl",
+		"enable_tracking":     "EnableTracking",
+		"exclusive_end_key":   "ExclusiveEndKey",
+		"hot_ttl":             "HotTtl",
+		"inclusive_begin_key": "InclusiveBeginKey",
+		"key":                 "Key",
+		"log_public_ip":       "LogPublicIP",
+		"max_split_shard":     "MaxSplitShard",
+		"modify_time":         "ModifyTime",
+		"project_id":          "ProjectId",
+		"shard_count":         "ShardCount",
+		"shard_id":            "ShardId",
+		"shards":              "Shards",
+		"split_number":        "SplitNumber",
+		"split_shard_id":      "SplitShardId",
+		"status":              "Status",
+		"stop_write_time":     "StopWriteTime",
+		"tags":                "Tags",
+		"time_format":         "TimeFormat",
+		"time_key":            "TimeKey",
+		"topic_id":            "TopicID",
+		"topic_name":          "TopicName",
+		"ttl":                 "Ttl",
+		"updated_time":        "UpdatedTime",
+		"value":               "Value",
+	})
+
+	opts = opts.WithWriteOnlyPropertyPaths([]string{
+		"/properties/SplitNumber",
+		"/properties/SplitShardId",
 	})
 
 	opts = opts.WithReadOnlyPropertyPaths([]string{
@@ -459,6 +584,7 @@ func topicResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/ConsumeTopic",
 		"/properties/CreatedTime",
 		"/properties/UpdatedTime",
+		"/properties/Shards",
 	})
 
 	opts = opts.WithCreateOnlyPropertyPaths([]string{

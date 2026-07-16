@@ -36,4 +36,11 @@ resource "volcenginecc_apig_upstream" "APIGUpstreamAIProviderDemo" {
       ]
     }
   }
+  version_details = [{
+    labels = [{
+      key   = "k1"
+      value = "v1"
+    }]
+    name = "v1"
+  }]
 }

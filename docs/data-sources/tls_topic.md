@@ -35,6 +35,9 @@ Data Source schema for Volcengine::TLS::Topic
 - `max_split_shard` (Number) Maximum partition split count, which is the maximum number of partitions after splitting. Value range: 1–256, default is 256. Required only when automatic log partition splitting is enabled (AutoSplit is true). MaxSplitShard must be greater than the specified ShardCount; otherwise, the log service cannot automatically split partitions.
 - `project_id` (String) Log project ID to which the log topic belongs.
 - `shard_count` (Number) Number of log partitions. By default, 1 partition is created; value range: 1–10. Each partition provides write capacity of 5 MiB/s, 500 ops/s, and read capacity of 20 MiB/s, 100 ops/s. Plan partitions appropriately when creating a log topic; partition count cannot be modified after creation.
+- `shards` (Attributes Set) Partition list of the log topic (see [below for nested schema](#nestedatt--shards))
+- `split_number` (Number) Number of splits for the partition. The split number must be a non-zero even number, such as 2, 4, 8, or 16. After splitting, the total number of readwrite partitions must not exceed 256. Must be used together with SplitShardId
+- `split_shard_id` (Number) Partition ID to be manually split. Must be used together with SplitNumber. Only partitions with readwrite status can be split
 - `tags` (Attributes Set) Tag list. (see [below for nested schema](#nestedatt--tags))
 - `time_format` (String) Time format
 - `time_key` (String) Time field name
@@ -42,6 +45,19 @@ Data Source schema for Volcengine::TLS::Topic
 - `topic_name` (String) Log topic name.
 - `ttl` (Number) Total log retention time in the log service. After the specified log storage duration is exceeded, expired logs in this log topic will be automatically cleared. Unit: days. Default is 30 days. Value range is 1–3650. Setting to 3650 days means permanent storage.
 - `updated_time` (String) Log topic modification time.
+
+<a id="nestedatt--shards"></a>
+### Nested Schema for `shards`
+
+Read-Only:
+
+- `exclusive_end_key` (String) Ending key value of the partition
+- `inclusive_begin_key` (String) Starting key value of the partition
+- `modify_time` (String) Last modified time of the partition
+- `shard_id` (Number) Partition ID of the log topic
+- `status` (String) Partition status: readwrite means read/write, readonly means read-only
+- `stop_write_time` (String) Time when the partition stopped writing, that is, the last time logs were written to this partition
+
 
 <a id="nestedatt--tags"></a>
 ### Nested Schema for `tags`

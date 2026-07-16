@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_tls_download_task.example "topic_id|task_id"

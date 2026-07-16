@@ -50,6 +50,13 @@ resource "volcenginecc_apig_upstream" "APIGUpstreamAIProviderDemo" {
       ]
     }
   }
+  version_details = [{
+    labels = [{
+      key   = "k1"
+      value = "v1"
+    }]
+    name = "v1"
+  }]
 }
 ```
 
@@ -71,6 +78,8 @@ resource "volcenginecc_apig_upstream" "APIGUpstreamAIProviderDemo" {
 - `load_balancer_settings` (Attributes) Load Balancing Configuration (see [below for nested schema](#nestedatt--load_balancer_settings))
 - `protocol` (String) Protocol. Options: HTTP: HTTP/1.1; HTTP2: HTTP/2; GRPC: GRPC
 - `tls_settings` (Attributes) TLS Configuration (see [below for nested schema](#nestedatt--tls_settings))
+- `version_details` (Attributes Set) Upstream version, only valid when the upstream source type is K8S
+ Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--version_details))
 
 ### Read-Only
 
@@ -80,8 +89,6 @@ resource "volcenginecc_apig_upstream" "APIGUpstreamAIProviderDemo" {
 - `id` (String) Uniquely identifies the resource.
 - `updated_time` (String) Upstream update time
 - `upstream_id` (String) Upstream ID。
-- `version_details` (Attributes Set) Upstream version, only valid when the upstream source type is K8S
- Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--version_details))
 
 <a id="nestedatt--upstream_spec"></a>
 ### Nested Schema for `upstream_spec`
@@ -243,6 +250,25 @@ Optional:
 - `tls_mode` (String) TLS mode. Options: DISABLE: disable TLS. SIMPLE: one-way TLS
 
 
+<a id="nestedatt--version_details"></a>
+### Nested Schema for `version_details`
+
+Optional:
+
+- `labels` (Attributes Set) Tag
+ Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--version_details--labels))
+- `name` (String) Version name. Supports uppercase and lowercase letters, numbers, and hyphens (-). Length: 2~63 characters. Cannot start with a hyphen (-)
+
+<a id="nestedatt--version_details--labels"></a>
+### Nested Schema for `version_details.labels`
+
+Optional:
+
+- `key` (String) Key
+- `value` (String) Value
+
+
+
 <a id="nestedatt--backend_targets"></a>
 ### Nested Schema for `backend_targets`
 
@@ -251,25 +277,6 @@ Read-Only:
 - `health_status` (String) Health Check Status
 - `ip` (String) Backend node IP
 - `port` (Number) Backend node port
-
-
-<a id="nestedatt--version_details"></a>
-### Nested Schema for `version_details`
-
-Read-Only:
-
-- `labels` (Attributes Set) Tag
- Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--version_details--labels))
-- `name` (String) Version name. Supports uppercase and lowercase letters, numbers, and hyphens (-). Length: 2~63 characters. Cannot start with a hyphen (-)
-- `update_time` (String) Update time
-
-<a id="nestedatt--version_details--labels"></a>
-### Nested Schema for `version_details.labels`
-
-Read-Only:
-
-- `key` (String) Key
-- `value` (String) Value
 
 ## Import
 

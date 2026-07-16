@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_escloud_ip_allow_list.example "instance_id|type"

@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_tls_rule_bound_host_group.example "rule_id|host_group_id"

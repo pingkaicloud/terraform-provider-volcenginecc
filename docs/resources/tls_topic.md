@@ -33,6 +33,8 @@ resource "volcenginecc_tls_topic" "TlsTopicDemo" {
   project_id     = "c6fef4c1-041f-434e-b0f4-d5e9*****"
   enable_hot_ttl = false
   allow_consume  = false
+  split_shard_id = 0
+  split_number   = 2
 }
 ```
 
@@ -57,6 +59,8 @@ resource "volcenginecc_tls_topic" "TlsTopicDemo" {
 - `hot_ttl` (Number) Standard storage duration. Default is 30 days; value range: 7–3650. This parameter is effective only when EnableHotTtl is true.
 - `log_public_ip` (Boolean) Enable external IP recording. Enabled by default. When enabled, the log service automatically adds the following metadata fields to the log content: __tag____client_ip__: Public IP address of the device sending the log. If logs are written using the log service's private domain name, the private IP address is recorded. __tag____receive_time__: Time when the log reaches the server, formatted as a 10-digit Unix timestamp.
 - `max_split_shard` (Number) Maximum partition split count, which is the maximum number of partitions after splitting. Value range: 1–256, default is 256. Required only when automatic log partition splitting is enabled (AutoSplit is true). MaxSplitShard must be greater than the specified ShardCount; otherwise, the log service cannot automatically split partitions.
+- `split_number` (Number) Number of splits for the partition. The split number must be a non-zero even number, such as 2, 4, 8, or 16. After splitting, the total number of readwrite partitions must not exceed 256. Must be used together with SplitShardId
+- `split_shard_id` (Number) Partition ID to be manually split. Must be used together with SplitNumber. Only partitions with readwrite status can be split
 - `tags` (Attributes Set) Tag list.
  Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--tags))
 - `time_format` (String) Time format
@@ -68,6 +72,8 @@ resource "volcenginecc_tls_topic" "TlsTopicDemo" {
 - `consume_topic` (String) Kafka protocol consumption topic ID, formatted as out+log topic ID. When consuming log data from this log topic via the Kafka protocol, set Topic to this ID.
 - `created_time` (String) Log topic creation time.
 - `id` (String) Uniquely identifies the resource.
+- `shards` (Attributes Set) Partition list of the log topic
+ Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--shards))
 - `topic_id` (String) Log topic ID.
 - `updated_time` (String) Log topic modification time.
 
@@ -78,6 +84,19 @@ Optional:
 
 - `key` (String) User tag key.
 - `value` (String) User tag value.
+
+
+<a id="nestedatt--shards"></a>
+### Nested Schema for `shards`
+
+Read-Only:
+
+- `exclusive_end_key` (String) Ending key value of the partition
+- `inclusive_begin_key` (String) Starting key value of the partition
+- `modify_time` (String) Last modified time of the partition
+- `shard_id` (Number) Partition ID of the log topic
+- `status` (String) Partition status: readwrite means read/write, readonly means read-only
+- `stop_write_time` (String) Time when the partition stopped writing, that is, the last time logs were written to this partition
 
 ## Import
 

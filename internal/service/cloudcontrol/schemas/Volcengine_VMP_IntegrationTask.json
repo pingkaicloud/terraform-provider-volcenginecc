@@ -1,0 +1,165 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/Type",
+    "/properties/SubType",
+    "/properties/Environment",
+    "/properties/VkeClusterId",
+    "/properties/ProjectName"
+  ],
+  "definitions": {
+    "Tag": {
+      "description": "Resource Tag",
+      "properties": {
+        "Key": {
+          "description": "Tag Key",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key",
+        "Value"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "VMP Integration Task Resource for Managing Monitoring Data Integration Tasks",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/Name",
+      "/properties/IntegrationTaskId",
+      "/properties/Status",
+      "/properties/Type",
+      "/properties/Environment",
+      "/properties/WorkspaceId",
+      "/properties/VkeClusterId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "vmp:CreateIntegrationTask",
+        "vmp:EnableIntegrationTasks",
+        "vmp:DisableIntegrationTasks",
+        "vmp:GetIntegrationTask"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "vmp:DisableIntegrationTasks",
+        "vmp:GetIntegrationTask",
+        "vmp:DeleteIntegrationTask"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "vmp:ListIntegrationTasks"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "vmp:GetIntegrationTask"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "vmp:UpdateIntegrationTask",
+        "vmp:EnableIntegrationTasks",
+        "vmp:DisableIntegrationTasks",
+        "vmp:TagResources",
+        "vmp:UntagResources",
+        "vmp:GetIntegrationTask"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/IntegrationTaskId"
+  ],
+  "properties": {
+    "CreateParams": {
+      "description": "Integration Task Parameters in JSON Format (provided during creation/update)",
+      "type": "string"
+    },
+    "Enabled": {
+      "description": "Enable Switch for Integration Task. True means enabled, false means disabled",
+      "type": "boolean"
+    },
+    "Environment": {
+      "description": "Integration Task Environment",
+      "type": "string"
+    },
+    "IntegrationTaskId": {
+      "description": "Integration Task Unique Identifier",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "Name": {
+      "description": "Integration Task Name",
+      "type": "string"
+    },
+    "ProjectName": {
+      "description": "Project Name to Which Integration Task Belongs",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "ReadParams": {
+      "description": "Integration Task Parameters in JSON Format (read-only, returned data)",
+      "type": "string"
+    },
+    "Status": {
+      "description": "Actual Running Status of Integration Task (read-only). Values: Creating, Updating, Active, Disabled, Error, Deleting",
+      "semantic": "status",
+      "type": "string"
+    },
+    "SubType": {
+      "description": "Integration Task Subtype",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "Integration Task Tag List",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "Type": {
+      "description": "Integration Task Type",
+      "type": "string"
+    },
+    "VkeClusterId": {
+      "description": "VKE Cluster ID Associated with Integration Task",
+      "type": "string"
+    },
+    "WorkspaceId": {
+      "description": "Workspace ID Associated with Integration Task",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/IntegrationTaskId",
+    "/properties/Status",
+    "/properties/ReadParams"
+  ],
+  "required": [
+    "Name",
+    "CreateParams",
+    "Type"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::VMP::IntegrationTask",
+  "writeOnlyProperties": [
+    "/properties/Enabled",
+    "/properties/CreateParams"
+  ]
+}

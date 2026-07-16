@@ -1,0 +1,172 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/Bucket"
+  ],
+  "definitions": {
+    "AccessControlTranslation": {
+      "description": "Replica object ACL conversion configuration",
+      "properties": {
+        "Owner": {
+          "description": "Object owner management permissions have been granted for replication to the destination bucket, allowing the destination bucket to read objects and grant other accounts permission to read objects",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Owner"
+      ],
+      "type": "object"
+    },
+    "Destination": {
+      "description": "Save target bucket information",
+      "properties": {
+        "Bucket": {
+          "description": "Name of the bucket storing object replicas identified by the rule",
+          "type": "string"
+        },
+        "Location": {
+          "description": "Region of the target bucket",
+          "type": "string"
+        },
+        "StorageClass": {
+          "description": "Specify the storage class for objects replicated to the target bucket. Options: STANDARD: Standard storage. STANDARD_IA: Infrequent access storage. GLACIER_IR: Archive instant retrieval storage. INTELLIGENT_TIERING: Intelligent tiering storage. ARCHIVE: Archive storage. COLD_ARCHIVE: Cold archive storage. DEEP_COLD_ARCHIVE: Deep cold archive storage",
+          "type": "string"
+        },
+        "StorageClassInheritDirective": {
+          "description": "Set the storage class for objects replicated to the target bucket. Options: SOURCE_OBJECT: Inherit the storage class of the source bucket object. DESTINATION_BUCKET: Inherit the default storage class of the target bucket",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Bucket",
+        "Location"
+      ],
+      "type": "object"
+    },
+    "Progress": {
+      "description": "Replication progress information",
+      "properties": {
+        "HistoricalObject": {
+          "description": "Show the percentage of historical data that has been replicated",
+          "type": "number"
+        },
+        "NewObject": {
+          "description": "Show the timestamp when data is replicated to the target bucket",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ReplicationRule": {
+      "description": "Single replication rule",
+      "properties": {
+        "AccessControlTranslation": {
+          "$ref": "#/definitions/AccessControlTranslation",
+          "description": "Object owner management permissions",
+          "type": "object"
+        },
+        "Destination": {
+          "$ref": "#/definitions/Destination",
+          "description": "Replication target bucket information",
+          "type": "object"
+        },
+        "HistoricalObjectReplication": {
+          "description": "Enable historical object replication. If enabled, historical objects matching this rule will be replicated. Options: Enabled: Enable historical object replication. Disabled: Do not enable historical object replication",
+          "type": "string"
+        },
+        "ID": {
+          "description": "Unique identifier for the rule, less than 255 characters",
+          "type": "string"
+        },
+        "PrefixSet": {
+          "description": "Object name prefix to which this rule applies",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "Progress": {
+          "$ref": "#/definitions/Progress",
+          "description": "Save replication progress",
+          "type": "object"
+        },
+        "Status": {
+          "description": "Specify whether to enable this rule. Options: Enabled: Enable this rule. Disabled: Do not enable this rule",
+          "semantic": "status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ID",
+        "Status",
+        "Destination",
+        "HistoricalObjectReplication"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "Manage cross-region replication configuration for the specified TOS bucket. This resource uses the bucket as the primary key. Create and Update will write the replication role and rule set as a whole. Delete will remove the replication configuration from the bucket",
+  "handlers": {
+    "create": {
+      "permissions": [
+        "tos:PutBucketReplication",
+        "tos:GetBucketReplication"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "tos:DeleteBucketReplication",
+        "tos:GetBucketReplication"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "tos:GetBucketReplication"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "tos:PutBucketReplication",
+        "tos:GetBucketReplication"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/Bucket"
+  ],
+  "properties": {
+    "Bucket": {
+      "description": "Name of the bucket to configure for cross-region replication",
+      "maxLength": 63,
+      "minLength": 3,
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "Role": {
+      "description": "Role name. The role must have read and write permissions for TOS and service access permissions. You can also use the default TOS role",
+      "type": "string"
+    },
+    "Rules": {
+      "description": "Replication rule information",
+      "insertionOrder": true,
+      "items": {
+        "$ref": "#/definitions/ReplicationRule",
+        "type": "object"
+      },
+      "type": "array",
+      "uniqueItems": true
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/Rules/*/Progress"
+  ],
+  "required": [
+    "Bucket",
+    "Role",
+    "Rules"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::TOS::BucketReplication"
+}

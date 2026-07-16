@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_vmp_integration_task.example "integration_task_id"

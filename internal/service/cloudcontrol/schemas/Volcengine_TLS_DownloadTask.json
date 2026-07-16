@@ -1,0 +1,198 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/TopicId",
+    "/properties/TaskName",
+    "/properties/Query",
+    "/properties/StartTime",
+    "/properties/EndTime",
+    "/properties/Compression",
+    "/properties/DataFormat",
+    "/properties/Limit",
+    "/properties/Sort",
+    "/properties/TaskType",
+    "/properties/AllowIncomplete",
+    "/properties/LogContextInfos",
+    "/properties/MustComplete",
+    "/properties/StartTimeStr",
+    "/properties/EndTimeStr"
+  ],
+  "definitions": {
+    "LogContextInfos": {
+      "description": "Context information for the downloaded logs, used for downloading by log context.",
+      "properties": {
+        "ContextFlow": {
+          "description": "LogGroup ID to which the log context belongs.",
+          "type": "string"
+        },
+        "PackageOffset": {
+          "description": "Specifies the log index in the LogGroup.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "Source": {
+          "description": "Host of the log source.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "Log download task, used to export log data retrieved from a log topic as a file for user download.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/TopicId",
+      "/properties/TaskName"
+    ],
+    "required": [
+      "/properties/TopicId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "TLS:CreateDownloadTask",
+        "TLS:DescribeDownloadTasks"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "TLS:CancelDownloadTask"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "TLS:DescribeDownloadTasks"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "TLS:DescribeDownloadTasks"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/TopicId",
+    "/properties/TaskId"
+  ],
+  "properties": {
+    "AllowIncomplete": {
+      "description": "Whether to allow approximate results when the query statement cannot be calculated precisely.",
+      "type": "boolean"
+    },
+    "Compression": {
+      "description": "Compression format of the exported file. none: no compression. Recommended only for small data volumes. gzip: compress using gzip format. ip: compress using ip format.",
+      "type": "string"
+    },
+    "CreateTime": {
+      "description": "Download task creation time.",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "DataFormat": {
+      "description": "Exported file format. Supported values: csv: CSV format. json: JSON format. jsonl: JSONL format.",
+      "type": "string"
+    },
+    "EndTime": {
+      "description": "Query end time, accurate to the millisecond. Unix timestamp format, representing the number of milliseconds since 1970-1-1 00:00:00 UTC.",
+      "format": "int64",
+      "type": "integer"
+    },
+    "EndTimeStr": {
+      "description": "Query end time.",
+      "type": "string"
+    },
+    "Limit": {
+      "description": "Number of original log entries downloaded, or number of rows in the analysis result.",
+      "format": "int64",
+      "type": "integer"
+    },
+    "LogContextInfos": {
+      "$ref": "#/definitions/LogContextInfos",
+      "description": "Download the log information required for context queries, including the source host, LogGroup ID, and the log's sequence number within the LogGroup. Set this parameter when TaskType is 2.",
+      "type": "object"
+    },
+    "LogCount": {
+      "description": "Number of log entries included in the download task.",
+      "format": "int64",
+      "type": "integer"
+    },
+    "LogSize": {
+      "description": "Total size of logs included in the download task, in bytes.",
+      "format": "int64",
+      "type": "integer"
+    },
+    "MustComplete": {
+      "description": "Whether to use fully accurate query results for download. true: use fully accurate query results to ensure the downloaded log data exactly matches the query conditions. false: full accuracy is not required; allows downloading log data that may not exactly match the query conditions.",
+      "type": "boolean"
+    },
+    "Query": {
+      "description": "Query statement for analysis, with a maximum length of 4 KiB.",
+      "type": "string"
+    },
+    "Sort": {
+      "description": "Log sorting order when only retrieving without analysis. asc: ascending. desc: descending.",
+      "type": "string"
+    },
+    "StartTime": {
+      "description": "Query start time, accurate to the millisecond. Unix timestamp format, representing the number of milliseconds since 1970-1-1 00:00:00 UTC.",
+      "format": "int64",
+      "type": "integer"
+    },
+    "StartTimeStr": {
+      "description": "Query start time.",
+      "type": "string"
+    },
+    "TaskId": {
+      "description": "Download task ID.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "TaskName": {
+      "description": "Download task name. Length range: 1–63 characters.",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "TaskStatus": {
+      "description": "Download task status, indicating the generation status of the log archive file. Includes: creating: file is being generated. created_cut: file has been partially generated. success: file has been generated. wait: waiting. fail: failed.",
+      "semantic": "status",
+      "type": "string"
+    },
+    "TaskType": {
+      "description": "Type of logs to download. 0: download search-type logs. 1: download analysis-type logs. 2: download context-type logs.",
+      "type": "integer"
+    },
+    "TopicId": {
+      "description": "Log topic ID to which the download task belongs.",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/TaskId",
+    "/properties/LogCount",
+    "/properties/LogSize",
+    "/properties/TaskStatus",
+    "/properties/CreateTime"
+  ],
+  "required": [
+    "TopicId",
+    "TaskName",
+    "StartTime",
+    "EndTime",
+    "Compression",
+    "DataFormat",
+    "Limit",
+    "Sort"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::TLS::DownloadTask",
+  "writeOnlyProperties": [
+    "/properties/StartTime",
+    "/properties/EndTime",
+    "/properties/MustComplete",
+    "/properties/Limit",
+    "/properties/Sort"
+  ]
+}
