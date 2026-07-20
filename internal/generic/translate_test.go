@@ -129,19 +129,19 @@ func TestTranslateToTerraform(t *testing.T) {
 			Schema:        testSimpleSchema,
 			CfToTfNameMap: simpleCfToTfNameMap,
 			ResourceModel: map[string]interface{}{
-				"trn":    "trn:ve:test:::test",
+				"Arn":    "arn:ve:test:::test",
 				"Name":   "testing",
 				"Number": float64(42),
 			},
 			ExpectedValue: tftypes.NewValue(tftypes.Object{
 				AttributeTypes: map[string]tftypes.Type{
-					"trn":        tftypes.String,
+					"arn":        tftypes.String,
 					"identifier": tftypes.String,
 					"name":       tftypes.String,
 					"number":     tftypes.Number,
 				},
 			}, map[string]tftypes.Value{
-				"trn":        tftypes.NewValue(tftypes.String, "trn:ve:test:::test"),
+				"arn":        tftypes.NewValue(tftypes.String, "arn:ve:test:::test"),
 				"identifier": tftypes.NewValue(tftypes.String, nil),
 				"name":       tftypes.NewValue(tftypes.String, "testing"),
 				"number":     tftypes.NewValue(tftypes.Number, 42),
@@ -152,7 +152,7 @@ func TestTranslateToTerraform(t *testing.T) {
 			Schema:        testSimpleSchema,
 			CfToTfNameMap: simpleCfToTfNameMap,
 			ResourceModel: map[string]interface{}{
-				"trn": "trn:ve:test:::test",
+				"Arn": "arn:ve:test:::test",
 				"Name": map[string]interface{}{
 					"Value": "testing",
 				},
@@ -160,13 +160,13 @@ func TestTranslateToTerraform(t *testing.T) {
 			},
 			ExpectedValue: tftypes.NewValue(tftypes.Object{
 				AttributeTypes: map[string]tftypes.Type{
-					"trn":        tftypes.String,
+					"arn":        tftypes.String,
 					"identifier": tftypes.String,
 					"name":       tftypes.String,
 					"number":     tftypes.Number,
 				},
 			}, map[string]tftypes.Value{
-				"trn":        tftypes.NewValue(tftypes.String, "trn:ve:test:::test"),
+				"arn":        tftypes.NewValue(tftypes.String, "arn:ve:test:::test"),
 				"identifier": tftypes.NewValue(tftypes.String, nil),
 				"name":       tftypes.NewValue(tftypes.String, `{"Value":"testing"}`),
 				"number":     tftypes.NewValue(tftypes.Number, 42),
@@ -177,20 +177,20 @@ func TestTranslateToTerraform(t *testing.T) {
 			Schema:        testSimpleSchema,
 			CfToTfNameMap: simpleCfToTfNameMap,
 			ResourceModel: map[string]interface{}{
-				"trn":    "trn:ve:test:::test",
+				"Arn":    "arn:ve:test:::test",
 				"Height": float64(1.75),
 				"Name":   "testing",
 				"Number": float64(42),
 			},
 			ExpectedValue: tftypes.NewValue(tftypes.Object{
 				AttributeTypes: map[string]tftypes.Type{
-					"trn":        tftypes.String,
+					"arn":        tftypes.String,
 					"identifier": tftypes.String,
 					"name":       tftypes.String,
 					"number":     tftypes.Number,
 				},
 			}, map[string]tftypes.Value{
-				"trn":        tftypes.NewValue(tftypes.String, "trn:ve:test:::test"),
+				"arn":        tftypes.NewValue(tftypes.String, "arn:ve:test:::test"),
 				"identifier": tftypes.NewValue(tftypes.String, nil),
 				"name":       tftypes.NewValue(tftypes.String, "testing"),
 				"number":     tftypes.NewValue(tftypes.Number, 42),
@@ -201,21 +201,21 @@ func TestTranslateToTerraform(t *testing.T) {
 			Schema:        testSimpleSchemaWithList,
 			CfToTfNameMap: simpleCfToTfNameMap,
 			ResourceModel: map[string]interface{}{
-				"trn":    "trn:ve:test:::test",
+				"Arn":    "arn:ve:test:::test",
 				"Name":   "testing",
 				"Number": float64(42),
 				"Ports":  []interface{}{float64(8080), float64(8443)},
 			},
 			ExpectedValue: tftypes.NewValue(tftypes.Object{
 				AttributeTypes: map[string]tftypes.Type{
-					"trn":        tftypes.String,
+					"arn":        tftypes.String,
 					"identifier": tftypes.String,
 					"name":       tftypes.String,
 					"number":     tftypes.Number,
 					"ports":      tftypes.List{ElementType: tftypes.Number},
 				},
 			}, map[string]tftypes.Value{
-				"trn":        tftypes.NewValue(tftypes.String, "trn:ve:test:::test"),
+				"arn":        tftypes.NewValue(tftypes.String, "arn:ve:test:::test"),
 				"identifier": tftypes.NewValue(tftypes.String, nil),
 				"name":       tftypes.NewValue(tftypes.String, "testing"),
 				"number":     tftypes.NewValue(tftypes.Number, 42),
@@ -230,21 +230,21 @@ func TestTranslateToTerraform(t *testing.T) {
 			Schema:        testSimpleSchemaWithList,
 			CfToTfNameMap: simpleCfToTfNameMap,
 			ResourceModel: map[string]interface{}{
-				"trn":    "trn:ve:test:::test",
+				"Arn":    "arn:ve:test:::test",
 				"Name":   "testing",
 				"Number": float64(42),
 				"Ports":  []interface{}{},
 			},
 			ExpectedValue: tftypes.NewValue(tftypes.Object{
 				AttributeTypes: map[string]tftypes.Type{
-					"trn":        tftypes.String,
+					"arn":        tftypes.String,
 					"identifier": tftypes.String,
 					"name":       tftypes.String,
 					"number":     tftypes.Number,
 					"ports":      tftypes.List{ElementType: tftypes.Number},
 				},
 			}, map[string]tftypes.Value{
-				"trn":        tftypes.NewValue(tftypes.String, "trn:ve:test:::test"),
+				"arn":        tftypes.NewValue(tftypes.String, "arn:ve:test:::test"),
 				"identifier": tftypes.NewValue(tftypes.String, nil),
 				"name":       tftypes.NewValue(tftypes.String, "testing"),
 				"number":     tftypes.NewValue(tftypes.Number, 42),
@@ -256,20 +256,20 @@ func TestTranslateToTerraform(t *testing.T) {
 			Schema:        testSimpleSchemaWithList,
 			CfToTfNameMap: simpleCfToTfNameMap,
 			ResourceModel: map[string]interface{}{
-				"trn":    "trn:ve:test:::test",
+				"Arn":    "arn:ve:test:::test",
 				"Name":   "testing",
 				"Number": float64(42),
 			},
 			ExpectedValue: tftypes.NewValue(tftypes.Object{
 				AttributeTypes: map[string]tftypes.Type{
-					"trn":        tftypes.String,
+					"arn":        tftypes.String,
 					"identifier": tftypes.String,
 					"name":       tftypes.String,
 					"number":     tftypes.Number,
 					"ports":      tftypes.List{ElementType: tftypes.Number},
 				},
 			}, map[string]tftypes.Value{
-				"trn":        tftypes.NewValue(tftypes.String, "trn:ve:test:::test"),
+				"arn":        tftypes.NewValue(tftypes.String, "arn:ve:test:::test"),
 				"identifier": tftypes.NewValue(tftypes.String, nil),
 				"name":       tftypes.NewValue(tftypes.String, "testing"),
 				"number":     tftypes.NewValue(tftypes.Number, 42),

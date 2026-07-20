@@ -780,7 +780,7 @@ func (e Emitter) emitAttribute(tfType string, attributeNameMap map[string]string
 	if computed && !parentComputedOnly {
 		// Computed.
 		// If our parent is Computed-only (and hence we are) then we don't need our own plan modifier.
-		planModifiers = append(planModifiers, fmt.Sprintf("%s.UseStateForUnknown()", fwPlanModifierPackage))
+		planModifiers = append(planModifiers, computedPlanModifier(fwPlanModifierPackage, path))
 		features.FrameworkPlanModifierPackages = append(features.FrameworkPlanModifierPackages, fwPlanModifierPackage)
 	}
 
@@ -813,6 +813,17 @@ func (e Emitter) emitAttribute(tfType string, attributeNameMap map[string]string
 	e.printf("}/*END ATTRIBUTE*/")
 
 	return features, false, nil
+}
+
+// computedPlanModifier returns the state-copy modifier for generated computed attributes.
+// Nested object children keep prior non-null values but leave prior nulls unknown so newly
+// added nested elements can accept server-populated values after apply.
+func computedPlanModifier(fwPlanModifierPackage string, path []string) string {
+	modifier := "UseStateForUnknown"
+	if len(path) > 1 {
+		modifier = "UseNonNullStateForUnknown"
+	}
+	return fmt.Sprintf("%s.%s()", fwPlanModifierPackage, modifier)
 }
 
 // emitSchema generates the Terraform Plugin SDK code for a Cloud Control property's schema.
