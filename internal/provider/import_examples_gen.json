@@ -1325,11 +1325,6 @@
         "path": "./examples/resources/volcenginecc_id_permission_namespace/import.sh"
     },
     {
-        "resource": "volcenginecc_veenedge_cloud_server",
-        "identifier": ["CloudServerIdentity"],
-        "path": "./examples/resources/volcenginecc_veenedge_cloud_server/import.sh"
-    },
-    {
         "resource": "volcenginecc_tos_bucket_replication",
         "identifier": ["Bucket"],
         "path": "./examples/resources/volcenginecc_tos_bucket_replication/import.sh"
@@ -1353,6 +1348,8 @@
         "resource": "volcenginecc_vmp_integration_task",
         "identifier": ["IntegrationTaskId"],
         "path": "./examples/resources/volcenginecc_vmp_integration_task/import.sh"
+    },
+    {
         "resource": "volcenginecc_id_workload_pool",
         "identifier": ["WorkloadPoolName"],
         "path": "./examples/resources/volcenginecc_id_workload_pool/import.sh"

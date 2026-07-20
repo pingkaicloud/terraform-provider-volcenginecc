@@ -33,6 +33,7 @@ import (
 	"github.com/volcengine/volcengine-go-sdk/volcengine"
 	"github.com/volcengine/volcengine-go-sdk/volcengine/credentials"
 	"github.com/volcengine/volcengine-go-sdk/volcengine/credentials/clicreds"
+	"github.com/volcengine/volcengine-go-sdk/volcengine/defaults"
 	"github.com/volcengine/volcengine-go-sdk/volcengine/session"
 )
 
@@ -213,14 +214,9 @@ func (p *VolcengineCCProvider) Configure(ctx context.Context, request provider.C
 	if config.Region.IsNull() || config.Region.IsUnknown() {
 		config.Region = types.StringValue(os.Getenv("VOLCENGINE_REGION"))
 	}
-	// 验证认证方式：必须配置ak + sk，或者必须配置profile + file_path
-	hasAKSK := config.AccessKey.ValueString() != "" && config.SecretKey.ValueString() != ""
-	hasProfile := config.Profile.ValueString() != ""
-
-	if !hasAKSK && !hasProfile {
-		response.Diagnostics.AddError("Invalid Authentication Configuration",
-			"Either (AccessKey and SecretKey) or Profile must be provided")
-	}
+	// 认证方式按优先级解析：显式 AK/SK > profile/file_path（CLI 配置）>
+	// DefaultCredentialProvider 默认链（环境变量、OIDC、CLI 配置、ECS 实例角色）。
+	// 因此无需在此强制要求显式凭证。
 	if config.Region.ValueString() == "" {
 		response.Diagnostics.AddError("Missing Region", "Region must be set")
 	}
@@ -350,34 +346,72 @@ func (p *VolcengineCCProvider) DataSources(ctx context.Context) []func() datasou
 	return dataSources
 }
 
+// buildCredentials 按优先级选择 SDK 使用的凭证提供方：
+//  1. assume_role：以显式 AccessKey/SecretKey 为源凭证，扮演指定角色（STS 凭证）；
+//  2. 显式配置的 AccessKey/SecretKey（静态凭证）；
+//  3. profile 或 file_path（火山引擎 CLI 配置文件凭证）；
+//  4. DefaultCredentialProvider 默认凭证链（环境变量、OIDC、CLI 配置、ECS 实例角色）。
+//
+// 当未提供任何显式凭证时，默认回退到 DefaultCredentialProvider。
+func buildCredentials(c *configModel) (*credentials.Credentials, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	switch {
+	case c.AssumeRole != nil && !c.AssumeRole.AssumeRoleTRN.IsNull():
+		accountId, roleName, err := ParseTrn(c.AssumeRole.AssumeRoleTRN.ValueString())
+		if err != nil {
+			diags.AddError(err.Error(), err.Error())
+			return nil, diags
+		}
+
+		if c.AssumeRole.Duration.IsNull() || c.AssumeRole.Duration.IsUnknown() {
+			c.AssumeRole.Duration = types.Int32Value(3600)
+		}
+
+		stsValue := credentials.StsValue{
+			AccessKey:       c.AccessKey.ValueString(),
+			SecurityKey:     c.SecretKey.ValueString(),
+			RoleName:        roleName, // 扮演角色名称
+			AccountId:       accountId,
+			Schema:          "https",
+			Region:          c.Region.ValueString(),
+			DurationSeconds: int(c.AssumeRole.Duration.ValueInt32()),
+		}
+		if c.Endpoints != nil && !c.Endpoints.STS.IsNull() && c.Endpoints.STS.ValueString() != "" {
+			stsValue.Host = c.Endpoints.STS.ValueString()
+		} else {
+			stsValue.Host = "sts.volcengineapi.com"
+		}
+		if c.DisableSSL.ValueBool() {
+			stsValue.Schema = "http"
+		}
+		return credentials.NewStsCredentials(stsValue), diags
+	case c.AccessKey.ValueString() != "" && c.SecretKey.ValueString() != "":
+		return credentials.NewStaticCredentials(c.AccessKey.ValueString(), c.SecretKey.ValueString(), c.SessionToken.ValueString()), diags
+	case c.Profile.ValueString() != "" || c.FilePath.ValueString() != "":
+		return clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString()), diags
+	default:
+		return defaults.NewDefaultCredentialProvider(), diags
+	}
+}
+
 func newProviderData(ctx context.Context, c *configModel) (*providerData, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	version := fmt.Sprintf("%s/%s (terraform/%s)", common.TerraformProviderName, common.TerraformProviderVersion, c.terraformVersion)
 	ctx, logger := baselogging.NewTfLogger(ctx)
 
+	creds, credDiags := buildCredentials(c)
+	diags.Append(credDiags...)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	var config *volcengine.Config
-
-	if c.AccessKey.ValueString() != "" && c.SecretKey.ValueString() != "" {
-		config = volcengine.NewConfig().
-			WithRegion(c.Region.ValueString()).
-			WithCredentials(credentials.NewStaticCredentials(c.AccessKey.ValueString(), c.SecretKey.ValueString(), c.SessionToken.ValueString())).
-			WithDisableSSL(c.DisableSSL.ValueBool()).
-			WithExtendHttpRequest(func(ctx context.Context, request *http.Request) {
-				request.Header.Set("user-agent", version)
-			})
-	} else {
-		config = volcengine.NewConfig().
-			WithRegion(c.Region.ValueString()).
-			WithCredentials(clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString())).
-			WithDisableSSL(c.DisableSSL.ValueBool()).
-			WithExtendHttpRequest(func(ctx context.Context, request *http.Request) {
-				request.Header.Set("user-agent", version)
-			})
-	}
+	config := volcengine.NewConfig().
+		WithRegion(c.Region.ValueString()).
+		WithCredentials(creds).
+		WithDisableSSL(c.DisableSSL.ValueBool()).
+		WithExtendHttpRequest(func(ctx context.Context, request *http.Request) {
+			request.Header.Set("user-agent", version)
+		})
 
 	if !(c.CustomerHeaders.IsNull() || c.CustomerHeaders.IsUnknown()) {
 		customHeaderMap := make(map[string]string)
@@ -413,38 +447,6 @@ func newProviderData(ctx context.Context, c *configModel) (*providerData, diag.D
 		}
 		httpClient := http.DefaultClient
 		httpClient.Transport = t
-	}
-
-	if c.AssumeRole != nil && !c.AssumeRole.AssumeRoleTRN.IsNull() {
-		accountId, roleName, err := ParseTrn(c.AssumeRole.AssumeRoleTRN.ValueString())
-		if err != nil {
-			diags.AddError(err.Error(), err.Error())
-			return nil, diags
-
-		}
-
-		if c.AssumeRole.Duration.IsNull() || c.AssumeRole.Duration.IsUnknown() {
-			c.AssumeRole.Duration = types.Int32Value(3600)
-		}
-
-		stsValue := credentials.StsValue{
-			AccessKey:       c.AccessKey.ValueString(),
-			SecurityKey:     c.SecretKey.ValueString(),
-			RoleName:        roleName, // 扮演角色名称
-			AccountId:       accountId,
-			Schema:          "https",
-			Region:          c.Region.ValueString(),
-			DurationSeconds: int(c.AssumeRole.Duration.ValueInt32()),
-		}
-		if c.Endpoints != nil && !c.Endpoints.STS.IsNull() && c.Endpoints.STS.ValueString() != "" {
-			stsValue.Host = c.Endpoints.STS.ValueString()
-		} else {
-			stsValue.Host = "sts.volcengineapi.com"
-		}
-		if c.DisableSSL.ValueBool() {
-			stsValue.Schema = "http"
-		}
-		config.WithCredentials(credentials.NewStsCredentials(stsValue))
 	}
 
 	sess, err := session.NewSession(config)
