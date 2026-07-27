@@ -43,4 +43,7 @@ resource "volcenginecc_ecs_instance" "EcsInstanceDemo" {
     delete_with_instance = true
     volume_type          = "ESSD_FlexPL"
   }
+  cpu_options = {
+    topology_type = "DiscreteCoreToHTMapping"
+  }
 }

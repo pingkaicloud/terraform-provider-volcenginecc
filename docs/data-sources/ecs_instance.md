@@ -43,6 +43,7 @@ Data Source schema for Volcengine::ECS::Instance
     - Currently, only g3al, c3al, r3al, g4i, c4i, r4i, g4ie, c4ie, r4ie instances support this parameter. For base/turbo frequencies and more information, see [Instance Specifications Introduction](https://www.volcengine.com/docs/6396/70840).
     - This feature is in invitation-only testing. To use it, please contact your account manager.
 - `cpu_memory` (Attributes) The CPU options for the instance. (see [below for nested schema](#nestedatt--cpu_memory))
+- `cpu_options` (Attributes) CPU configuration options for the instance (see [below for nested schema](#nestedatt--cpu_options))
 - `created_at` (String) Instance creation time.
 - `credit_specification` (String) Burstable instance operating mode. Values:
     - Standard: Standard mode.
@@ -165,6 +166,19 @@ Read-Only:
 - `cpu_number` (Number) Number of vCPUs for the instance.
 - `memory_size` (Number) Instance memory size (MB).
 - `threads_per_core` (Number) Threads per core for the instance.
+
+
+<a id="nestedatt--cpu_options"></a>
+### Nested Schema for `cpu_options`
+
+Read-Only:
+
+- `topology_type` (String) CPU topology mode. Available values:
+    - ContinuousCoreToHTMapping: Continuous HT mode
+    - DiscreteCoreToHTMapping (default): Discrete HT mode
+  
+  **Note:**
+  This feature is currently in invitation-only testing. To use it, please contact your account manager to apply.
 
 
 <a id="nestedatt--data_volumes"></a>

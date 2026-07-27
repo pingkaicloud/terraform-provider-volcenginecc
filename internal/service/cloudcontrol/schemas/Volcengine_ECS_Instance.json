@@ -66,6 +66,16 @@
       },
       "type": "object"
     },
+    "CpuOptions": {
+      "description": "CPU configuration options for the instance",
+      "properties": {
+        "TopologyType": {
+          "description": "CPU topology mode. Available values:\n- ContinuousCoreToHTMapping: Continuous HT mode\n- DiscreteCoreToHTMapping (default): Discrete HT mode\n:::tip\nThis feature is currently in invitation-only testing. To use it, please contact your account manager to apply.\n:::",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "EipAddress": {
       "description": "The EIP address of the instance.",
       "properties": {
@@ -557,6 +567,11 @@
     "CpuMemory": {
       "$ref": "#/definitions/CpuMemory",
       "description": "The CPU options for the instance.",
+      "type": "object"
+    },
+    "CpuOptions": {
+      "$ref": "#/definitions/CpuOptions",
+      "description": "CPU configuration options for the instance",
       "type": "object"
     },
     "CreatedAt": {

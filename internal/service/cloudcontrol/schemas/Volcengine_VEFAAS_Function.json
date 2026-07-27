@@ -339,8 +339,7 @@
         "vefaas:GetFunction",
         "vefaas:ListFunctions",
         "vefaas:CreateDependencyInstallTask",
-        "vefaas:GetDependencyInstallTaskStatus",
-        "tag:GetResources"
+        "vefaas:GetDependencyInstallTaskStatus"
       ]
     },
     "delete": {
@@ -360,8 +359,7 @@
       "permissions": [
         "vefaas:GetFunction",
         "vefaas:ListFunctions",
-        "vefaas:GetDependencyInstallTaskStatus",
-        "tag:GetResources"
+        "vefaas:GetDependencyInstallTaskStatus"
       ]
     },
     "update": {
@@ -370,8 +368,7 @@
         "vefaas:GetFunction",
         "vefaas:ListFunctions",
         "vefaas:CreateDependencyInstallTask",
-        "vefaas:GetDependencyInstallTaskStatus",
-        "tag:GetResources"
+        "vefaas:GetDependencyInstallTaskStatus"
       ]
     }
   },
