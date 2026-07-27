@@ -26,11 +26,7 @@ func FindResourceByTypeNameAndIDWithSysTag(ctx context.Context, client *cloudcon
 		Identifier: &id,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "HandlerErrorCode: NotFound") {
-			return nil, &tfresource.NotFoundError{LastError: err}
-
-		}
-		return nil, err
+		return nil, wrapCloudControlNotFound(err)
 	}
 	if output == nil || output.ResourceDescription == nil {
 		return nil, &tfresource.NotFoundError{Message: "Empty result"}
@@ -48,18 +44,14 @@ func FindResourceByTypeNameAndID(ctx context.Context, client *cloudcontrol.Cloud
 		Identifier: &id,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "HandlerErrorCode: NotFound") {
-			return nil, &tfresource.NotFoundError{LastError: err}
-
-		}
-		return nil, err
+		return nil, wrapCloudControlNotFound(err)
 	}
 	if output == nil || output.ResourceDescription == nil {
 		return nil, &tfresource.NotFoundError{Message: "Empty result"}
 	}
 	err = NormalizeResourceDescription(output.ResourceDescription)
 	if err != nil {
-		return nil, &tfresource.NotFoundError{Message: "normalize resource description err", LastError: err}
+		return nil, fmt.Errorf("normalize resource description: %w", err)
 	}
 	return output, nil
 }

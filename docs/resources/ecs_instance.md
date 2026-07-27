@@ -57,6 +57,9 @@ resource "volcenginecc_ecs_instance" "EcsInstanceDemo" {
     delete_with_instance = true
     volume_type          = "ESSD_FlexPL"
   }
+  cpu_options = {
+    topology_type = "DiscreteCoreToHTMapping"
+  }
 }
 ```
 
@@ -99,6 +102,7 @@ resource "volcenginecc_ecs_instance" "EcsInstanceDemo" {
   **Note:**
     - Currently, only g3al, c3al, r3al, g4i, c4i, r4i, g4ie, c4ie, r4ie instances support this parameter. For base/turbo frequencies and more information, see [Instance Specifications Introduction](https://www.volcengine.com/docs/6396/70840).
     - This feature is in invitation-only testing. To use it, please contact your account manager.
+- `cpu_options` (Attributes) CPU configuration options for the instance (see [below for nested schema](#nestedatt--cpu_options))
 - `credit_specification` (String) Burstable instance operating mode. Values:
     - Standard: Standard mode.
     - Unlimited: Unlimited performance mode (not supported yet).
@@ -268,6 +272,19 @@ Optional:
 Read-Only:
 
 - `volume_id` (String) Instance volume ID.
+
+
+<a id="nestedatt--cpu_options"></a>
+### Nested Schema for `cpu_options`
+
+Optional:
+
+- `topology_type` (String) CPU topology mode. Available values:
+    - ContinuousCoreToHTMapping: Continuous HT mode
+    - DiscreteCoreToHTMapping (default): Discrete HT mode
+  
+  **Note:**
+  This feature is currently in invitation-only testing. To use it, please contact your account manager to apply.
 
 
 <a id="nestedatt--data_volumes"></a>

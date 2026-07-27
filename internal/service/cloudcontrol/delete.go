@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/volcengine/terraform-provider-volcenginecc/internal/base"
 	"github.com/volcengine/terraform-provider-volcenginecc/internal/cloudcontrol"
+	"github.com/volcengine/terraform-provider-volcenginecc/internal/tfresource"
 	"github.com/volcengine/terraform-provider-volcenginecc/internal/util"
 )
 
@@ -28,7 +29,7 @@ func DeleteResource(ctx context.Context, cloudControlClient *cloudcontrol.CloudC
 		ClientToken: util.StringPtr(util.GenerateToken(32)),
 	})
 	if err != nil {
-		return err
+		return wrapCloudControlNotFound(err)
 	}
 	if resp == nil || resp.OperationStatus == nil {
 		return fmt.Errorf("call DeleteResource failed,resp:%s,err:%v ", util.JsonString(resp), err)
@@ -37,7 +38,11 @@ func DeleteResource(ctx context.Context, cloudControlClient *cloudcontrol.CloudC
 	taskId := ""
 	status := *resp.OperationStatus
 	if status == base.FAILED {
-		return fmt.Errorf("invoke DeleteResource handler failed,resp:%s ", util.JsonString(resp))
+		err := fmt.Errorf("invoke DeleteResource handler failed,resp:%s ", util.JsonString(resp))
+		if isCloudControlNotFoundProgressEvent(&resp.ProgressEvent) {
+			return &tfresource.NotFoundError{LastError: err}
+		}
+		return err
 	} else if status == base.SUCCESS {
 		return nil
 	} else if status == base.IN_PROGRESS || status == base.PENDING {
@@ -88,7 +93,11 @@ func AwaitTask(ctx context.Context, client *cloudcontrol.CloudControl, taskId st
 
 		status := *output.OperationStatus
 		if status == base.FAILED {
-			return nil, false, fmt.Errorf("invoke get task failed,resp:%s,err:%v ", util.JsonString(output), err)
+			err := fmt.Errorf("invoke get task failed,resp:%s ", util.JsonString(output))
+			if isCloudControlNotFoundProgressEvent(output) {
+				return nil, false, &tfresource.NotFoundError{LastError: err}
+			}
+			return nil, false, err
 		} else if status == base.SUCCESS {
 			return output, true, nil
 		} else if status == base.IN_PROGRESS || status == base.PENDING {

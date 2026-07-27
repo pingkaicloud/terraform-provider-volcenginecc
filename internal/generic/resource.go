@@ -548,7 +548,7 @@ func (r *genericResource) Read(ctx context.Context, request resource.ReadRequest
 
 	if tfresource.NotFound(err) {
 		response.Diagnostics.Append(ResourceNotFoundWarningDiag(err))
-		//response.State.RemoveResource(ctx)
+		response.State.RemoveResource(ctx)
 
 		return
 	}
@@ -878,6 +878,11 @@ func (r *genericResource) Delete(ctx context.Context, request resource.DeleteReq
 	}
 
 	err = tfcloudcontrol.DeleteResource(ctx, conn, r.provider.Region(ctx), "", r.ccTypeName, id)
+
+	if tfresource.NotFound(err) {
+		response.State.RemoveResource(ctx)
+		return
+	}
 
 	if err != nil {
 		response.Diagnostics.Append(ServiceOperationErrorDiag("Cloud Control API", "DeleteResource", err))

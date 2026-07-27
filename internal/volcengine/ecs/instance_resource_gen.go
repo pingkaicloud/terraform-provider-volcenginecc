@@ -207,6 +207,38 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 				objectplanmodifier.UseStateForUnknown(),
 			}, /*END PLAN MODIFIERS*/
 		}, /*END ATTRIBUTE*/
+		// Property: CpuOptions
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "CPU configuration options for the instance",
+		//	  "properties": {
+		//	    "TopologyType": {
+		//	      "description": "CPU topology mode. Available values:\n- ContinuousCoreToHTMapping: Continuous HT mode\n- DiscreteCoreToHTMapping (default): Discrete HT mode\n:::tip\nThis feature is currently in invitation-only testing. To use it, please contact your account manager to apply.\n:::",
+		//	      "type": "string"
+		//	    }
+		//	  },
+		//	  "type": "object"
+		//	}
+		"cpu_options": schema.SingleNestedAttribute{ /*START ATTRIBUTE*/
+			Attributes: map[string]schema.Attribute{ /*START SCHEMA*/
+				// Property: TopologyType
+				"topology_type": schema.StringAttribute{ /*START ATTRIBUTE*/
+					Description: "CPU topology mode. Available values:\n    - ContinuousCoreToHTMapping: Continuous HT mode\n    - DiscreteCoreToHTMapping (default): Discrete HT mode\n  \n  **Note:**\n  This feature is currently in invitation-only testing. To use it, please contact your account manager to apply.\n  ",
+					Optional:    true,
+					Computed:    true,
+					PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
+						stringplanmodifier.UseNonNullStateForUnknown(),
+					}, /*END PLAN MODIFIERS*/
+				}, /*END ATTRIBUTE*/
+			}, /*END SCHEMA*/
+			Description: "CPU configuration options for the instance",
+			Optional:    true,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Object{ /*START PLAN MODIFIERS*/
+				objectplanmodifier.UseStateForUnknown(),
+			}, /*END PLAN MODIFIERS*/
+		}, /*END ATTRIBUTE*/
 		// Property: CreatedAt
 		// Cloud Control resource type schema:
 		//
@@ -2284,6 +2316,7 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		"cpu_max_frequency":               "CpuMaxFrequency",
 		"cpu_memory":                      "CpuMemory",
 		"cpu_number":                      "CpuNumber",
+		"cpu_options":                     "CpuOptions",
 		"created_at":                      "CreatedAt",
 		"credit_specification":            "CreditSpecification",
 		"data_volumes":                    "DataVolumes",
@@ -2361,6 +2394,7 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		"tags":                            "Tags",
 		"tenancy":                         "Tenancy",
 		"threads_per_core":                "ThreadsPerCore",
+		"topology_type":                   "TopologyType",
 		"type":                            "Type",
 		"updated_at":                      "UpdatedAt",
 		"user_data":                       "UserData",
