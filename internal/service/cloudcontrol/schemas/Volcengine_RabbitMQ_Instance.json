@@ -227,6 +227,9 @@
     },
     "Tags": {
       "description": "Tags bound to the instance.",
+      "elementIdentifier": [
+        "/Key"
+      ],
       "insertionOrder": false,
       "items": {
         "$ref": "#/definitions/Tag"

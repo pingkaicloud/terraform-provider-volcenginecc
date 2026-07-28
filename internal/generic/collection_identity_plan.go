@@ -2,6 +2,8 @@ package generic
 
 import (
 	"fmt"
+	"math/big"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -232,90 +234,116 @@ func configElementForPlannedIdentity(
 	return configElements[plannedIndex], true
 }
 
-// alignIdentityCollectionState reorders remote readback collections to prior
-// identity order while preserving each complete remote element value.
-func (r *genericResource) alignIdentityCollectionState(prior, remote tftypes.Value) (tftypes.Value, error) {
+// canonicalizeIdentityCollectionState sorts remote or planned collections by
+// the objective elementIdentifier order while preserving complete element
+// values.
+func (r *genericResource) canonicalizeIdentityCollectionState(remote tftypes.Value) (tftypes.Value, error) {
+	return r.canonicalizeIdentityCollectionStateWithMode(remote, false)
+}
+
+// canonicalizeIdentityCollectionPlan sorts every collection whose identity is
+// fully known and leaves unsafe plan-time identities unchanged.
+func (r *genericResource) canonicalizeIdentityCollectionPlan(planned tftypes.Value) tftypes.Value {
+	result, _ := r.canonicalizeIdentityCollectionStateWithMode(planned, true)
+	return result
+}
+
+// canonicalizeIdentityCollectionStateWithMode implements strict Read/state
+// sorting and best-effort Plan sorting without ever using index fallback.
+func (r *genericResource) canonicalizeIdentityCollectionStateWithMode(remote tftypes.Value, allowUnsafe bool) (tftypes.Value, error) {
 	result := remote
 	for _, identity := range r.collectionIdentities {
 		attributeNames, err := r.collectionAttributeNames(identity.PropertyPath)
 		if err != nil {
+			if allowUnsafe {
+				continue
+			}
 			return remote, err
 		}
 		if len(attributeNames) != 1 {
 			continue
 		}
 		attributePath := terraformAttributePath(attributeNames)
-		priorCollection, err := terraformValueAtPath(prior, attributePath)
-		if err != nil {
-			return remote, fmt.Errorf("reading prior collection %q: %w", identity.PropertyPath, err)
-		}
 		remoteCollection, err := terraformValueAtPath(result, attributePath)
 		if err != nil {
+			if allowUnsafe {
+				continue
+			}
 			return remote, fmt.Errorf("reading remote collection %q: %w", identity.PropertyPath, err)
 		}
 		identifierNames, err := r.identifierAttributeNames(identity.IdentifierPaths)
 		if err != nil {
+			if allowUnsafe {
+				continue
+			}
 			return remote, err
 		}
-		aligned, err := alignTerraformCollectionState(priorCollection, remoteCollection, identifierNames)
+		canonical, err := canonicalizeTerraformCollectionState(remoteCollection, identifierNames)
 		if err != nil {
-			return remote, fmt.Errorf("aligning remote collection %q: %w", identity.PropertyPath, err)
+			if allowUnsafe {
+				continue
+			}
+			return remote, fmt.Errorf("canonicalizing collection %q: %w", identity.PropertyPath, err)
 		}
-		result, err = replaceTerraformValueAtPath(result, attributePath, aligned)
+		result, err = replaceTerraformValueAtPath(result, attributePath, canonical)
 		if err != nil {
+			if allowUnsafe {
+				continue
+			}
 			return remote, fmt.Errorf("setting remote collection %q: %w", identity.PropertyPath, err)
 		}
 	}
 	return result, nil
 }
 
-// alignTerraformCollectionState orders matched remote elements by prior
-// identity and appends remote-only elements without dropping remote readback.
-func alignTerraformCollectionState(prior, remote tftypes.Value, identifiers [][]string) (tftypes.Value, error) {
-	if prior.IsNull() || !prior.IsKnown() || remote.IsNull() || !remote.IsKnown() {
+// canonicalizeTerraformCollectionState orders a known Terraform collection by
+// its scalar identity tuple. Null or unknown collections keep their value.
+func canonicalizeTerraformCollectionState(remote tftypes.Value, identifiers [][]string) (tftypes.Value, error) {
+	if remote.IsNull() || !remote.IsKnown() {
 		return remote, nil
-	}
-	priorElements, err := terraformCollectionElements(prior)
-	if err != nil {
-		return remote, err
 	}
 	remoteElements, err := terraformCollectionElements(remote)
 	if err != nil {
 		return remote, err
 	}
-	if _, err := indexTerraformElements(priorElements, identifiers); err != nil {
-		return remote, err
+	type sortableElement struct {
+		value    tftypes.Value
+		identity []canonicalIdentityScalar
 	}
-	remoteByIdentity, err := indexTerraformElements(remoteElements, identifiers)
-	if err != nil {
-		return remote, err
-	}
-
-	aligned := make([]tftypes.Value, 0, len(remoteElements))
+	sortable := make([]sortableElement, 0, len(remoteElements))
 	seen := make(map[string]struct{}, len(remoteElements))
-	for _, priorElement := range priorElements {
-		key, err := terraformElementIdentity(priorElement, identifiers)
-		if err != nil {
-			return remote, err
-		}
-		remoteElement, ok := remoteByIdentity[key]
-		if !ok {
-			continue
-		}
-		aligned = append(aligned, remoteElement)
-		seen[key] = struct{}{}
-	}
 	for _, remoteElement := range remoteElements {
-		key, err := terraformElementIdentity(remoteElement, identifiers)
+		identity, err := terraformElementIdentityScalars(remoteElement, identifiers)
 		if err != nil {
 			return remote, err
 		}
-		if _, ok := seen[key]; ok {
-			continue
+		key, err := collectionIdentityKey(identity)
+		if err != nil {
+			return remote, err
 		}
-		aligned = append(aligned, remoteElement)
+		if _, exists := seen[string(key)]; exists {
+			return remote, fmt.Errorf("duplicate collection identity %s", key)
+		}
+		seen[string(key)] = struct{}{}
+		sortable = append(sortable, sortableElement{value: remoteElement, identity: identity})
 	}
-	return tftypes.NewValue(remote.Type(), aligned), nil
+	var compareErr error
+	sort.SliceStable(sortable, func(left, right int) bool {
+		comparison, err := compareCanonicalIdentity(sortable[left].identity, sortable[right].identity)
+		if err != nil {
+			compareErr = err
+			return false
+		}
+		return comparison < 0
+	})
+	if compareErr != nil {
+		return remote, compareErr
+	}
+	canonical := make([]tftypes.Value, len(sortable))
+	for index, element := range sortable {
+		canonical[index] = element.value
+	}
+	return tftypes.NewValue(remote.Type(), canonical), nil
 }
 
 // terraformCollectionElements decodes either a Terraform set or list without
@@ -348,27 +376,60 @@ func indexTerraformElements(elements []tftypes.Value, identifiers [][]string) (m
 // terraformElementIdentity encodes typed, known scalar identity values in
 // declaration order so different Terraform value types cannot collide.
 func terraformElementIdentity(element tftypes.Value, identifiers [][]string) (string, error) {
+	identity, err := terraformElementIdentityScalars(element, identifiers)
+	if err != nil {
+		return "", err
+	}
+	key, err := collectionIdentityKey(identity)
+	return string(key), err
+}
+
+// terraformElementIdentityScalars extracts known Terraform string, number, or
+// boolean identity fields in elementIdentifier order.
+func terraformElementIdentityScalars(element tftypes.Value, identifiers [][]string) ([]canonicalIdentityScalar, error) {
 	current := element
-	parts := make([]string, 0, len(identifiers))
+	parts := make([]canonicalIdentityScalar, 0, len(identifiers))
 	for _, identifier := range identifiers {
 		current = element
 		for _, name := range identifier {
 			var object map[string]tftypes.Value
 			if err := current.As(&object); err != nil {
-				return "", err
+				return nil, err
 			}
 			var ok bool
 			current, ok = object[name]
 			if !ok {
-				return "", fmt.Errorf("identity attribute %q is missing", name)
+				return nil, fmt.Errorf("identity attribute %q is missing", name)
 			}
 		}
 		if current.IsNull() || !current.IsKnown() {
-			return "", fmt.Errorf("identity attribute is null or unknown")
+			return nil, fmt.Errorf("identity attribute is null or unknown")
 		}
-		parts = append(parts, fmt.Sprintf("%s:%s", current.Type(), current))
+		switch {
+		case current.Type().Is(tftypes.String):
+			var value string
+			if err := current.As(&value); err != nil {
+				return nil, err
+			}
+			parts = append(parts, canonicalIdentityScalar{kind: "string", stringValue: value})
+		case current.Type().Is(tftypes.Number):
+			value := new(big.Float)
+			if err := current.As(value); err != nil {
+				return nil, err
+			}
+			rational, _ := value.Rat(nil)
+			parts = append(parts, canonicalIdentityScalar{kind: "number", numberValue: rational})
+		case current.Type().Is(tftypes.Bool):
+			var value bool
+			if err := current.As(&value); err != nil {
+				return nil, err
+			}
+			parts = append(parts, canonicalIdentityScalar{kind: "boolean", boolValue: value})
+		default:
+			return nil, fmt.Errorf("identity attribute type %s is not a supported scalar", current.Type())
+		}
 	}
-	return strings.Join(parts, "\x00"), nil
+	return parts, nil
 }
 
 // mergeTerraformElementPlan restores prior values when a computed field is

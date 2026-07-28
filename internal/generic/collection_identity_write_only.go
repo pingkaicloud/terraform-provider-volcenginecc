@@ -97,7 +97,8 @@ func writeOnlyRelativePropertyPath(collectionPath string, writeOnlyPath string) 
 }
 
 // restoreTerraformCollectionWriteOnlyValues copies write-only values from
-// matched prior elements into remote elements without copying by array index.
+// matched prior elements into remote elements without copying by array index,
+// then restores canonical order because identity fields are unchanged.
 func restoreTerraformCollectionWriteOnlyValues(prior, remote tftypes.Value, identifiers [][]string, writeOnlyPaths [][]string) (tftypes.Value, error) {
 	if prior.IsNull() || !prior.IsKnown() || remote.IsNull() || !remote.IsKnown() {
 		return remote, nil
@@ -142,5 +143,5 @@ func restoreTerraformCollectionWriteOnlyValues(prior, remote tftypes.Value, iden
 		}
 		restored = append(restored, element)
 	}
-	return tftypes.NewValue(remote.Type(), restored), nil
+	return canonicalizeTerraformCollectionState(tftypes.NewValue(remote.Type(), restored), identifiers)
 }

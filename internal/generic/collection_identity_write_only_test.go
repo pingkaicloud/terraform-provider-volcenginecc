@@ -34,8 +34,8 @@ func TestRestoreTerraformCollectionWriteOnlyValues(t *testing.T) {
 				terraformWriteOnlyElement(elementType, "first", nil, "new-first"),
 			},
 			want: []tftypes.Value{
-				terraformWriteOnlyElement(elementType, "second", "secret-second", "new-second"),
 				terraformWriteOnlyElement(elementType, "first", "secret-first", "new-first"),
+				terraformWriteOnlyElement(elementType, "second", "secret-second", "new-second"),
 			},
 		},
 		"remote new element does not inherit prior secret": {

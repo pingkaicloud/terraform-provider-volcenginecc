@@ -449,23 +449,26 @@ func (r *genericResource) Configure(_ context.Context, request resource.Configur
 }
 
 // ModifyPlan reconciles unknown computed values in identity-bearing collections
-// with prior values. It never pairs unsafe identities or falls back to indexes,
-// so user changes remain in the plan.
+// with prior values, then applies canonical identity order where identifiers are
+// known. It never pairs unsafe identities or falls back to indexes.
 func (r *genericResource) ModifyPlan(ctx context.Context, request resource.ModifyPlanRequest, response *resource.ModifyPlanResponse) {
 	response.Plan = request.Plan
 
-	if len(r.collectionIdentities) == 0 || request.Plan.Raw.IsNull() || !request.Plan.Raw.IsKnown() ||
-		request.State.Raw.IsNull() || !request.State.Raw.IsKnown() {
+	if len(r.collectionIdentities) == 0 || request.Plan.Raw.IsNull() || !request.Plan.Raw.IsKnown() {
 		return
 	}
 
-	plan, err := r.mergeIdentityCollectionPlans(request.Config.Raw, request.State.Raw, request.Plan.Raw)
-	if err != nil {
-		response.Diagnostics.AddError("Unable to merge unordered collection plan", err.Error())
-		return
+	plan := request.Plan.Raw
+	if !request.State.Raw.IsNull() && request.State.Raw.IsKnown() {
+		var err error
+		plan, err = r.mergeIdentityCollectionPlans(request.Config.Raw, request.State.Raw, plan)
+		if err != nil {
+			response.Diagnostics.AddError("Unable to merge unordered collection plan", err.Error())
+			return
+		}
 	}
 
-	response.Plan.Raw = plan
+	response.Plan.Raw = r.canonicalizeIdentityCollectionPlan(plan)
 }
 
 func (r *genericResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
@@ -623,12 +626,12 @@ func (r *genericResource) Read(ctx context.Context, request resource.ReadRequest
 
 		return
 	}
-	if len(r.collectionIdentities) > 0 && !request.State.Raw.IsNull() && request.State.Raw.IsKnown() {
-		val, err = r.alignIdentityCollectionState(request.State.Raw, val)
+	if len(r.collectionIdentities) > 0 {
+		val, err = r.canonicalizeIdentityCollectionState(val)
 		if err != nil {
 			response.Diagnostics.AddError(
-				"Unable to align unordered collection state",
-				fmt.Sprintf("Unable to align Cloud Control API readback with prior Terraform state by collection identity. Original Error: %s", err.Error()),
+				"Unable to canonicalize unordered collection state",
+				fmt.Sprintf("Unable to sort Cloud Control API readback by collection identity. Original Error: %s", err.Error()),
 			)
 
 			return
@@ -838,11 +841,13 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 		return
 	}
 	if len(r.collectionIdentities) > 0 {
-		currentDesiredState, plannedDesiredState, err = normalizeIdentityCollections(currentDesiredState, plannedDesiredState, remoteDesiredState, r.collectionIdentities)
+		// CCAPI must sort the resource document used as the JSON Patch base by
+		// the same identity order before applying these index-based operations.
+		currentDesiredState, plannedDesiredState, err = canonicalizeIdentityCollections(currentDesiredState, plannedDesiredState, r.collectionIdentities)
 		if err != nil {
 			response.Diagnostics.AddError(
-				"Unable to normalize unordered collection update",
-				fmt.Sprintf("Unable to align Cloud Control API current and planned states by collection identity before JSON Patch generation. Original Error: %s", err.Error()),
+				"Unable to canonicalize unordered collection update",
+				fmt.Sprintf("Unable to sort Cloud Control API current and planned states by collection identity before JSON Patch generation. Original Error: %s", err.Error()),
 			)
 
 			return
@@ -943,6 +948,16 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 	response.Diagnostics.Append(r.populateUnknownValues(ctx, id, &response.State)...)
 	if response.Diagnostics.HasError() {
 		return
+	}
+	if len(r.collectionIdentities) > 0 {
+		response.State.Raw, err = r.canonicalizeIdentityCollectionState(response.State.Raw)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Unable to canonicalize unordered collection state",
+				fmt.Sprintf("Unable to sort updated Terraform state by collection identity. Original Error: %s", err.Error()),
+			)
+			return
+		}
 	}
 
 	traceExit(ctx, "Resource.Update")

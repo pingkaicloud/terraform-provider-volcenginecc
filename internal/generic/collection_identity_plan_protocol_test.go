@@ -230,11 +230,125 @@ func TestPlanResourceChangeMergesMultisetAfterAttributeModifier(t *testing.T) {
 		},
 	)
 	want := tftypes.NewValue(collectionType, []tftypes.Value{
-		terraformPlanElement(elementType, "second", "readback", "new-second"),
 		terraformPlanElement(elementType, "first", nil, "new-first"),
+		terraformPlanElement(elementType, "second", "readback", "new-second"),
 	})
 	if !got.Equal(want) {
 		t.Fatalf("PlanResourceChange() multiset = %s, want %s", got, want)
+	}
+}
+
+func TestPlanResourceChangeCanonicalizesCreateMultiset(t *testing.T) {
+	t.Parallel()
+
+	elementType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"identity": tftypes.String,
+		"computed": tftypes.String,
+		"writable": tftypes.String,
+	}}
+	collectionType := tftypes.List{ElementType: elementType}
+	resourceType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"id":    tftypes.String,
+		"items": collectionType,
+	}}
+	elements := []tftypes.Value{
+		terraformPlanElement(elementType, "second", nil, "second"),
+		terraformPlanElement(elementType, "first", nil, "first"),
+	}
+	config := tftypes.NewValue(resourceType, map[string]tftypes.Value{
+		"id":    tftypes.NewValue(tftypes.String, nil),
+		"items": tftypes.NewValue(collectionType, elements),
+	})
+	proposed := tftypes.NewValue(resourceType, map[string]tftypes.Value{
+		"id":    tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"items": tftypes.NewValue(collectionType, elements),
+	})
+
+	server := providerserver.NewProtocol6(identityPlanTestProvider{})()
+	response, err := server.PlanResourceChange(context.Background(), &tfprotov6.PlanResourceChangeRequest{
+		TypeName:         "test_identity_multiset_resource",
+		Config:           identityPlanDynamicValue(t, resourceType, config),
+		PriorState:       identityPlanDynamicValue(t, resourceType, tftypes.NewValue(resourceType, nil)),
+		ProposedNewState: identityPlanDynamicValue(t, resourceType, proposed),
+	})
+	if err != nil {
+		t.Fatalf("PlanResourceChange() error = %v", err)
+	}
+	for _, diagnostic := range response.Diagnostics {
+		if diagnostic.Severity == tfprotov6.DiagnosticSeverityError {
+			t.Fatalf("PlanResourceChange() diagnostic = %s: %s", diagnostic.Summary, diagnostic.Detail)
+		}
+	}
+	got, err := response.PlannedState.Unmarshal(resourceType)
+	if err != nil {
+		t.Fatalf("unmarshalling planned state: %v", err)
+	}
+	want := tftypes.NewValue(resourceType, map[string]tftypes.Value{
+		"id": tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"items": tftypes.NewValue(collectionType, []tftypes.Value{
+			terraformPlanElement(elementType, "first", tftypes.UnknownValue, "first"),
+			terraformPlanElement(elementType, "second", tftypes.UnknownValue, "second"),
+		}),
+	})
+	if !got.Equal(want) {
+		t.Fatalf("PlanResourceChange() planned state = %s, want %s", got, want)
+	}
+}
+
+func TestPlanResourceChangePreservesCreateMultisetOrderForUnknownIdentity(t *testing.T) {
+	t.Parallel()
+
+	elementType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"identity": tftypes.String,
+		"computed": tftypes.String,
+		"writable": tftypes.String,
+	}}
+	collectionType := tftypes.List{ElementType: elementType}
+	resourceType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"id":    tftypes.String,
+		"items": collectionType,
+	}}
+	elements := []tftypes.Value{
+		terraformPlanElement(elementType, tftypes.UnknownValue, nil, "second"),
+		terraformPlanElement(elementType, tftypes.UnknownValue, nil, "first"),
+	}
+	config := tftypes.NewValue(resourceType, map[string]tftypes.Value{
+		"id":    tftypes.NewValue(tftypes.String, nil),
+		"items": tftypes.NewValue(collectionType, elements),
+	})
+	proposed := tftypes.NewValue(resourceType, map[string]tftypes.Value{
+		"id":    tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"items": tftypes.NewValue(collectionType, elements),
+	})
+
+	server := providerserver.NewProtocol6(identityPlanTestProvider{})()
+	response, err := server.PlanResourceChange(context.Background(), &tfprotov6.PlanResourceChangeRequest{
+		TypeName:         "test_identity_multiset_resource",
+		Config:           identityPlanDynamicValue(t, resourceType, config),
+		PriorState:       identityPlanDynamicValue(t, resourceType, tftypes.NewValue(resourceType, nil)),
+		ProposedNewState: identityPlanDynamicValue(t, resourceType, proposed),
+	})
+	if err != nil {
+		t.Fatalf("PlanResourceChange() error = %v", err)
+	}
+	for _, diagnostic := range response.Diagnostics {
+		if diagnostic.Severity == tfprotov6.DiagnosticSeverityError {
+			t.Fatalf("PlanResourceChange() diagnostic = %s: %s", diagnostic.Summary, diagnostic.Detail)
+		}
+	}
+	got, err := response.PlannedState.Unmarshal(resourceType)
+	if err != nil {
+		t.Fatalf("unmarshalling planned state: %v", err)
+	}
+	want := tftypes.NewValue(resourceType, map[string]tftypes.Value{
+		"id": tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		"items": tftypes.NewValue(collectionType, []tftypes.Value{
+			terraformPlanElement(elementType, tftypes.UnknownValue, tftypes.UnknownValue, "second"),
+			terraformPlanElement(elementType, tftypes.UnknownValue, tftypes.UnknownValue, "first"),
+		}),
+	})
+	if !got.Equal(want) {
+		t.Fatalf("PlanResourceChange() planned state = %s, want %s", got, want)
 	}
 }
 

@@ -445,6 +445,9 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		//
 		//	{
 		//	  "description": "Tags bound to the instance.",
+		//	  "elementIdentifier": [
+		//	    "/Key"
+		//	  ],
 		//	  "insertionOrder": false,
 		//	  "items": {
 		//	    "properties": {
@@ -687,6 +690,15 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/VpcId",
 		"/properties/SubnetId",
 		"/properties/Version",
+	})
+	opts = opts.WithCollectionIdentities([]generic.CollectionIdentity{
+		{
+			PropertyPath: "/Tags",
+			IdentifierPaths: []string{
+				"/Key",
+			},
+			UniqueItems: true,
+		},
 	})
 	opts = opts.WithCreateTimeoutInMinutes(0).WithDeleteTimeoutInMinutes(0)
 

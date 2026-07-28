@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestAlignCollectionByIdentity(t *testing.T) {
+func TestCanonicalizeCollectionByIdentity(t *testing.T) {
 	tests := map[string]struct {
 		prior           []interface{}
 		remote          []interface{}
@@ -59,8 +59,8 @@ func TestAlignCollectionByIdentity(t *testing.T) {
 			wantNames:       []string{"Primary", "Readonly"},
 		},
 		"R6 duplicate identity rejected": {
-			prior:           identityElements(identityElement("A", "one"), identityElement("A", "two")),
-			remote:          identityElements(identityElement("A", "one")),
+			prior:           identityElements(identityElement("A", "one")),
+			remote:          identityElements(identityElement("A", "one"), identityElement("A", "two")),
 			identifierPaths: []string{"/Name"},
 			wantError:       "duplicate identity",
 		},
@@ -74,7 +74,7 @@ func TestAlignCollectionByIdentity(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			aligned, err := alignCollectionByIdentity(test.prior, test.remote, test.identifierPaths)
+			aligned, err := canonicalizeCollectionByIdentity(test.remote, test.identifierPaths)
 			if test.wantError != "" {
 				if err == nil || !strings.Contains(err.Error(), test.wantError) {
 					t.Fatalf("expected error containing %q, got %v", test.wantError, err)
@@ -95,6 +95,105 @@ func TestAlignCollectionByIdentity(t *testing.T) {
 			}
 			assertStringSliceEqual(t, got, test.wantNames)
 		})
+	}
+}
+
+func TestCanonicalizeCollectionByIdentityComparator(t *testing.T) {
+	tests := map[string]struct {
+		collection      []interface{}
+		identifierPaths []string
+		field           string
+		want            []string
+	}{
+		"single string field": {
+			collection: identityElements(
+				identityElement("k2", "two"),
+				identityElement("Name", "name"),
+				identityElement("k1", "one"),
+			),
+			identifierPaths: []string{"/Name"},
+			field:           "Name",
+			want:            []string{"Name", "k1", "k2"},
+		},
+		"composite fields": {
+			collection: identityElements(
+				map[string]interface{}{"ZoneId": "b", "NodeType": "primary"},
+				map[string]interface{}{"ZoneId": "a", "NodeType": "secondary"},
+				map[string]interface{}{"ZoneId": "a", "NodeType": "primary"},
+			),
+			identifierPaths: []string{"/ZoneId", "/NodeType"},
+			field:           "NodeType",
+			want:            []string{"primary", "secondary", "primary"},
+		},
+		"nested field": {
+			collection: identityElements(
+				map[string]interface{}{"Scope": map[string]interface{}{"Name": "z"}},
+				map[string]interface{}{"Scope": map[string]interface{}{"Name": "a"}},
+			),
+			identifierPaths: []string{"/Scope/Name"},
+			field:           "Scope.Name",
+			want:            []string{"a", "z"},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			canonical, err := canonicalizeCollectionByIdentity(test.collection, test.identifierPaths)
+			if err != nil {
+				t.Fatalf("canonicalizeCollectionByIdentity() error = %v", err)
+			}
+			got := make([]string, 0, len(canonical))
+			for _, raw := range canonical {
+				element := raw.(map[string]interface{})
+				if test.field == "Scope.Name" {
+					got = append(got, element["Scope"].(map[string]interface{})["Name"].(string))
+					continue
+				}
+				got = append(got, element[test.field].(string))
+			}
+			assertStringSliceEqual(t, got, test.want)
+		})
+	}
+}
+
+func TestCanonicalizeIdentityDesiredStateScalarTypes(t *testing.T) {
+	tests := map[string]struct {
+		state      string
+		identifier string
+		want       string
+	}{
+		"number uses numeric order": {
+			state:      `{"Items":[{"Id":10},{"Id":2},{"Id":-1}]}`,
+			identifier: "/Id",
+			want:       `{"Items":[{"Id":-1},{"Id":2},{"Id":10}]}`,
+		},
+		"boolean orders false before true": {
+			state:      `{"Items":[{"Enabled":true},{"Enabled":false}]}`,
+			identifier: "/Enabled",
+			want:       `{"Items":[{"Enabled":false},{"Enabled":true}]}`,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := canonicalizeIdentityDesiredState(test.state, []CollectionIdentity{{
+				PropertyPath:    "/Items",
+				IdentifierPaths: []string{test.identifier},
+			}})
+			if err != nil {
+				t.Fatalf("canonicalizeIdentityDesiredState() error = %v", err)
+			}
+			assertJSONEqual(t, got, test.want)
+		})
+	}
+}
+
+func TestCanonicalizeIdentityDesiredStateRejectsEquivalentNumericIdentity(t *testing.T) {
+	_, err := canonicalizeIdentityDesiredState(
+		`{"Items":[{"Id":1},{"Id":1.0}]}`,
+		[]CollectionIdentity{{PropertyPath: "/Items", IdentifierPaths: []string{"/Id"}}},
+	)
+	if err == nil || !strings.Contains(err.Error(), "duplicate identity") {
+		t.Fatalf("canonicalizeIdentityDesiredState() error = %v, want duplicate identity", err)
 	}
 }
 
@@ -348,7 +447,7 @@ func TestNormalizeIdentityCollectionsForPatch(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			normalizedCurrent, normalizedPlanned, err := normalizeIdentityCollections(test.current, test.planned, test.current, identity)
+			normalizedCurrent, normalizedPlanned, err := canonicalizeIdentityCollections(test.current, test.planned, identity)
 			if err != nil {
 				t.Fatalf("unexpected normalization error: %v", err)
 			}
@@ -377,7 +476,7 @@ func TestNormalizeIdentityCollectionsForPatch(t *testing.T) {
 	}
 }
 
-func TestNormalizeIdentityCollectionsRejectsUnsafeIdentity(t *testing.T) {
+func TestCanonicalizeIdentityCollectionsRejectsUnsafeIdentity(t *testing.T) {
 	identity := []CollectionIdentity{{
 		PropertyPath:    "/Labels",
 		IdentifierPaths: []string{"/Name"},
@@ -407,15 +506,15 @@ func TestNormalizeIdentityCollectionsRejectsUnsafeIdentity(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, _, err := normalizeIdentityCollections(test.current, test.planned, test.current, identity)
+			_, _, err := canonicalizeIdentityCollections(test.current, test.planned, identity)
 			if err == nil || !strings.Contains(err.Error(), test.wantError) {
-				t.Fatalf("normalizeIdentityCollections() error = %v, want containing %q", err, test.wantError)
+				t.Fatalf("canonicalizeIdentityCollections() error = %v, want containing %q", err, test.wantError)
 			}
 		})
 	}
 }
 
-func TestNormalizeIdentityCollectionsForSetAndMultisetMetadata(t *testing.T) {
+func TestCanonicalizeIdentityCollectionsForSetAndMultisetMetadata(t *testing.T) {
 	tests := map[string]CollectionIdentity{
 		"set metadata": {
 			PropertyPath:    "/Labels",
@@ -431,14 +530,13 @@ func TestNormalizeIdentityCollectionsForSetAndMultisetMetadata(t *testing.T) {
 
 	for name, identity := range tests {
 		t.Run(name, func(t *testing.T) {
-			normalizedCurrent, normalizedPlanned, err := normalizeIdentityCollections(
+			normalizedCurrent, normalizedPlanned, err := canonicalizeIdentityCollections(
 				`{"Labels":[{"Name":"A","Value":"old"},{"Name":"B","Value":"same"}]}`,
 				`{"Labels":[{"Name":"B","Value":"same"},{"Name":"A","Value":"new"}]}`,
-				`{"Labels":[{"Name":"A","Value":"old"},{"Name":"B","Value":"same"}]}`,
 				[]CollectionIdentity{identity},
 			)
 			if err != nil {
-				t.Fatalf("normalizeIdentityCollections() error = %v", err)
+				t.Fatalf("canonicalizeIdentityCollections() error = %v", err)
 			}
 
 			patch, err := patchDocument(normalizedCurrent, normalizedPlanned)
@@ -458,7 +556,7 @@ func TestNormalizeIdentityCollectionsForSetAndMultisetMetadata(t *testing.T) {
 	}
 }
 
-func TestNormalizeIdentityCollectionsUsesRemoteOrderForPatchIndexes(t *testing.T) {
+func TestCanonicalizeIdentityCollectionsUsesObjectiveOrderForPatchIndexes(t *testing.T) {
 	identity := []CollectionIdentity{{
 		PropertyPath:    "/PrefixListEntries",
 		IdentifierPaths: []string{"/Cidr"},
@@ -468,23 +566,60 @@ func TestNormalizeIdentityCollectionsUsesRemoteOrderForPatchIndexes(t *testing.T
 	planned := `{"PrefixListEntries":[{"Cidr":"A","Description":"a"},{"Cidr":"B","Description":"b-updated"}]}`
 	remote := `{"PrefixListEntries":[{"Cidr":"B","Description":"b"},{"Cidr":"A","Description":"a"}]}`
 
-	normalizedCurrent, normalizedPlanned, err := normalizeIdentityCollections(current, planned, remote, identity)
+	normalizedCurrent, normalizedPlanned, err := canonicalizeIdentityCollections(current, planned, identity)
 	if err != nil {
-		t.Fatalf("normalizeIdentityCollections() error = %v", err)
+		t.Fatalf("canonicalizeIdentityCollections() error = %v", err)
 	}
 	patch, err := patchDocument(normalizedCurrent, normalizedPlanned)
 	if err != nil {
 		t.Fatalf("patchDocument() error = %v", err)
 	}
-	if !strings.Contains(patch, `/PrefixListEntries/0/Description`) {
-		t.Fatalf("patch does not target remote B index: %s", patch)
+	if !strings.Contains(patch, `/PrefixListEntries/1/Description`) {
+		t.Fatalf("patch does not target canonical B index: %s", patch)
 	}
 
-	applied, err := applyTestJSONPatch(remote, patch)
+	canonicalRemote, err := canonicalizeIdentityDesiredState(remote, identity)
 	if err != nil {
-		t.Fatalf("applying patch %s to remote %s: %v", patch, remote, err)
+		t.Fatalf("canonicalizeIdentityDesiredState() error = %v", err)
 	}
-	assertJSONEqual(t, applied, `{"PrefixListEntries":[{"Cidr":"B","Description":"b-updated"},{"Cidr":"A","Description":"a"}]}`)
+	applied, err := applyTestJSONPatch(canonicalRemote, patch)
+	if err != nil {
+		t.Fatalf("applying patch %s to canonical remote %s: %v", patch, canonicalRemote, err)
+	}
+	assertJSONEqual(t, applied, `{"PrefixListEntries":[{"Cidr":"A","Description":"a"},{"Cidr":"B","Description":"b-updated"}]}`)
+}
+
+func TestCanonicalizeIdentityCollectionsSurvivesHandlerReadOrderChange(t *testing.T) {
+	identity := []CollectionIdentity{{
+		PropertyPath:    "/Tags",
+		IdentifierPaths: []string{"/Key"},
+		UniqueItems:     true,
+	}}
+	providerCurrent := `{"Tags":[{"Key":"k1","Value":"v2"},{"Key":"Name","Value":"tt-rabbitmq-instance"}]}`
+	planned := `{"Tags":[{"Key":"Name","Value":"tt-rabbitmq-instance"},{"Key":"k1","Value":"v1"},{"Key":"k2","Value":"v3"}]}`
+	handlerCurrent := `{"Tags":[{"Key":"Name","Value":"tt-rabbitmq-instance"},{"Key":"k1","Value":"v2"}]}`
+
+	canonicalCurrent, canonicalPlanned, err := canonicalizeIdentityCollections(providerCurrent, planned, identity)
+	if err != nil {
+		t.Fatalf("canonicalizeIdentityCollections() error = %v", err)
+	}
+	patch, err := patchDocument(canonicalCurrent, canonicalPlanned)
+	if err != nil {
+		t.Fatalf("patchDocument() error = %v", err)
+	}
+	if !strings.Contains(patch, `/Tags/1`) || strings.Contains(patch, `/Tags/0`) {
+		t.Fatalf("patch does not target canonical k1 index: %s", patch)
+	}
+
+	canonicalHandlerCurrent, err := canonicalizeIdentityDesiredState(handlerCurrent, identity)
+	if err != nil {
+		t.Fatalf("canonicalizeIdentityDesiredState() error = %v", err)
+	}
+	applied, err := applyTestJSONPatch(canonicalHandlerCurrent, patch)
+	if err != nil {
+		t.Fatalf("applying patch %s to handler state %s: %v", patch, canonicalHandlerCurrent, err)
+	}
+	assertJSONEqual(t, applied, planned)
 }
 
 func identityElement(name, value string) map[string]interface{} {
