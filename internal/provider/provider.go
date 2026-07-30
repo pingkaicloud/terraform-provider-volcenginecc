@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -35,6 +36,7 @@ import (
 	"github.com/volcengine/volcengine-go-sdk/volcengine/credentials/clicreds"
 	"github.com/volcengine/volcengine-go-sdk/volcengine/defaults"
 	"github.com/volcengine/volcengine-go-sdk/volcengine/session"
+	"golang.org/x/net/http/httpproxy"
 )
 
 const (
@@ -109,7 +111,21 @@ func (p *VolcengineCCProvider) Schema(ctx context.Context, request provider.Sche
 			},
 			"proxy_url": schema.StringAttribute{
 				Optional:    true,
-				Description: "PROXY URL for Volcengine Provider",
+				Description: "HTTP, HTTPS, SOCKS5, or SOCKS5H proxy URL for Cloud Control API requests. It can also be sourced from the `VOLCENGINE_PROXY_URL` environment variable.",
+			},
+			"proxy_authorization": schema.StringAttribute{
+				Optional:    true,
+				Sensitive:   true,
+				Description: "Value of the Proxy-Authorization header for Cloud Control API proxy requests, for example `Basic <token>`. It can also be sourced from the `VOLCENGINE_PROXY_AUTHORIZATION` environment variable.",
+			},
+			"no_proxy": schema.StringAttribute{
+				Optional:    true,
+				Description: "Comma-separated hosts, domain suffixes, IP addresses, or CIDR ranges that bypass proxy_url. It follows standard NO_PROXY matching and can be sourced from VOLCENGINE_NO_PROXY, NO_PROXY, or no_proxy.",
+			},
+			"proxy_include_domains": schema.SetAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+				Description: "Hosts, domain suffixes, IP addresses, or CIDR ranges that use proxy_url while all other destinations connect directly. It can be sourced as a comma-separated list from VOLCENGINE_PROXY_INCLUDE_DOMAINS and cannot be combined with no_proxy.",
 			},
 			"assume_role": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
@@ -159,18 +175,21 @@ func (p *VolcengineCCProvider) Schema(ctx context.Context, request provider.Sche
 }
 
 type configModel struct {
-	AccessKey        types.String    `tfsdk:"access_key"`
-	SecretKey        types.String    `tfsdk:"secret_key"`
-	SessionToken     types.String    `tfsdk:"session_token"`
-	Region           types.String    `tfsdk:"region"`
-	DisableSSL       types.Bool      `tfsdk:"disable_ssl"`
-	CustomerHeaders  types.String    `tfsdk:"customer_headers"`
-	ProxyURL         types.String    `tfsdk:"proxy_url"`
-	AssumeRole       *AssumeRoleData `tfsdk:"assume_role"`
-	Endpoints        *endpointData   `tfsdk:"endpoints"`
-	Profile          types.String    `tfsdk:"profile"`
-	FilePath         types.String    `tfsdk:"file_path"`
-	terraformVersion string
+	AccessKey           types.String    `tfsdk:"access_key"`
+	SecretKey           types.String    `tfsdk:"secret_key"`
+	SessionToken        types.String    `tfsdk:"session_token"`
+	Region              types.String    `tfsdk:"region"`
+	DisableSSL          types.Bool      `tfsdk:"disable_ssl"`
+	CustomerHeaders     types.String    `tfsdk:"customer_headers"`
+	ProxyURL            types.String    `tfsdk:"proxy_url"`
+	ProxyAuthorization  types.String    `tfsdk:"proxy_authorization"`
+	NoProxy             types.String    `tfsdk:"no_proxy"`
+	ProxyIncludeDomains types.Set       `tfsdk:"proxy_include_domains"`
+	AssumeRole          *AssumeRoleData `tfsdk:"assume_role"`
+	Endpoints           *endpointData   `tfsdk:"endpoints"`
+	Profile             types.String    `tfsdk:"profile"`
+	FilePath            types.String    `tfsdk:"file_path"`
+	terraformVersion    string
 }
 type AssumeRoleData struct {
 	AssumeRoleTRN types.String `tfsdk:"assume_role_trn"`
@@ -226,11 +245,7 @@ func (p *VolcengineCCProvider) Configure(ctx context.Context, request provider.C
 			config.DisableSSL = types.BoolValue(disableSSLBool)
 		}
 	}
-	if config.ProxyURL.IsNull() || config.ProxyURL.IsUnknown() {
-		if proxyURL := os.Getenv("VOLCENGINE_PROXY_URL"); proxyURL != "" {
-			config.ProxyURL = types.StringValue(proxyURL)
-		}
-	}
+	setProxyDefaultsFromEnvironment(&config)
 	if config.CustomerHeaders.IsNull() || config.CustomerHeaders.IsUnknown() {
 		if customerHeader := os.Getenv("VOLCENGINE_CUSTOMER_HEADERS"); customerHeader != "" {
 			config.CustomerHeaders = types.StringValue(customerHeader)
@@ -394,6 +409,233 @@ func buildCredentials(c *configModel) (*credentials.Credentials, diag.Diagnostic
 	}
 }
 
+func setProxyDefaultsFromEnvironment(c *configModel) {
+	if c.ProxyURL.IsNull() || c.ProxyURL.IsUnknown() {
+		if proxyURL := os.Getenv("VOLCENGINE_PROXY_URL"); proxyURL != "" {
+			c.ProxyURL = types.StringValue(proxyURL)
+		}
+	}
+	if c.ProxyAuthorization.IsNull() || c.ProxyAuthorization.IsUnknown() {
+		if proxyAuthorization := os.Getenv("VOLCENGINE_PROXY_AUTHORIZATION"); proxyAuthorization != "" {
+			c.ProxyAuthorization = types.StringValue(proxyAuthorization)
+		}
+	}
+	if c.ProxyIncludeDomains.IsNull() || c.ProxyIncludeDomains.IsUnknown() {
+		if domains := splitProxyPatterns(os.Getenv("VOLCENGINE_PROXY_INCLUDE_DOMAINS")); len(domains) > 0 {
+			values := make([]attr.Value, 0, len(domains))
+			for _, domain := range domains {
+				values = append(values, types.StringValue(domain))
+			}
+			c.ProxyIncludeDomains = types.SetValueMust(types.StringType, values)
+		}
+	}
+	if c.NoProxy.IsNull() || c.NoProxy.IsUnknown() {
+		if noProxy := os.Getenv("VOLCENGINE_NO_PROXY"); noProxy != "" {
+			c.NoProxy = types.StringValue(noProxy)
+			return
+		}
+		if !hasProxyIncludeDomains(c.ProxyIncludeDomains) {
+			if noProxy := firstNonEmptyEnvironmentValue("NO_PROXY", "no_proxy"); noProxy != "" {
+				c.NoProxy = types.StringValue(noProxy)
+			}
+		}
+	}
+}
+
+func firstNonEmptyEnvironmentValue(names ...string) string {
+	for _, name := range names {
+		if value := os.Getenv(name); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func splitProxyPatterns(value string) []string {
+	seen := make(map[string]struct{})
+	var patterns []string
+	for _, pattern := range strings.Split(value, ",") {
+		pattern = strings.TrimSpace(pattern)
+		if pattern == "" {
+			continue
+		}
+		if _, exists := seen[pattern]; exists {
+			continue
+		}
+		seen[pattern] = struct{}{}
+		patterns = append(patterns, pattern)
+	}
+	return patterns
+}
+
+func hasProxyIncludeDomains(value types.Set) bool {
+	return !value.IsNull() && !value.IsUnknown() && len(value.Elements()) > 0
+}
+
+type proxyAuthorizationRoundTripper struct {
+	transport     http.RoundTripper
+	authorization string
+	proxy         func(*http.Request) (*url.URL, error)
+}
+
+func (t *proxyAuthorizationRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+	if request.URL.Scheme != "http" {
+		return t.transport.RoundTrip(request)
+	}
+	proxyURL, err := t.proxy(request)
+	if err != nil {
+		return nil, err
+	}
+	if proxyURL == nil {
+		return t.transport.RoundTrip(request)
+	}
+
+	requestCopy := request.Clone(request.Context())
+	requestCopy.Header = request.Header.Clone()
+	requestCopy.Header.Set("Proxy-Authorization", t.authorization)
+	return t.transport.RoundTrip(requestCopy)
+}
+
+func (t *proxyAuthorizationRoundTripper) CloseIdleConnections() {
+	if transport, ok := t.transport.(interface{ CloseIdleConnections() }); ok {
+		transport.CloseIdleConnections()
+	}
+}
+
+func newProviderHTTPClient() (*http.Client, error) {
+	defaultTransport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		return nil, errors.New("the default HTTP transport cannot be cloned")
+	}
+
+	return &http.Client{Transport: defaultTransport.Clone()}, nil
+}
+
+func newProxyHTTPClient(rawProxyURL, proxyAuthorization, noProxy string, proxyIncludeDomains []string) (*http.Client, string, error) {
+	proxyURL, err := url.Parse(rawProxyURL)
+	if err != nil {
+		return nil, "", errors.New("proxy_url must be a valid absolute URL")
+	}
+
+	proxyURL.Scheme = strings.ToLower(proxyURL.Scheme)
+	switch proxyURL.Scheme {
+	case "http", "https", "socks5", "socks5h":
+	default:
+		return nil, "", errors.New("proxy_url must use the http, https, socks5, or socks5h scheme")
+	}
+	if proxyURL.Host == "" {
+		return nil, "", errors.New("proxy_url must include a host")
+	}
+	if proxyAuthorization != "" && proxyURL.Scheme != "http" && proxyURL.Scheme != "https" {
+		return nil, "", errors.New("proxy_authorization requires proxy_url to use the http or https scheme")
+	}
+	if proxyAuthorization != "" && proxyURL.User != nil {
+		return nil, "", errors.New("proxy_url user information and proxy_authorization cannot be configured together")
+	}
+	if proxyAuthorization != "" {
+		if strings.TrimSpace(proxyAuthorization) == "" || !validHTTPHeaderValue(proxyAuthorization) {
+			return nil, "", errors.New("proxy_authorization must be a non-empty valid HTTP header value")
+		}
+	}
+	noProxy = strings.TrimSpace(noProxy)
+	proxyIncludeDomains, err = normalizeProxyPatterns(proxyIncludeDomains)
+	if err != nil {
+		return nil, "", err
+	}
+	if noProxy != "" && len(proxyIncludeDomains) > 0 {
+		return nil, "", errors.New("no_proxy and proxy_include_domains cannot be configured together")
+	}
+
+	httpClient, err := newProviderHTTPClient()
+	if err != nil {
+		return nil, "", err
+	}
+	transport := httpClient.Transport.(*http.Transport)
+	transport.Proxy = newProxySelector(proxyURL, noProxy, proxyIncludeDomains)
+	if proxyAuthorization != "" {
+		transport.GetProxyConnectHeader = nil
+		transport.ProxyConnectHeader = make(http.Header)
+		transport.ProxyConnectHeader.Set("Proxy-Authorization", proxyAuthorization)
+	}
+
+	return httpClient, proxyURL.String(), nil
+}
+
+func normalizeProxyPatterns(patterns []string) ([]string, error) {
+	normalized := make([]string, 0, len(patterns))
+	for _, pattern := range patterns {
+		pattern = strings.TrimSpace(pattern)
+		if pattern == "" {
+			return nil, errors.New("proxy_include_domains must not contain an empty value")
+		}
+		normalized = append(normalized, pattern)
+	}
+	return normalized, nil
+}
+
+func newProxySelector(proxyURL *url.URL, noProxy string, proxyIncludeDomains []string) func(*http.Request) (*url.URL, error) {
+	if noProxy == "" && len(proxyIncludeDomains) == 0 {
+		return http.ProxyURL(proxyURL)
+	}
+
+	proxyConfig := func(noProxyValue string) func(*url.URL) (*url.URL, error) {
+		return (&httpproxy.Config{
+			HTTPProxy:  proxyURL.String(),
+			HTTPSProxy: proxyURL.String(),
+			NoProxy:    noProxyValue,
+		}).ProxyFunc()
+	}
+	if noProxy != "" {
+		proxyForURL := proxyConfig(noProxy)
+		return func(request *http.Request) (*url.URL, error) {
+			return proxyForURL(request.URL)
+		}
+	}
+
+	proxyForEveryURL := proxyConfig("")
+	proxyUnlessIncluded := proxyConfig(strings.Join(proxyIncludeDomains, ","))
+	return func(request *http.Request) (*url.URL, error) {
+		configuredProxy, err := proxyForEveryURL(request.URL)
+		if err != nil || configuredProxy == nil {
+			return nil, err
+		}
+		unmatchedProxy, err := proxyUnlessIncluded(request.URL)
+		if err != nil {
+			return nil, err
+		}
+		if unmatchedProxy != nil {
+			return nil, nil
+		}
+		return configuredProxy, nil
+	}
+}
+
+func validHTTPHeaderValue(value string) bool {
+	for i := 0; i < len(value); i++ {
+		if value[i] == '\t' {
+			continue
+		}
+		if value[i] < 0x20 || value[i] == 0x7f {
+			return false
+		}
+	}
+	return true
+}
+
+func withProxyAuthorization(client *http.Client, proxyAuthorization string, proxy func(*http.Request) (*url.URL, error)) *http.Client {
+	if proxyAuthorization == "" {
+		return client
+	}
+
+	clientCopy := *client
+	clientCopy.Transport = &proxyAuthorizationRoundTripper{
+		transport:     client.Transport,
+		authorization: proxyAuthorization,
+		proxy:         proxy,
+	}
+	return &clientCopy
+}
+
 func newProviderData(ctx context.Context, c *configModel) (*providerData, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	version := fmt.Sprintf("%s/%s (terraform/%s)", common.TerraformProviderName, common.TerraformProviderVersion, c.terraformVersion)
@@ -412,6 +654,13 @@ func newProviderData(ctx context.Context, c *configModel) (*providerData, diag.D
 		WithExtendHttpRequest(func(ctx context.Context, request *http.Request) {
 			request.Header.Set("user-agent", version)
 		})
+
+	httpClient, err := newProviderHTTPClient()
+	if err != nil {
+		diags.AddError("Error Creating HTTP Client", err.Error())
+		return nil, diags
+	}
+	config.WithHTTPClient(httpClient)
 
 	if !(c.CustomerHeaders.IsNull() || c.CustomerHeaders.IsUnknown()) {
 		customHeaderMap := make(map[string]string)
@@ -440,13 +689,33 @@ func newProviderData(ctx context.Context, c *configModel) (*providerData, diag.D
 		config.WithEndpoint(fmt.Sprintf("cloudcontrol.%s.volcengineapi.com", c.Region.ValueString()))
 	}
 
-	if !(c.ProxyURL.IsNull() || c.ProxyURL.IsUnknown()) {
-		u, _ := url.Parse(c.ProxyURL.ValueString())
-		t := &http.Transport{
-			Proxy: http.ProxyURL(u),
+	proxyURL := c.ProxyURL.ValueString()
+	proxyAuthorization := c.ProxyAuthorization.ValueString()
+	noProxy := strings.TrimSpace(c.NoProxy.ValueString())
+	proxyIncludeDomains, err := proxyIncludeDomainsFromConfig(c.ProxyIncludeDomains)
+	if err != nil {
+		diags.AddError("Invalid Proxy Configuration", err.Error())
+		return nil, diags
+	}
+	if proxyURL == "" && proxyAuthorization != "" {
+		diags.AddError("Invalid Proxy Configuration", "proxy_url must be configured when proxy_authorization is set")
+		return nil, diags
+	}
+	if proxyURL == "" && len(proxyIncludeDomains) > 0 {
+		diags.AddError("Invalid Proxy Configuration", "proxy_url must be configured when proxy_include_domains is set")
+		return nil, diags
+	}
+	var configuredProxy func(*http.Request) (*url.URL, error)
+	if proxyURL != "" {
+		httpClient, normalizedProxyURL, err := newProxyHTTPClient(proxyURL, proxyAuthorization, noProxy, proxyIncludeDomains)
+		if err != nil {
+			diags.AddError("Invalid Proxy Configuration", err.Error())
+			return nil, diags
 		}
-		httpClient := http.DefaultClient
-		httpClient.Transport = t
+		config.WithHTTPProxy(normalizedProxyURL).
+			WithHTTPSProxy(normalizedProxyURL).
+			WithHTTPClient(httpClient)
+		configuredProxy = httpClient.Transport.(*http.Transport).Proxy
 	}
 
 	sess, err := session.NewSession(config)
@@ -456,9 +725,14 @@ func newProviderData(ctx context.Context, c *configModel) (*providerData, diag.D
 	}
 
 	cloudcontrolClient := cloudcontrol.New(sess)
-	if err != nil {
-		diags.AddError(err.Error(), err.Error())
-		return nil, diags
+	if configuredProxy != nil {
+		transport, ok := cloudcontrolClient.Config.HTTPClient.Transport.(*http.Transport)
+		if !ok {
+			diags.AddError("Error Configuring Proxy", fmt.Sprintf("Cloud Control HTTP transport has type %T, want *http.Transport", cloudcontrolClient.Config.HTTPClient.Transport))
+			return nil, diags
+		}
+		transport.Proxy = configuredProxy
+		cloudcontrolClient.Config.HTTPClient = withProxyAuthorization(cloudcontrolClient.Config.HTTPClient, proxyAuthorization, configuredProxy)
 	}
 
 	providerData := &providerData{
@@ -468,6 +742,22 @@ func newProviderData(ctx context.Context, c *configModel) (*providerData, diag.D
 	}
 
 	return providerData, diags
+}
+
+func proxyIncludeDomainsFromConfig(value types.Set) ([]string, error) {
+	if value.IsNull() || value.IsUnknown() {
+		return nil, nil
+	}
+
+	domains := make([]string, 0, len(value.Elements()))
+	for _, element := range value.Elements() {
+		domain, ok := element.(types.String)
+		if !ok || domain.IsNull() || domain.IsUnknown() {
+			return nil, errors.New("proxy_include_domains must contain only known string values")
+		}
+		domains = append(domains, domain.ValueString())
+	}
+	return normalizeProxyPatterns(domains)
 }
 
 func ParseTrn(trn string) (string, string, error) {
