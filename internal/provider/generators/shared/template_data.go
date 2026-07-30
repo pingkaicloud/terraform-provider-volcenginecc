@@ -190,8 +190,9 @@ type CollectionIdentity struct {
 	UniqueItems     bool
 }
 
-// collectCollectionIdentities walks expanded properties in stable name order
-// and retains wildcard segments for collections nested below object arrays.
+// collectCollectionIdentities walks expanded properties in stable name order,
+// retains wildcard segments below object arrays, and emits children before
+// parents so every consumer observes the required inner-first sort order.
 func collectCollectionIdentities(properties map[string]*ccschema.Property, parentPath []string) []CollectionIdentity {
 	var result []CollectionIdentity
 	names := make([]string, 0, len(properties))
@@ -207,15 +208,6 @@ func collectCollectionIdentities(properties map[string]*ccschema.Property, paren
 		}
 
 		propertyPath := append(append([]string(nil), parentPath...), name)
-		if len(property.ElementIdentifier) > 0 {
-			uniqueItems := property.UniqueItems != nil && *property.UniqueItems
-			result = append(result, CollectionIdentity{
-				PropertyPath:    "/" + strings.Join(propertyPath, "/"),
-				IdentifierPaths: append([]string(nil), property.ElementIdentifier...),
-				UniqueItems:     uniqueItems,
-			})
-		}
-
 		switch property.Type.String() {
 		case ccschema.PropertyTypeObject, "":
 			result = append(result, collectCollectionIdentities(property.Properties, propertyPath)...)
@@ -224,6 +216,15 @@ func collectCollectionIdentities(properties map[string]*ccschema.Property, paren
 				itemPath := append(append([]string(nil), propertyPath...), "*")
 				result = append(result, collectCollectionIdentities(property.Items.Properties, itemPath)...)
 			}
+		}
+
+		if len(property.ElementIdentifier) > 0 {
+			uniqueItems := property.UniqueItems != nil && *property.UniqueItems
+			result = append(result, CollectionIdentity{
+				PropertyPath:    "/" + strings.Join(propertyPath, "/"),
+				IdentifierPaths: append([]string(nil), property.ElementIdentifier...),
+				UniqueItems:     uniqueItems,
+			})
 		}
 	}
 

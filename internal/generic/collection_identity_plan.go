@@ -69,6 +69,10 @@ func (r *genericResource) collectionAttributeNames(propertyPath string) ([]strin
 	segments := strings.Split(strings.TrimPrefix(propertyPath, "/"), "/")
 	names := make([]string, 0, len(segments))
 	for _, segment := range segments {
+		if segment == "*" {
+			names = append(names, segment)
+			continue
+		}
 		name, ok := r.ccToTfNameMap[segment]
 		if !ok {
 			return nil, fmt.Errorf("attribute name mapping not found for collection segment %q", segment)
@@ -252,24 +256,20 @@ func (r *genericResource) canonicalizeIdentityCollectionPlan(planned tftypes.Val
 // sorting and best-effort Plan sorting without ever using index fallback.
 func (r *genericResource) canonicalizeIdentityCollectionStateWithMode(remote tftypes.Value, allowUnsafe bool) (tftypes.Value, error) {
 	result := remote
-	for _, identity := range r.collectionIdentities {
+	ordered, err := collectionIdentitiesInnerFirst(r.collectionIdentities)
+	if err != nil {
+		if allowUnsafe {
+			return remote, nil
+		}
+		return remote, err
+	}
+	for _, identity := range ordered {
 		attributeNames, err := r.collectionAttributeNames(identity.PropertyPath)
 		if err != nil {
 			if allowUnsafe {
 				continue
 			}
 			return remote, err
-		}
-		if len(attributeNames) != 1 {
-			continue
-		}
-		attributePath := terraformAttributePath(attributeNames)
-		remoteCollection, err := terraformValueAtPath(result, attributePath)
-		if err != nil {
-			if allowUnsafe {
-				continue
-			}
-			return remote, fmt.Errorf("reading remote collection %q: %w", identity.PropertyPath, err)
 		}
 		identifierNames, err := r.identifierAttributeNames(identity.IdentifierPaths)
 		if err != nil {
@@ -278,22 +278,68 @@ func (r *genericResource) canonicalizeIdentityCollectionStateWithMode(remote tft
 			}
 			return remote, err
 		}
-		canonical, err := canonicalizeTerraformCollectionState(remoteCollection, identifierNames)
+		canonical, err := canonicalizeTerraformCollectionsAtPath(result, attributeNames, identifierNames, allowUnsafe)
 		if err != nil {
 			if allowUnsafe {
 				continue
 			}
 			return remote, fmt.Errorf("canonicalizing collection %q: %w", identity.PropertyPath, err)
 		}
-		result, err = replaceTerraformValueAtPath(result, attributePath, canonical)
-		if err != nil {
-			if allowUnsafe {
-				continue
-			}
-			return remote, fmt.Errorf("setting remote collection %q: %w", identity.PropertyPath, err)
-		}
+		result = canonical
 	}
 	return result, nil
+}
+
+// canonicalizeTerraformCollectionsAtPath recursively rebuilds Terraform
+// objects and collections while applying identity ordering at every leaf
+// selected by wildcard segments. Plan mode degrades only the unsafe leaf.
+func canonicalizeTerraformCollectionsAtPath(
+	current tftypes.Value,
+	segments []string,
+	identifiers [][]string,
+	allowUnsafe bool,
+) (tftypes.Value, error) {
+	if current.IsNull() || !current.IsKnown() {
+		return current, nil
+	}
+	if len(segments) == 0 {
+		canonical, err := canonicalizeTerraformCollectionState(current, identifiers)
+		if err != nil && allowUnsafe {
+			return current, nil
+		}
+		return canonical, err
+	}
+
+	segment := segments[0]
+	if segment == "*" {
+		elements, err := terraformCollectionElements(current)
+		if err != nil {
+			return current, err
+		}
+		transformed := make([]tftypes.Value, len(elements))
+		for index, element := range elements {
+			transformed[index], err = canonicalizeTerraformCollectionsAtPath(element, segments[1:], identifiers, allowUnsafe)
+			if err != nil {
+				return current, fmt.Errorf("element %d: %w", index, err)
+			}
+		}
+		return tftypes.NewValue(current.Type(), transformed), nil
+	}
+
+	var object map[string]tftypes.Value
+	if err := current.As(&object); err != nil {
+		return current, fmt.Errorf("attribute %q traverses %s: %w", segment, current.Type(), err)
+	}
+	child, ok := object[segment]
+	if !ok {
+		return current, fmt.Errorf("attribute %q not found", segment)
+	}
+	canonical, err := canonicalizeTerraformCollectionsAtPath(child, segments[1:], identifiers, allowUnsafe)
+	if err != nil {
+		return current, err
+	}
+	object[segment] = canonical
+	return tftypes.NewValue(current.Type(), object), nil
 }
 
 // canonicalizeTerraformCollectionState orders a known Terraform collection by

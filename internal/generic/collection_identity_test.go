@@ -187,6 +187,53 @@ func TestCanonicalizeIdentityDesiredStateScalarTypes(t *testing.T) {
 	}
 }
 
+func TestCanonicalizeIdentityDesiredStateNestedCollectionsInnerFirst(t *testing.T) {
+	identities := []CollectionIdentity{
+		{PropertyPath: "/Groups", IdentifierPaths: []string{"/Name"}},
+		{PropertyPath: "/Groups/*/Members", IdentifierPaths: []string{"/Id"}},
+	}
+	state := `{
+		"Groups": [
+			{"Name":"z","Members":[{"Id":"2"},{"Id":"1"}]},
+			{"Name":"a","Members":[{"Id":"4"},{"Id":"3"}]}
+		]
+	}`
+
+	got, err := canonicalizeIdentityDesiredState(state, identities)
+	if err != nil {
+		t.Fatalf("canonicalizeIdentityDesiredState() error = %v", err)
+	}
+	assertJSONEqual(t, got, `{
+		"Groups": [
+			{"Name":"a","Members":[{"Id":"3"},{"Id":"4"}]},
+			{"Name":"z","Members":[{"Id":"1"},{"Id":"2"}]}
+		]
+	}`)
+}
+
+func TestCanonicalizeIdentityDesiredStateObjectNestedCollection(t *testing.T) {
+	got, err := canonicalizeIdentityDesiredState(
+		`{"Parent":{"Children":[{"Id":"b"},{"Id":"a"}]}}`,
+		[]CollectionIdentity{{PropertyPath: "/Parent/Children", IdentifierPaths: []string{"/Id"}}},
+	)
+	if err != nil {
+		t.Fatalf("canonicalizeIdentityDesiredState() error = %v", err)
+	}
+	assertJSONEqual(t, got, `{"Parent":{"Children":[{"Id":"a"},{"Id":"b"}]}}`)
+}
+
+func TestCanonicalizeIdentityDesiredStateNestedMissingAndNullCollections(t *testing.T) {
+	state := `{"Groups":[{"Name":"missing"},{"Name":"null","Members":null}]}`
+	got, err := canonicalizeIdentityDesiredState(
+		state,
+		[]CollectionIdentity{{PropertyPath: "/Groups/*/Members", IdentifierPaths: []string{"/Id"}}},
+	)
+	if err != nil {
+		t.Fatalf("canonicalizeIdentityDesiredState() error = %v", err)
+	}
+	assertJSONEqual(t, got, state)
+}
+
 func TestCanonicalizeIdentityDesiredStateRejectsEquivalentNumericIdentity(t *testing.T) {
 	_, err := canonicalizeIdentityDesiredState(
 		`{"Items":[{"Id":1},{"Id":1.0}]}`,

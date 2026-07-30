@@ -164,6 +164,111 @@ func TestCanonicalizeTerraformCollectionStateScalarTypes(t *testing.T) {
 	}
 }
 
+func TestCanonicalizeTerraformCollectionsAtNestedArrayPath(t *testing.T) {
+	t.Parallel()
+
+	memberType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"id": tftypes.String,
+	}}
+	membersType := tftypes.List{ElementType: memberType}
+	groupType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"name":    tftypes.String,
+		"members": membersType,
+	}}
+	groupsType := tftypes.List{ElementType: groupType}
+	rootType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"groups": groupsType,
+	}}
+	member := func(id string) tftypes.Value {
+		return tftypes.NewValue(memberType, map[string]tftypes.Value{
+			"id": tftypes.NewValue(tftypes.String, id),
+		})
+	}
+	group := func(name string, members ...tftypes.Value) tftypes.Value {
+		return tftypes.NewValue(groupType, map[string]tftypes.Value{
+			"name":    tftypes.NewValue(tftypes.String, name),
+			"members": tftypes.NewValue(membersType, members),
+		})
+	}
+	root := tftypes.NewValue(rootType, map[string]tftypes.Value{
+		"groups": tftypes.NewValue(groupsType, []tftypes.Value{
+			group("z", member("2"), member("1")),
+			group("a", member("4"), member("3")),
+		}),
+	})
+
+	resource := genericResource{
+		ccToTfNameMap: map[string]string{
+			"Groups":  "groups",
+			"Name":    "name",
+			"Members": "members",
+			"Id":      "id",
+		},
+		collectionIdentities: []CollectionIdentity{
+			{PropertyPath: "/Groups", IdentifierPaths: []string{"/Name"}},
+			{PropertyPath: "/Groups/*/Members", IdentifierPaths: []string{"/Id"}},
+		},
+	}
+	got, err := resource.canonicalizeIdentityCollectionState(root)
+	if err != nil {
+		t.Fatalf("canonicalizeIdentityCollectionState() error = %v", err)
+	}
+	want := tftypes.NewValue(rootType, map[string]tftypes.Value{
+		"groups": tftypes.NewValue(groupsType, []tftypes.Value{
+			group("a", member("3"), member("4")),
+			group("z", member("1"), member("2")),
+		}),
+	})
+	if !got.Equal(want) {
+		t.Fatalf("canonicalizeIdentityCollectionState() = %s, want %s", got, want)
+	}
+}
+
+func TestCanonicalizeTerraformNestedPlanDegradesOnlyUnsafeLeaf(t *testing.T) {
+	t.Parallel()
+
+	memberType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"id": tftypes.String}}
+	membersType := tftypes.List{ElementType: memberType}
+	groupType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"members": membersType}}
+	groupsType := tftypes.List{ElementType: groupType}
+	rootType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{"groups": groupsType}}
+	member := func(id interface{}) tftypes.Value {
+		return tftypes.NewValue(memberType, map[string]tftypes.Value{
+			"id": tftypes.NewValue(tftypes.String, id),
+		})
+	}
+	group := func(members ...tftypes.Value) tftypes.Value {
+		return tftypes.NewValue(groupType, map[string]tftypes.Value{
+			"members": tftypes.NewValue(membersType, members),
+		})
+	}
+	root := tftypes.NewValue(rootType, map[string]tftypes.Value{
+		"groups": tftypes.NewValue(groupsType, []tftypes.Value{
+			group(member(tftypes.UnknownValue), member("a")),
+			group(member("d"), member("c")),
+		}),
+	})
+
+	got, err := canonicalizeTerraformCollectionsAtPath(
+		root,
+		[]string{"groups", "*", "members"},
+		[][]string{{"id"}},
+		true,
+	)
+	if err != nil {
+		t.Fatalf("canonicalizeTerraformCollectionsAtPath() error = %v", err)
+	}
+	want := tftypes.NewValue(rootType, map[string]tftypes.Value{
+		"groups": tftypes.NewValue(groupsType, []tftypes.Value{
+			group(member(tftypes.UnknownValue), member("a")),
+			group(member("c"), member("d")),
+		}),
+	})
+	if !got.Equal(want) {
+		t.Fatalf("canonicalizeTerraformCollectionsAtPath() = %s, want %s", got, want)
+	}
+}
+
 func terraformReadElement(elementType tftypes.Object, identity string, zone string, readback string) tftypes.Value {
 	return tftypes.NewValue(elementType, map[string]tftypes.Value{
 		"identity": tftypes.NewValue(tftypes.String, identity),

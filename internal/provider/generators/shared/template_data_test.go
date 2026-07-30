@@ -38,10 +38,34 @@ func TestCollectCollectionIdentities(t *testing.T) {
 			Type:  &arrayType,
 			Items: &ccschema.Property{Type: &objectType},
 		},
+		"Groups": {
+			Type:              &arrayType,
+			ElementIdentifier: []string{"/Name"},
+			Items: &ccschema.Property{
+				Type: &objectType,
+				Properties: map[string]*ccschema.Property{
+					"Members": {
+						Type:              &arrayType,
+						ElementIdentifier: []string{"/Id"},
+						Items:             &ccschema.Property{Type: &objectType},
+					},
+				},
+			},
+		},
 	}
 
 	got := collectCollectionIdentities(properties, nil)
 	want := []CollectionIdentity{
+		{
+			PropertyPath:    "/Groups/*/Members",
+			IdentifierPaths: []string{"/Id"},
+			UniqueItems:     false,
+		},
+		{
+			PropertyPath:    "/Groups",
+			IdentifierPaths: []string{"/Name"},
+			UniqueItems:     false,
+		},
 		{
 			PropertyPath:    "/Parent/Children",
 			IdentifierPaths: []string{"/Id"},

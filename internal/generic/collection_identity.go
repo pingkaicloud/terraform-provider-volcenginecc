@@ -180,23 +180,109 @@ func canonicalizeIdentityDesiredState(state string, identities []CollectionIdent
 // canonicalizeIdentityCollectionsInValue applies canonical identity order to
 // every present collection path in a decoded desired-state document.
 func canonicalizeIdentityCollectionsInValue(root interface{}, identities []CollectionIdentity) error {
-	for _, identity := range identities {
-		collection, found, err := optionalCollectionAtJSONPointer(root, identity.PropertyPath)
+	ordered, err := collectionIdentitiesInnerFirst(identities)
+	if err != nil {
+		return err
+	}
+	for _, identity := range ordered {
+		segments, err := jsonPointerSegments(identity.PropertyPath)
 		if err != nil {
-			return fmt.Errorf("reading collection %q: %w", identity.PropertyPath, err)
+			return fmt.Errorf("parsing collection %q: %w", identity.PropertyPath, err)
 		}
-		if !found {
-			continue
+		if len(segments) == 0 {
+			return fmt.Errorf("collection %q: root collection path is not supported", identity.PropertyPath)
 		}
-		canonical, err := canonicalizeCollectionByIdentity(collection, identity.IdentifierPaths)
+		_, err = canonicalizeJSONCollectionsAtPath(root, segments, identity.IdentifierPaths, identity.PropertyPath)
 		if err != nil {
-			return fmt.Errorf("sorting collection %q: %w", identity.PropertyPath, err)
-		}
-		if err := setCollectionAtJSONPointer(root, identity.PropertyPath, canonical); err != nil {
-			return fmt.Errorf("setting collection %q: %w", identity.PropertyPath, err)
+			return fmt.Errorf("canonicalizing collection %q: %w", identity.PropertyPath, err)
 		}
 	}
 	return nil
+}
+
+// collectionIdentitiesInnerFirst returns a stable depth-descending copy so
+// nested collections are canonicalized before their containing collections.
+func collectionIdentitiesInnerFirst(identities []CollectionIdentity) ([]CollectionIdentity, error) {
+	type identityWithDepth struct {
+		identity CollectionIdentity
+		depth    int
+	}
+	ordered := make([]identityWithDepth, 0, len(identities))
+	for _, identity := range identities {
+		segments, err := jsonPointerSegments(identity.PropertyPath)
+		if err != nil {
+			return nil, fmt.Errorf("parsing collection %q: %w", identity.PropertyPath, err)
+		}
+		ordered = append(ordered, identityWithDepth{identity: identity, depth: len(segments)})
+	}
+	sort.SliceStable(ordered, func(left, right int) bool {
+		return ordered[left].depth > ordered[right].depth
+	})
+	result := make([]CollectionIdentity, len(ordered))
+	for index, item := range ordered {
+		result[index] = item.identity
+	}
+	return result, nil
+}
+
+// canonicalizeJSONCollectionsAtPath recursively resolves object attributes and
+// wildcard array elements, then sorts every collection reached at the leaf.
+func canonicalizeJSONCollectionsAtPath(
+	current interface{},
+	segments []string,
+	identifierPaths []string,
+	location string,
+) (interface{}, error) {
+	if current == nil {
+		return current, nil
+	}
+	if len(segments) == 0 {
+		collection, ok := current.([]interface{})
+		if !ok {
+			return current, fmt.Errorf("%s expected array, got %T", location, current)
+		}
+		canonical, err := canonicalizeCollectionByIdentity(collection, identifierPaths)
+		if err != nil {
+			return current, fmt.Errorf("%s: %w", location, err)
+		}
+		return canonical, nil
+	}
+
+	segment := segments[0]
+	if segment == "*" {
+		collection, ok := current.([]interface{})
+		if !ok {
+			return current, fmt.Errorf("%s wildcard traverses %T", location, current)
+		}
+		for index, element := range collection {
+			canonical, err := canonicalizeJSONCollectionsAtPath(
+				element,
+				segments[1:],
+				identifierPaths,
+				fmt.Sprintf("%s[%d]", location, index),
+			)
+			if err != nil {
+				return current, err
+			}
+			collection[index] = canonical
+		}
+		return collection, nil
+	}
+
+	object, ok := current.(map[string]interface{})
+	if !ok {
+		return current, fmt.Errorf("%s segment %q traverses %T", location, segment, current)
+	}
+	child, found := object[segment]
+	if !found || child == nil {
+		return current, nil
+	}
+	canonical, err := canonicalizeJSONCollectionsAtPath(child, segments[1:], identifierPaths, location+"/"+segment)
+	if err != nil {
+		return current, err
+	}
+	object[segment] = canonical
+	return object, nil
 }
 
 // decodeIdentityJSON preserves JSON numbers as decimal strings so canonical
@@ -449,59 +535,6 @@ func hasDuplicateCompleteElements(collections ...[]interface{}) bool {
 		}
 	}
 	return false
-}
-
-// optionalCollectionAtJSONPointer returns a collection when the path exists as
-// an array, and reports not found for missing or null paths so whole-field
-// additions and removals can be left to JSON Patch generation.
-func optionalCollectionAtJSONPointer(root interface{}, pointer string) ([]interface{}, bool, error) {
-	value, found, err := valueAtJSONPointer(root, pointer)
-	if err != nil {
-		return nil, false, err
-	}
-	if !found || value == nil {
-		return nil, false, nil
-	}
-	collection, ok := value.([]interface{})
-	if !ok {
-		return nil, false, fmt.Errorf("expected array, got %T", value)
-	}
-	return collection, true, nil
-}
-
-// setCollectionAtJSONPointer replaces the array at a JSON Pointer path.
-func setCollectionAtJSONPointer(root interface{}, pointer string, collection []interface{}) error {
-	segments, err := jsonPointerSegments(pointer)
-	if err != nil {
-		return err
-	}
-	if len(segments) == 0 {
-		return fmt.Errorf("root collection path is not supported")
-	}
-
-	current := root
-	for _, segment := range segments[:len(segments)-1] {
-		object, ok := current.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("segment %q traverses %T", segment, current)
-		}
-		next, ok := object[segment]
-		if !ok {
-			return fmt.Errorf("segment %q not found", segment)
-		}
-		current = next
-	}
-
-	object, ok := current.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("collection parent is %T", current)
-	}
-	last := segments[len(segments)-1]
-	if _, ok := object[last]; !ok {
-		return fmt.Errorf("segment %q not found", last)
-	}
-	object[last] = collection
-	return nil
 }
 
 // valueAtJSONPointer resolves object-only JSON Pointer paths used by collection
