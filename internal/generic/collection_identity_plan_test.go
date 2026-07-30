@@ -73,19 +73,19 @@ func TestMergeTerraformCollectionPlan(t *testing.T) {
 				terraformPlanElement(elementType, "same", nil, "config"),
 			},
 		},
-		"multiset list can read config empty sentinel after identity is canonicalized": {
+		"safe config identities do not fall back to collection position": {
 			collectionType: tftypes.List{ElementType: elementType},
 			config: []tftypes.Value{
-				terraformPlanElement(elementType, "", nil, "config"),
+				terraformPlanElement(elementType, "config-only", nil, "config"),
 			},
 			prior: []tftypes.Value{
 				terraformPlanElement(elementType, "readback", nil, "old"),
 			},
 			planned: []tftypes.Value{
-				terraformPlanElement(elementType, "readback", tftypes.UnknownValue, "config"),
+				terraformPlanElement(elementType, "readback", tftypes.UnknownValue, "planned"),
 			},
 			want: []tftypes.Value{
-				terraformPlanElement(elementType, "readback", nil, "config"),
+				terraformPlanElement(elementType, "readback", tftypes.UnknownValue, "planned"),
 			},
 		},
 		"identity change remains a removal and addition": {

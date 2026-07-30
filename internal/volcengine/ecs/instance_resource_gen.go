@@ -1127,8 +1127,7 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		//	    },
 		//	    "PrimaryIpAddress": {
 		//	      "description": "Instance primary IP address",
-		//	      "type": "string",
-		//	      "useStateForEmpty": true
+		//	      "type": "string"
 		//	    },
 		//	    "PrivateIpAddresses": {
 		//	      "description": "Instance private IP address.",
@@ -1207,7 +1206,6 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 					Computed:    true,
 					PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
 						stringplanmodifier.UseStateForUnknown(),
-						generic.UseStateForEmpty(),
 					}, /*END PLAN MODIFIERS*/
 				}, /*END ATTRIBUTE*/
 				// Property: PrivateIpAddresses
@@ -1516,8 +1514,7 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		//	      },
 		//	      "PrimaryIpAddress": {
 		//	        "description": "Instance primary IP address",
-		//	        "type": "string",
-		//	        "useStateForEmpty": true
+		//	        "type": "string"
 		//	      },
 		//	      "PrivateIpAddresses": {
 		//	        "description": "Instance private IP address.",
@@ -1601,7 +1598,6 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 						Computed:    true,
 						PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
 							stringplanmodifier.UseStateForUnknown(),
-							generic.UseStateForEmpty(),
 							stringplanmodifier.RequiresReplaceIfConfigured(),
 						}, /*END PLAN MODIFIERS*/
 					}, /*END ATTRIBUTE*/

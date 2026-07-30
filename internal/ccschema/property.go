@@ -74,9 +74,6 @@ type Property struct {
 	Required          []string                 `json:"required,omitempty"`
 	Type              *Type                    `json:"type,omitempty"`
 	UniqueItems       *bool                    `json:"uniqueItems,omitempty"`
-	// UseStateForEmpty marks optional computed strings whose API treats an empty
-	// configured value as unspecified and later reads back a concrete value.
-	UseStateForEmpty bool `json:"useStateForEmpty,omitempty"`
 }
 
 // String returns a string representation of Property.

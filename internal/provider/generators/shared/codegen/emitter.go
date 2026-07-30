@@ -784,13 +784,6 @@ func (e Emitter) emitAttribute(tfType string, attributeNameMap map[string]string
 		features.FrameworkPlanModifierPackages = append(features.FrameworkPlanModifierPackages, fwPlanModifierPackage)
 	}
 
-	if property.UseStateForEmpty {
-		if property.Type.String() != ccschema.PropertyTypeString || !optional || !computed {
-			return features, false, fmt.Errorf("%s useStateForEmpty requires an optional computed string", strings.Join(path, "/"))
-		}
-		planModifiers = append(planModifiers, "generic.UseStateForEmpty()")
-	}
-
 	if createOnly {
 		// ForceNew.
 		if optional && computed {

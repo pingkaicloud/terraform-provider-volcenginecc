@@ -2,8 +2,9 @@
 
 > 初稿日期：2026-06-28  
 > 总结日期：2026-07-04  
+> 规范排序修订：2026-07-28
 > 分支：`terraform-identity-validation`  
-> 分支快照：`7c7b6fb fix: align identity updates to remote order`  
+> 分支快照：`4ff7048 fix: canonicalize nested identity collections`<br>
 > 基准：只读飞书镜像 `README.md`  
 > 证据：当前目录下真实 Plan / Read / Update E2E 结果及修复验收结果  
 > 状态：分支实现及 E2E 验收总结
@@ -17,14 +18,20 @@
 
 这里的“统一”不表示四个阶段直接调用同一个函数。当前实现分别使用：
 
-- Plan：`mergeIdentityCollectionPlans()`；
-- Read：`alignIdentityCollectionState()`；
-- Update：`normalizeIdentityCollections()`；
+- Plan：`mergeIdentityCollectionPlans()` + `canonicalizeIdentityCollectionPlan()`；
+- Read：`canonicalizeIdentityCollectionState()`；
+- Update：`canonicalizeIdentityCollections()`；
 - WriteOnly：`restoreIdentityCollectionWriteOnlyValues()`。
 
 四条路径共享 `collectionIdentities` 元数据、identity 提取规则以及“不按 index
 猜测”的安全边界，但各自根据阶段职责处理 Terraform value、JSON desired state
 或 writeOnly 回填。
+
+2026-07-28 修订后，排序不再以 prior、planned 或 Provider 某次 GetResource 的
+remote 顺序为标准。所有阶段统一采用 elementIdentifier tuple 的客观规范升序；
+CCAPI Handler 也必须在实际应用 JSON Patch 前对最新资源文档执行同一排序。
+字符串按大小写敏感的 UTF-8 字节序，数字按精确数值，布尔值按
+`false < true`。
 
 真实 E2E 进一步证明 Plan 阶段也必须接入 identity：
 
@@ -48,11 +55,14 @@ identity 不是 ignored fields 列表。非 identity 字段不等于可以忽略
 | 已复现的 E2E 案例 | 问题原因 | 如何修复 |
 |-|-|-|
 | Plan：Set / Multiset 的 computed/readback 字段 `null -> unknown`。<br />测试文档：[Plan `null -> unknown` E2E 测试记录](https://www.feishu.cn/docx/Wke2dizsVot9swxQzCIc4OAlnee) | Framework 在资源存在其他规划差异时会把 computed null 标记为 unknown。Set 使用完整 object 判定元素身份，`generic.Multiset()` 也只做完整 object `Equal()`；二者都不知道变化前后是同一个逻辑元素。 | 为 collection 声明 `elementIdentifier`；Plan 阶段先按业务 identity 配对 prior/planned 元素，再根据 Config 所有权合并字段。配置未声明的 computed/readback 字段保留 prior value，用户显式配置的变化不应被吞掉。 |
-| Plan：Set / Multiset 的非 identity 具体值被服务端回填或规范化。 Set 的 `Direction "" -> "ingress"` 形成稳定 drift；Multiset 的 `PrimaryIpAddress "具体 IP" -> ""` 导致 ECS replacement。<br><br>测试文档：[Plan 非 identity 具体值差异 E2E 测试记录](https://www.feishu.cn/docx/VRzbdSRTCoBQaMxxzvSc57g0nug) | 用户配置值与服务端最终表示不同，且差异字段参与完整元素比较。identity 只能确认“是同一个元素”，不能自行判断两个具体值是否业务等价。 | 按字段真实语义处理：只读字段修正为 readOnly，非法输入增加 validator，等价表示增加明确的 canonical normalizer。ECS 空字符串“自动分配”场景已通过 `useStateForEmpty` / `UseStateForEmpty()` 收敛；SecurityGroup `Direction` 仍需 schema 维护方确认字段所有权，不能由通用 identity merge 直接忽略。 |
-| Read：Multiset 的 remote 反序产生 reorder-only plan。 <br>测试文档：[Read remote 反序 E2E 测试记录](https://www.feishu.cn/docx/X1H1dlwHMoROzNxyLBncApftnKg) | Read 直接接受 remote 顺序；当元素中还存在 readback 字段差异时，`generic.Multiset()` 无法靠完整 object 相等找到对应元素并恢复 prior 顺序。 | Read 阶段按 `elementIdentifier` 配对 remote/prior，将匹配元素按 prior identity 顺序对齐，同时保留完整 remote 字段进入 state；Plan merge 作为第二道保护。identity 缺失、null、unknown 或重复时不按 index 猜测。 |
-| Update：Set / Multiset 仍按数组下标生成 patch。 Multiset 单元素修改生成多个 index patch；Set 的 PrefixList 在 remote 为 `[B, A]` 时，修改 B 却生成 `/PrefixListEntries/1/...` 并实际改错 A。<br><br>测试文档：[Update index patch E2E 测试记录](https://www.feishu.cn/docx/MtvBdSQtkoLW3ixSO2NcHLJgnhe) | Terraform Set/Multiset 的无序语义不会自动传递给 CCAPI JSON Patch。旧逻辑未按 patch 实际作用的 remote 数组顺序对齐 current/planned，因此逻辑元素与数组下标错位。 | 在 `patchDocument()` 前按 identity normalize，并以真实 `remoteDesiredState` 的 identity 顺序同时重排 current/planned。修复后 PrefixList 对 B 的修改从错误的 index 1 改为 remote 中正确的 index 0，最终稳定 plan 收敛。 |
+| Read：Multiset 的 remote 反序产生 reorder-only plan。 <br>测试文档：[Read remote 反序 E2E 测试记录](https://www.feishu.cn/docx/X1H1dlwHMoROzNxyLBncApftnKg) | Read 直接接受 remote 顺序；当元素中还存在 readback 字段差异时，`generic.Multiset()` 无法靠完整 object 相等恢复稳定顺序。 | Read 阶段按 `elementIdentifier` 规范升序输出完整 remote state，不依赖 prior 顺序；Plan merge 继续作为字段语义保护。 |
+| Update：Provider GetResource 与 CCAPI Handler 实际应用 Patch 时数组顺序可能不同。 | 旧修复以 Provider 的 `remoteDesiredState` 为下标基准，只能保证 Provider 本地 Patch 正确，不能约束 Handler 的第二次快照。 | Provider current/planned 分别按 canonical identity order 排序；CCAPI Handler 对实际 Patch base 执行同一排序后再应用 Patch。 |
 
 方案必须同时覆盖这些样本，不能只让某一个 plan 变成 `No changes`。
+
+用户显式空字符串与服务端具体回填值之间的等价性属于字段语义问题，不由本分支
+处理。ECS `PrimaryIpAddress` 的历史方案和证据已移至
+[`UseStateForEmpty` 字段语义问题独立记录](use_state_for_empty_solution.md)。
 
 ## 三、实现总览
 
@@ -61,8 +71,11 @@ identity 不是 ignored fields 列表。非 identity 字段不等于可以忽略
 | Schema 元数据 | 已实现 | 为已确认的无序 object array 声明 `elementIdentifier`；字段级 readOnly/writeOnly/default/规范化语义仍分别维护。 |
 | 公共 identity 匹配层 | 已实现 | 提取组合 identity、检查缺失/unknown/重复、配对 collection elements。 |
 | Plan identity-aware merge | 已实现 | 消除非 identity computed/readback 字段造成的无意义 diff，同时保留真实配置变化。 |
-| Read reorder | 已实现 | remote 按 identity 对齐 prior，但完整 remote readback 仍进入 state。 |
-| Update normalize | 已实现 | current/planned 按真实 remote identity 顺序对齐后再生成 JSON Patch。 |
+| Plan canonical order | 已实现 | identity-aware merge 后，对已知 identity 的 PlannedState 执行规范排序。 |
+| Read canonical order | 已实现 | remote 不依赖 prior，按 elementIdentifier 规范升序进入 state。 |
+| Create plan canonical order | 已实现 | ModifyPlan 只排序已知 identity；Create 请求和 response 不二次重排，避免服务端补齐 unknown identity 后交换 List 元素。 |
+| Provider Update canonical order | 已实现 | current/planned 独立规范排序后生成 JSON Patch。 |
+| CCAPI Update canonical order | 待 CCAPI 仓库实现 | 对 Handler 实际 Patch base 使用同一 comparator 排序。 |
 | WriteOnly identity-aware 回填 | 已实现 | 按 identity 从 prior state 回填 writeOnly 字段。 |
 | 风险保护 | 已实现于已声明 identity 的 collection | identity 不安全时不猜测、不按 index 静默处理；无安全 identity 的 Multiset 全局策略仍未完成。 |
 
@@ -249,35 +262,33 @@ state.Direction  = "ingress"
 可以保留为少量字段级规范化的补充，但主路径是公共 identity helper +
 `ModifyPlan`。
 
-## 七、Read reorder
+## 七、Read canonical order
 
 目标不是丢弃 remote 字段，而是：
 
 ```text
 remote 完整 readback 进入 tfstate
-+ remote 元素按 identity 与 prior 元素对齐
++ remote 元素按 elementIdentifier tuple 的规范升序排列
 + 顺序变化不制造无意义 plan
 ```
 
 处理流程：
 
 ```text
-prior state collection
 remote collection
-  -> identity 配对
-  -> 已匹配元素按 prior 顺序排列
-  -> remote 新增元素按稳定规则追加
-  -> 删除元素不再写回
+  -> 按 JSON Pointer 提取单字段、组合或嵌套 identity
+  -> 检查缺失、null、类型和重复
+  -> 按规范 comparator 排序
   -> 完整 remote object 写入 state
 ```
 
 Set 在 Terraform 层没有顺序语义，因此纯 remote 反序不会形成 reorder-only plan。
 Set 的主要风险是 readback/default 字段改变完整 object 身份，并在后续 Plan 表现为
 元素 remove/add；该问题主要由 Plan identity-aware merge 处理。Multiset 使用 List
-表示，remote 顺序则会直接影响 state 是否稳定，因此 Read reorder 对 Multiset 是
-独立且必要的保护。
+表示，remote 顺序则会直接影响 state 是否稳定，因此 Read canonical order 对
+Multiset 是独立且必要的保护。
 
-## 八、Update normalize
+## 八、Provider 与 CCAPI Update canonical order
 
 修复前 Update 链路：
 
@@ -297,27 +308,35 @@ prior Terraform state
 - 没有 schema 声明的业务 identity；
 - `patchDocument()` 最终仍按数组下标生成 patch。
 
-当前实现链路：
+Provider 当前实现链路：
 
 ```text
 prior/current Terraform state
 planned desired
 remote desired state
-  -> 按同一 elementIdentifier 配对
-  -> 以真实 remote 数组顺序为下标基准
-  -> 将 current 和 planned 同时排列到 remote identity 顺序
+  -> mergeLocalWithRemoteForSets
+  -> current 和 planned 分别按同一 elementIdentifier 规范升序排列
   -> 保留新增/删除元素
   -> 对齐 writeOnly 值
-  -> patchDocument(normalizedCurrent, normalizedPlanned)
+  -> patchDocument(canonicalCurrent, canonicalPlanned)
 ```
 
-这里不能把 current 单独排列到 planned 顺序。JSON Patch 最终作用于真实 remote
-数组，只有以 `remoteDesiredState` 的 identity 顺序同时规范化 current/planned，
-patch 下标才会指向正确的服务端元素。
+CCAPI Handler 必须补齐：
+
+```text
+UpdateResource 实际使用的最新资源文档
+  -> 使用同一 schema elementIdentifier 和 comparator 规范排序
+  -> 在 canonical resource document 上应用 Provider PatchDocument
+```
+
+Provider 与 Handler 只要面对的是同一成员集合，原始数组顺序如何变化都不会改变
+identity 的 canonical index。该保证不覆盖两次快照之间的并发新增/删除；这类成员
+变化仍需要锁、资源版本或条件更新。
 
 验收要求：
 
 - remote 只反序时 PatchDocument 为空；
+- Provider/Handler 两次 GetResource 顺序不同时仍命中正确 identity；
 - 修改一个逻辑元素时，只生成目标元素 patch；
 - identity 改变时保留真实删除/新增；
 - identity 不唯一时不生成可能改错对象的局部 index patch。
@@ -373,9 +392,11 @@ genericResource.collectionIdentities
 | Runtime option | `internal/generic/resource.go` | `genericResource` 保存 `collectionIdentities`，四阶段从同一份 metadata 进入。 |
 | 公共 helper | `internal/generic/collection_identity.go` | `pairCollectionsByIdentity()` 负责 identity 提取、唯一性检查和元素配对；同文件实现 JSON desired state normalize。 |
 | Plan | `internal/generic/resource.go`、`internal/generic/collection_identity_plan.go` | `ModifyPlan()` 调用 `mergeIdentityCollectionPlans()` 做字段级 merge。 |
-| Read | `internal/generic/resource.go`、`internal/generic/collection_identity_plan.go` | remote 写 state 前由 `alignIdentityCollectionState()` 按 prior identity 顺序对齐。 |
-| Update | `internal/generic/resource.go`、`internal/generic/collection_identity.go` | `patchDocument()` 前由 `normalizeIdentityCollections()` 按 remote 顺序同时对齐 current/planned。 |
-| WriteOnly | `internal/generic/resource.go`、`internal/generic/collection_identity_write_only.go` | `restoreIdentityCollectionWriteOnlyValues()` 按 identity 从 prior 回填。 |
+| Plan | `internal/generic/resource.go`、`internal/generic/collection_identity_plan.go` | identity-aware merge 后由 `canonicalizeIdentityCollectionPlan()` 排序已知 identity。 |
+| Read | `internal/generic/resource.go`、`internal/generic/collection_identity_plan.go` | remote 写 state 前由 `canonicalizeIdentityCollectionState()` 规范排序。 |
+| Create | `internal/generic/resource.go`、`internal/generic/collection_identity_plan.go` | 复用 ModifyPlan 已产生的顺序；Create 请求和 response 不额外排序。 |
+| Update | `internal/generic/resource.go`、`internal/generic/collection_identity.go` | `patchDocument()` 前由 `canonicalizeIdentityCollections()` 独立排序 current/planned。 |
+| WriteOnly | `internal/generic/resource.go`、`internal/generic/collection_identity_write_only.go` | 按 identity 从 prior 回填后保持 canonical order。 |
 
 不要手改生成的 `internal/volcengine/*/*_resource_gen.go`。元数据必须从 schema parser
 和 generator 进入生成代码。
@@ -391,8 +412,9 @@ genericResource.collectionIdentities
 | identity 为 null/unknown | 不匹配、不按 index 猜测。 |
 | 组合 identity 重复 | 返回明确 diagnostic。 |
 | Set remote 反序 | Set 本身无序，纯顺序变化不应形成 reorder-only plan；readback/default 导致的完整 object 身份变化由 Plan 用例覆盖。 |
-| Multiset remote 反序 | Read 按 prior identity 顺序写入完整 remote 元素，重复 plan 无 reorder-only diff。 |
+| Multiset remote 反序 | Read 按 canonical identity order 写入完整 remote 元素，重复 plan 无 reorder-only diff。 |
 | Update 前 GetResource 反序 | 不生成 reorder-only patch。 |
+| Provider GetResource 与 Handler GetResource 顺序不同 | 两边规范排序后，Patch 仍命中同一 identity。 |
 | 单元素业务修改 | 只生成目标元素 patch。 |
 | Multiset 允许完整重复元素 | identity 能区分时处理；不能区分时降级。 |
 | writeOnly + remote 反序 | 按 identity 回填到正确元素。 |
@@ -405,14 +427,13 @@ genericResource.collectionIdentities
 | 阶段 | 真实资源与场景 | 验收结果 |
 |-|-|-|
 | Plan / Set | VPC ENI `PrivateIpSets` 的 `AssociatedElasticIp null -> unknown` | description-only 变更不再带出 `private_ip_sets` remove/add，最终稳定 plan 收敛。 |
-| Plan / Multiset | ECS `SecondaryNetworkInterfaces` 的 computed/readback 字段 | 目标 collection before/after 保持一致；空字符串自动分配场景由 `UseStateForEmpty()` 收敛，不再触发 replacement。 |
+| Plan / Multiset | ECS `SecondaryNetworkInterfaces` 的未配置 computed/readback 字段 `null -> unknown` | 目标 collection before/after 保持一致，identity-aware merge 不再制造无意义 replacement。 |
 | Read / Multiset | AutoScaling `ScalingConfiguration.Volumes` remote 保留反序 | 修复前产生 reorder-only plan；修复后目标资源为 `no-op`。该用例使用的 `/Size + /VolumeType` 仅是受控测试 identity。 |
 | Update / Set | VPC PrefixList `PrefixListEntries` remote 为 `[B, A]` 后修改 B | 修复前 patch index 指向 A；修复后 patch 指向 remote index 0 的 B，A 不变，最终 plan 收敛。 |
 
 详细命令、云端 readback、plan JSON、patch 和清理证据分别见本目录：
 
 - [Plan `null -> unknown` E2E 测试记录](https://www.feishu.cn/docx/Wke2dizsVot9swxQzCIc4OAlnee)；
-- [Plan 非 identity 具体值差异 E2E 测试记录](https://www.feishu.cn/docx/VRzbdSRTCoBQaMxxzvSc57g0nug)；
 - [Read remote 反序 E2E 测试记录](https://www.feishu.cn/docx/X1H1dlwHMoROzNxyLBncApftnKg)；
 - [Update index patch E2E 测试记录](https://www.feishu.cn/docx/MtvBdSQtkoLW3ixSO2NcHLJgnhe)。
 

@@ -219,7 +219,8 @@ func mergeTerraformCollectionPlan(config, prior, planned tftypes.Value, identifi
 }
 
 // configElementForPlannedIdentity returns the config element used for field
-// ownership checks, falling back to planned position only after identity pairing.
+// ownership checks, falling back to planned position only when config identities
+// cannot be indexed safely.
 func configElementForPlannedIdentity(
 	configElements []tftypes.Value,
 	configByIdentity map[string]tftypes.Value,
@@ -228,9 +229,8 @@ func configElementForPlannedIdentity(
 	plannedIndex int,
 ) (tftypes.Value, bool) {
 	if configByIdentityOK {
-		if configElement, ok := configByIdentity[key]; ok {
-			return configElement, true
-		}
+		configElement, ok := configByIdentity[key]
+		return configElement, ok
 	}
 	if plannedIndex >= len(configElements) {
 		return tftypes.Value{}, false

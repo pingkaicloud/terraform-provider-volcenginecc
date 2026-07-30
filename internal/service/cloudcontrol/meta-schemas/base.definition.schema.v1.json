@@ -86,9 +86,6 @@
             "description": {
               "$ref": "http://json-schema.org/draft-07/schema#/properties/description"
             },
-            "useStateForEmpty": {
-              "type": "boolean"
-            },
             "semantic": {
               "type": "string",
               "enum": [
