@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_cloudmonitor_contact.example "contact_id"

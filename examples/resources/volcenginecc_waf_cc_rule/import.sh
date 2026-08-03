@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_waf_cc_rule.example "host|rule_id"
