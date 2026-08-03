@@ -669,6 +669,64 @@ func TestCanonicalizeIdentityCollectionsSurvivesHandlerReadOrderChange(t *testin
 	assertJSONEqual(t, applied, planned)
 }
 
+// TestCanonicalizeIdentityCollectionsSurvivesAllSnapshotPermutations verifies
+// that independently ordered provider, planned, and handler snapshots converge
+// once each side canonicalizes identity collections before generating or applying a patch.
+func TestCanonicalizeIdentityCollectionsSurvivesAllSnapshotPermutations(t *testing.T) {
+	identity := []CollectionIdentity{{
+		PropertyPath:    "/Tags",
+		IdentifierPaths: []string{"/Key"},
+		UniqueItems:     true,
+	}}
+	providerCurrents := []string{
+		`{"Tags":[{"Key":"Name","Value":"tt-rabbitmq-instance"},{"Key":"k1","Value":"v2"}]}`,
+		`{"Tags":[{"Key":"k1","Value":"v2"},{"Key":"Name","Value":"tt-rabbitmq-instance"}]}`,
+	}
+	plannedStates := []string{
+		`{"Tags":[{"Key":"Name","Value":"tt-rabbitmq-instance"},{"Key":"k1","Value":"v1"},{"Key":"k2","Value":"v3"}]}`,
+		`{"Tags":[{"Key":"Name","Value":"tt-rabbitmq-instance"},{"Key":"k2","Value":"v3"},{"Key":"k1","Value":"v1"}]}`,
+		`{"Tags":[{"Key":"k1","Value":"v1"},{"Key":"Name","Value":"tt-rabbitmq-instance"},{"Key":"k2","Value":"v3"}]}`,
+		`{"Tags":[{"Key":"k1","Value":"v1"},{"Key":"k2","Value":"v3"},{"Key":"Name","Value":"tt-rabbitmq-instance"}]}`,
+		`{"Tags":[{"Key":"k2","Value":"v3"},{"Key":"Name","Value":"tt-rabbitmq-instance"},{"Key":"k1","Value":"v1"}]}`,
+		`{"Tags":[{"Key":"k2","Value":"v3"},{"Key":"k1","Value":"v1"},{"Key":"Name","Value":"tt-rabbitmq-instance"}]}`,
+	}
+	handlerCurrents := []string{
+		`{"Tags":[{"Key":"Name","Value":"tt-rabbitmq-instance"},{"Key":"k1","Value":"v2"}]}`,
+		`{"Tags":[{"Key":"k1","Value":"v2"},{"Key":"Name","Value":"tt-rabbitmq-instance"}]}`,
+	}
+
+	for providerIndex, providerCurrent := range providerCurrents {
+		for plannedIndex, planned := range plannedStates {
+			for handlerIndex, handlerCurrent := range handlerCurrents {
+				name := fmt.Sprintf("provider-%d/planned-%d/handler-%d", providerIndex, plannedIndex, handlerIndex)
+				t.Run(name, func(t *testing.T) {
+					canonicalCurrent, canonicalPlanned, err := canonicalizeIdentityCollections(providerCurrent, planned, identity)
+					if err != nil {
+						t.Fatalf("canonicalizeIdentityCollections() error = %v", err)
+					}
+					patch, err := patchDocument(canonicalCurrent, canonicalPlanned)
+					if err != nil {
+						t.Fatalf("patchDocument() error = %v", err)
+					}
+					if !strings.Contains(patch, `/Tags/1`) || strings.Contains(patch, `/Tags/0`) {
+						t.Fatalf("patch does not target only canonical k1/addition indexes: %s", patch)
+					}
+
+					canonicalHandlerCurrent, err := canonicalizeIdentityDesiredState(handlerCurrent, identity)
+					if err != nil {
+						t.Fatalf("canonicalizeIdentityDesiredState(handler) error = %v", err)
+					}
+					applied, err := applyTestJSONPatch(canonicalHandlerCurrent, patch)
+					if err != nil {
+						t.Fatalf("applying patch %s to handler state %s: %v", patch, canonicalHandlerCurrent, err)
+					}
+					assertJSONEqual(t, applied, canonicalPlanned)
+				})
+			}
+		}
+	}
+}
+
 func identityElement(name, value string) map[string]interface{} {
 	return map[string]interface{}{"Name": name, "Value": value}
 }
