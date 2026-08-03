@@ -277,6 +277,9 @@
 //go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_tls_alarm_content_template_types -cctype Volcengine::TLS::AlarmContentTemplateType -package tls ../volcengine/tls/alarm_content_template_type_plural_data_source_gen.go ../volcengine/tls/alarm_content_template_type_plural_data_source_gen_test.go
 //go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_veenedge_veens -cctype Volcengine::VeenEdge::Veen -package veenedge ../volcengine/veenedge/veen_plural_data_source_gen.go ../volcengine/veenedge/veen_plural_data_source_gen_test.go
 //go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_id_oauth2_credential_providers -cctype Volcengine::ID::Oauth2CredentialProvider -package id ../volcengine/id/oauth2_credential_provider_plural_data_source_gen.go ../volcengine/id/oauth2_credential_provider_plural_data_source_gen_test.go
+//go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_waf_cc_rules -cctype Volcengine::WAF::CcRule -package waf ../volcengine/waf/cc_rule_plural_data_source_gen.go ../volcengine/waf/cc_rule_plural_data_source_gen_test.go
+//go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_cloudmonitor_contacts -cctype Volcengine::CloudMonitor::Contact -package cloudmonitor ../volcengine/cloudmonitor/contact_plural_data_source_gen.go ../volcengine/cloudmonitor/contact_plural_data_source_gen_test.go
+//go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_efs_mount_points -cctype Volcengine::EFS::MountPoint -package efs ../volcengine/efs/mount_point_plural_data_source_gen.go ../volcengine/efs/mount_point_plural_data_source_gen_test.go
 
 package provider
 

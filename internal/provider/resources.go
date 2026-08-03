@@ -278,6 +278,9 @@
 //go:generate go run generators/resource/main.go -resource volcenginecc_tls_alarm_content_template_type -ccschema ../service/cloudcontrol/schemas/Volcengine_TLS_AlarmContentTemplateType.json -package tls -- ../volcengine/tls/alarm_content_template_type_resource_gen.go ../volcengine/tls/alarm_content_template_type_resource_gen_test.go
 //go:generate go run generators/resource/main.go -resource volcenginecc_veenedge_veen -ccschema ../service/cloudcontrol/schemas/Volcengine_VeenEdge_Veen.json -package veenedge -- ../volcengine/veenedge/veen_resource_gen.go ../volcengine/veenedge/veen_resource_gen_test.go
 //go:generate go run generators/resource/main.go -resource volcenginecc_id_oauth2_credential_provider -ccschema ../service/cloudcontrol/schemas/Volcengine_ID_Oauth2CredentialProvider.json -package id -- ../volcengine/id/oauth2_credential_provider_resource_gen.go ../volcengine/id/oauth2_credential_provider_resource_gen_test.go
+//go:generate go run generators/resource/main.go -resource volcenginecc_waf_cc_rule -ccschema ../service/cloudcontrol/schemas/Volcengine_WAF_CcRule.json -package waf -- ../volcengine/waf/cc_rule_resource_gen.go ../volcengine/waf/cc_rule_resource_gen_test.go
+//go:generate go run generators/resource/main.go -resource volcenginecc_cloudmonitor_contact -ccschema ../service/cloudcontrol/schemas/Volcengine_CloudMonitor_Contact.json -package cloudmonitor -- ../volcengine/cloudmonitor/contact_resource_gen.go ../volcengine/cloudmonitor/contact_resource_gen_test.go
+//go:generate go run generators/resource/main.go -resource volcenginecc_efs_mount_point -ccschema ../service/cloudcontrol/schemas/Volcengine_EFS_MountPoint.json -package efs -- ../volcengine/efs/mount_point_resource_gen.go ../volcengine/efs/mount_point_resource_gen_test.go
 
 package provider
 

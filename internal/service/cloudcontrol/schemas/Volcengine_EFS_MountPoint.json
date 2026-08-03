@@ -1,0 +1,151 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/FileSystemId",
+    "/properties/VpcId",
+    "/properties/SubnetId"
+  ],
+  "description": "EFS file storage mount point, used to mount the file system on the client within the specified VPC and subnet",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/MountPointId",
+      "/properties/MountPointName",
+      "/properties/FileSystemId",
+      "/properties/VpcId",
+      "/properties/ZoneId"
+    ],
+    "required": [
+      "/properties/FileSystemId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "efs:CreateMountPoint",
+        "efs:DescribeMountPoints"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "efs:DeleteMountPoint",
+        "efs:DescribeMountPoints"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "efs:DescribeMountPoints"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "efs:DescribeMountPoints"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "efs:UpdateMountPoint",
+        "efs:DescribeMountPoints"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/FileSystemId",
+    "/properties/MountPointId"
+  ],
+  "properties": {
+    "CreateTime": {
+      "description": "Creation time of the mount point",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Domain": {
+      "description": "Domain name of the mount point",
+      "type": "string"
+    },
+    "FileSystemId": {
+      "description": "ID of the associated file system",
+      "type": "string"
+    },
+    "Ip": {
+      "description": "IP address of the mount point",
+      "type": "string"
+    },
+    "MountPointId": {
+      "description": "ID of the mount point",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "MountPointName": {
+      "description": "Name of the mount point",
+      "maxLength": 128,
+      "minLength": 1,
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "PermissionGroupId": {
+      "description": "ID of the permission group bound to the mount point",
+      "type": "string"
+    },
+    "PermissionGroupName": {
+      "description": "Name of the permission group bound to the mount point",
+      "type": "string"
+    },
+    "Status": {
+      "description": "Status of the mount point. Creating: In progress; Running: Available; Updating: In progress; Deleting: In progress; CreateError: Creation failed; DeleteError: Deletion failed; Disabled: Disabled; Unknown: Unknown",
+      "semantic": "status",
+      "type": "string"
+    },
+    "SubnetId": {
+      "description": "ID of the subnet associated with the mount point",
+      "type": "string"
+    },
+    "SubnetName": {
+      "description": "Name of the subnet associated with the mount point",
+      "type": "string"
+    },
+    "UpdateTime": {
+      "description": "Last update time of the mount point",
+      "semantic": "updatedTime",
+      "type": "string"
+    },
+    "VpcId": {
+      "description": "ID of the VPC associated with the mount point",
+      "type": "string"
+    },
+    "VpcName": {
+      "description": "Name of the VPC associated with the mount point",
+      "type": "string"
+    },
+    "ZoneId": {
+      "description": "ID of the availability zone associated with the mount point",
+      "type": "string"
+    },
+    "ZoneName": {
+      "description": "Name of the availability zone associated with the mount point",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/MountPointId",
+    "/properties/ZoneId",
+    "/properties/PermissionGroupName",
+    "/properties/VpcName",
+    "/properties/SubnetName",
+    "/properties/ZoneName",
+    "/properties/Domain",
+    "/properties/Ip",
+    "/properties/Status",
+    "/properties/CreateTime",
+    "/properties/UpdateTime"
+  ],
+  "required": [
+    "FileSystemId",
+    "VpcId",
+    "MountPointName",
+    "PermissionGroupId"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::EFS::MountPoint"
+}

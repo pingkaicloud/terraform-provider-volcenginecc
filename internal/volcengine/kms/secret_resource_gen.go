@@ -499,9 +499,6 @@ func secretResource(ctx context.Context) (resource.Resource, error) {
 		"secret_value": schema.StringAttribute{ /*START ATTRIBUTE*/
 			Description: "Credential value. When SecretType is Generic, users can customize it. It is recommended to use JSON key-value pairs",
 			Required:    true,
-			PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
-				stringplanmodifier.RequiresReplace(),
-			}, /*END PLAN MODIFIERS*/
 			// SecretValue is a write-only property.
 		}, /*END ATTRIBUTE*/
 		// Property: SecretVersions
@@ -713,7 +710,6 @@ func secretResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/RotationInterval",
 		"/properties/SecretName",
 		"/properties/SecretType",
-		"/properties/SecretValue",
 		"/properties/AutomaticRotation",
 		"/properties/SecretRestore",
 	})

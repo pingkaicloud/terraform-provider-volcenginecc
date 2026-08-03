@@ -1119,3 +1119,16 @@ resource_schema "volcengine_veenedge_veen" {
 resource_schema "volcengine_id_oauth2_credential_provider" {
   cloudcontrol_type_name = "Volcengine::ID::Oauth2CredentialProvider"
 }
+
+resource_schema "volcengine_waf_cc_rule" {
+  cloudcontrol_type_name = "Volcengine::WAF::CcRule"
+}
+
+resource_schema "volcengine_cloudmonitor_contact" {
+  cloudcontrol_type_name = "Volcengine::CloudMonitor::Contact"
+}
+
+resource_schema "volcengine_efs_mount_point" {
+  cloudcontrol_type_name = "Volcengine::EFS::MountPoint"
+}
+

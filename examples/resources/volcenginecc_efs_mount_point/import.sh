@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_efs_mount_point.example "file_system_id|mount_point_id"

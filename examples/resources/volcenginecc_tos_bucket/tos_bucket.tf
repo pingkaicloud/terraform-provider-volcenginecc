@@ -23,7 +23,7 @@ resource "volcenginecc_tos_bucket" "Example" {
       }
       lifecycle_rule_id = "bucketdemo"
       prefix            = "prefix"
-      status = "Enabled" }
+    status = "Enabled" }
   ]
   object_lock_configuration = {
     object_lock_enabled = "Enabled"

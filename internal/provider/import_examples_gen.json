@@ -1378,5 +1378,20 @@
         "resource": "volcenginecc_id_oauth2_credential_provider",
         "identifier": ["Name","PoolName"],
         "path": "./examples/resources/volcenginecc_id_oauth2_credential_provider/import.sh"
+    },
+    {
+        "resource": "volcenginecc_waf_cc_rule",
+        "identifier": ["Host","RuleId"],
+        "path": "./examples/resources/volcenginecc_waf_cc_rule/import.sh"
+    },
+    {
+        "resource": "volcenginecc_cloudmonitor_contact",
+        "identifier": ["ContactId"],
+        "path": "./examples/resources/volcenginecc_cloudmonitor_contact/import.sh"
+    },
+    {
+        "resource": "volcenginecc_efs_mount_point",
+        "identifier": ["FileSystemId","MountPointId"],
+        "path": "./examples/resources/volcenginecc_efs_mount_point/import.sh"
     }
 ]
