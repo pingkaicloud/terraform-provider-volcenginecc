@@ -86,11 +86,11 @@ func (p *VolcengineCCProvider) Schema(ctx context.Context, request provider.Sche
 	response.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"access_key": schema.StringAttribute{
-				Description: "The Access Key for Volcengine Provider. It must be provided, but it can also be sourced from the `VOLCENGINE_ACCESS_KEY` environment variable",
+				Description: "The Access Key for Volcengine Provider. It can also be sourced from the `VOLCENGINE_ACCESS_KEY` environment variable",
 				Optional:    true,
 			},
 			"secret_key": schema.StringAttribute{
-				Description: "he Secret Key for Volcengine Provider. It must be provided, but it can also be sourced from the `VOLCENGINE_SECRET_KEY` environment variable",
+				Description: "The Secret Key for Volcengine Provider. It can also be sourced from the `VOLCENGINE_SECRET_KEY` environment variable",
 				Optional:    true,
 			},
 			"session_token": schema.StringAttribute{
@@ -146,7 +146,7 @@ func (p *VolcengineCCProvider) Schema(ctx context.Context, request provider.Sche
 					},
 				},
 				Optional:    true,
-				Description: "An `assume_role` block (documented below). Only one `assume_role` block may be in the configuration.",
+				Description: "An `assume_role` block that uses the selected source credentials to obtain target-role credentials. Only one `assume_role` block may be in the configuration.",
 			},
 			"endpoints": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
@@ -163,11 +163,11 @@ func (p *VolcengineCCProvider) Schema(ctx context.Context, request provider.Sche
 				Description: "An `endpoints` block (documented below). Only one `endpoints` block may be in the configuration.",
 			},
 			"profile": schema.StringAttribute{
-				Description: "The profile for Volcengine Provider. It can be sourced from the `VOLCENGINE_PROFILE` environment variable",
+				Description: "The Profile for Volcengine Provider. An explicitly configured Profile is used as the source credential and can also be sourced from the `VOLCENGINE_PROFILE` environment variable",
 				Optional:    true,
 			},
 			"file_path": schema.StringAttribute{
-				Description: "The file path for Volcengine Provider configuration. It can be sourced from the `VOLCENGINE_FILE_PATH` environment variable",
+				Description: "The Profile configuration file path for Volcengine Provider. It defaults to `~/.volcengine/config.json` and can be sourced from the `VOLCENGINE_FILE_PATH` environment variable",
 				Optional:    true,
 			},
 		},
@@ -190,6 +190,9 @@ type configModel struct {
 	Profile             types.String    `tfsdk:"profile"`
 	FilePath            types.String    `tfsdk:"file_path"`
 	terraformVersion    string
+	accessKeyExplicit   bool
+	secretKeyExplicit   bool
+	profileExplicit     bool
 }
 type AssumeRoleData struct {
 	AssumeRoleTRN types.String `tfsdk:"assume_role_trn"`
@@ -215,6 +218,9 @@ func (p *VolcengineCCProvider) Configure(ctx context.Context, request provider.C
 	}
 
 	config.terraformVersion = request.TerraformVersion
+	config.accessKeyExplicit = isKnownNonEmptyString(config.AccessKey)
+	config.secretKeyExplicit = isKnownNonEmptyString(config.SecretKey)
+	config.profileExplicit = isKnownNonEmptyString(config.Profile)
 	if config.AccessKey.IsNull() || config.AccessKey.IsUnknown() {
 		config.AccessKey = types.StringValue(os.Getenv("VOLCENGINE_ACCESS_KEY"))
 	}
@@ -233,9 +239,9 @@ func (p *VolcengineCCProvider) Configure(ctx context.Context, request provider.C
 	if config.Region.IsNull() || config.Region.IsUnknown() {
 		config.Region = types.StringValue(os.Getenv("VOLCENGINE_REGION"))
 	}
-	// 认证方式按优先级解析：显式 AK/SK > profile/file_path（CLI 配置）>
-	// DefaultCredentialProvider 默认链（环境变量、OIDC、CLI 配置、ECS 实例角色）。
-	// 因此无需在此强制要求显式凭证。
+	// 认证分两阶段解析：先保留 Terraform 显式选择的 Profile 或 AK/SK，
+	// 再由 buildSourceCredentials 选择源凭证；未显式选择时才回退到环境变量或默认凭证链。
+	// 源凭证确定后，buildCredentials 再按需使用 AssumeRole 包装它。
 	if config.Region.ValueString() == "" {
 		response.Diagnostics.AddError("Missing Region", "Region must be set")
 	}
@@ -284,7 +290,7 @@ func (p *VolcengineCCProvider) Configure(ctx context.Context, request provider.C
 	}
 	if config.AssumeRole.Policy.IsNull() || config.AssumeRole.Policy.IsUnknown() {
 		if policy := os.Getenv("VOLCENGINE_ASSUME_ROLE_POLICY"); policy != "" {
-			config.AssumeRole.Policy = types.StringValue("VOLCENGINE_ASSUME_ROLE_Policy")
+			config.AssumeRole.Policy = types.StringValue(policy)
 		}
 	}
 
@@ -361,52 +367,114 @@ func (p *VolcengineCCProvider) DataSources(ctx context.Context) []func() datasou
 	return dataSources
 }
 
-// buildCredentials 按优先级选择 SDK 使用的凭证提供方：
-//  1. assume_role：以显式 AccessKey/SecretKey 为源凭证，扮演指定角色（STS 凭证）；
-//  2. 显式配置的 AccessKey/SecretKey（静态凭证）；
-//  3. profile 或 file_path（火山引擎 CLI 配置文件凭证）；
-//  4. DefaultCredentialProvider 默认凭证链（环境变量、OIDC、CLI 配置、ECS 实例角色）。
-//
-// 当未提供任何显式凭证时，默认回退到 DefaultCredentialProvider。
-func buildCredentials(c *configModel) (*credentials.Credentials, diag.Diagnostics) {
+type credentialSourceKind int
+
+const (
+	credentialSourceDefault credentialSourceKind = iota
+	credentialSourceStatic
+	credentialSourceProfile
+)
+
+type sourceCredentialsValidator func() error
+
+type assumeRoleCredentialsFactory func(*credentials.Credentials, credentials.StsValue, sourceCredentialsValidator) *credentials.Credentials
+
+// buildSourceCredentials 选择调用云服务或 STS 的源凭证。Terraform 中显式指定的
+// Profile 优先于环境变量注入的 AK/SK；同时显式配置 Profile 与 AK/SK 时返回冲突诊断，
+// 避免在用户不知情的情况下切换身份。
+func buildSourceCredentials(c *configModel) (*credentials.Credentials, credentialSourceKind, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	switch {
-	case c.AssumeRole != nil && !c.AssumeRole.AssumeRoleTRN.IsNull():
-		accountId, roleName, err := ParseTrn(c.AssumeRole.AssumeRoleTRN.ValueString())
-		if err != nil {
-			diags.AddError(err.Error(), err.Error())
+	case c.profileExplicit && (c.accessKeyExplicit || c.secretKeyExplicit):
+		diags.AddError(
+			"Conflicting Authentication Configuration",
+			"Profile cannot be configured together with AccessKey or SecretKey. Choose exactly one explicit source credential.",
+		)
+		return nil, credentialSourceDefault, diags
+	case c.profileExplicit:
+		return clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString()), credentialSourceProfile, diags
+	case c.AccessKey.ValueString() != "" && c.SecretKey.ValueString() != "":
+		return credentials.NewStaticCredentials(c.AccessKey.ValueString(), c.SecretKey.ValueString(), c.SessionToken.ValueString()), credentialSourceStatic, diags
+	case c.Profile.ValueString() != "" || c.FilePath.ValueString() != "":
+		return clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString()), credentialSourceProfile, diags
+	default:
+		return defaults.NewDefaultCredentialProvider(), credentialSourceDefault, diags
+	}
+}
+
+// buildCredentials 先选择可刷新的源凭证，再按需使用 AssumeRole 凭证提供方包装源凭证。
+// AssumeRole 不再与 Profile、静态凭证或默认凭证链竞争优先级。
+func buildCredentials(c *configModel) (*credentials.Credentials, diag.Diagnostics) {
+	return buildCredentialsWithFactory(c, newAssumeRoleCredentials)
+}
+
+// buildCredentialsWithFactory 使用可注入的工厂构造最终凭证，使测试能够验证源凭证
+// 选择与 AssumeRole 参数，而无需发起真实 STS 请求。
+func buildCredentialsWithFactory(c *configModel, factory assumeRoleCredentialsFactory) (*credentials.Credentials, diag.Diagnostics) {
+	sourceCredentials, sourceKind, diags := buildSourceCredentials(c)
+	if diags.HasError() {
+		return nil, diags
+	}
+	if !hasAssumeRole(c) {
+		return sourceCredentials, diags
+	}
+	if sourceKind == credentialSourceDefault {
+		diags.AddError(
+			"AssumeRole Source Credentials Required",
+			"V1 requires AssumeRole source credentials to be selected by explicit AK/SK, AK/SK environment variables, or Profile. The default credential chain cannot be combined with AssumeRole because its source mode cannot be verified as a single hop.",
+		)
+		return nil, diags
+	}
+
+	accountId, roleName, err := ParseTrn(c.AssumeRole.AssumeRoleTRN.ValueString())
+	if err != nil {
+		diags.AddError("Invalid AssumeRole TRN", err.Error())
+		return nil, diags
+	}
+	var validateSource sourceCredentialsValidator
+	if sourceKind == credentialSourceProfile {
+		validateSource = func() error {
+			return validateProfileAssumeRoleMode(c.FilePath.ValueString(), c.Profile.ValueString())
+		}
+		if err := validateSource(); err != nil {
+			diags.AddError("Unsupported Profile for AssumeRole", err.Error())
 			return nil, diags
 		}
-
-		if c.AssumeRole.Duration.IsNull() || c.AssumeRole.Duration.IsUnknown() {
-			c.AssumeRole.Duration = types.Int32Value(3600)
-		}
-
-		stsValue := credentials.StsValue{
-			AccessKey:       c.AccessKey.ValueString(),
-			SecurityKey:     c.SecretKey.ValueString(),
-			RoleName:        roleName, // 扮演角色名称
-			AccountId:       accountId,
-			Schema:          "https",
-			Region:          c.Region.ValueString(),
-			DurationSeconds: int(c.AssumeRole.Duration.ValueInt32()),
-		}
-		if c.Endpoints != nil && !c.Endpoints.STS.IsNull() && c.Endpoints.STS.ValueString() != "" {
-			stsValue.Host = c.Endpoints.STS.ValueString()
-		} else {
-			stsValue.Host = "sts.volcengineapi.com"
-		}
-		if c.DisableSSL.ValueBool() {
-			stsValue.Schema = "http"
-		}
-		return credentials.NewStsCredentials(stsValue), diags
-	case c.AccessKey.ValueString() != "" && c.SecretKey.ValueString() != "":
-		return credentials.NewStaticCredentials(c.AccessKey.ValueString(), c.SecretKey.ValueString(), c.SessionToken.ValueString()), diags
-	case c.Profile.ValueString() != "" || c.FilePath.ValueString() != "":
-		return clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString()), diags
-	default:
-		return defaults.NewDefaultCredentialProvider(), diags
 	}
+
+	if c.AssumeRole.Duration.IsNull() || c.AssumeRole.Duration.IsUnknown() {
+		c.AssumeRole.Duration = types.Int32Value(int32(defaultAssumeRoleDuration.Seconds()))
+	}
+
+	stsValue := credentials.StsValue{
+		RoleName:        roleName,
+		AccountId:       accountId,
+		Schema:          "https",
+		Region:          c.Region.ValueString(),
+		DurationSeconds: int(c.AssumeRole.Duration.ValueInt32()),
+		Policy:          c.AssumeRole.Policy.ValueString(),
+	}
+	if c.Endpoints != nil && !c.Endpoints.STS.IsNull() && c.Endpoints.STS.ValueString() != "" {
+		stsValue.Host = c.Endpoints.STS.ValueString()
+	} else {
+		stsValue.Host = "sts.volcengineapi.com"
+	}
+	if c.DisableSSL.ValueBool() {
+		stsValue.Schema = "http"
+	}
+
+	return factory(sourceCredentials, stsValue, validateSource), diags
+}
+
+// hasAssumeRole reports whether the resolved configuration contains a usable target role TRN.
+func hasAssumeRole(c *configModel) bool {
+	return c.AssumeRole != nil && isKnownNonEmptyString(c.AssumeRole.AssumeRoleTRN)
+}
+
+// isKnownNonEmptyString reports whether a Terraform string is configured with a known,
+// non-empty value. It is used before environment fallback to retain explicit-source intent.
+func isKnownNonEmptyString(value types.String) bool {
+	return !value.IsNull() && !value.IsUnknown() && value.ValueString() != ""
 }
 
 func setProxyDefaultsFromEnvironment(c *configModel) {

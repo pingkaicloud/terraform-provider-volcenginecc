@@ -6,11 +6,14 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -18,9 +21,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	frameworkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	providerschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/volcengine/terraform-provider-volcenginecc/internal/cloudcontrol"
 	"github.com/volcengine/volcengine-go-sdk/volcengine"
+	"github.com/volcengine/volcengine-go-sdk/volcengine/credentials"
 )
 
 const testProxyAuthorization = "Basic WlRJX3Rlc3Q6dGVzdC10b2tlbg=="
@@ -716,4 +722,417 @@ func receiveString(t *testing.T, values <-chan string, description string) strin
 		t.Fatalf("timed out waiting for %s", description)
 		return ""
 	}
+}
+
+type sequenceCredentialsProvider struct {
+	values []credentials.Value
+	calls  int
+}
+
+// Retrieve returns the next configured credential value and records the retrieval count.
+func (p *sequenceCredentialsProvider) Retrieve() (credentials.Value, error) {
+	if len(p.values) == 0 {
+		return credentials.Value{}, errors.New("no credentials configured")
+	}
+	index := p.calls
+	if index >= len(p.values) {
+		index = len(p.values) - 1
+	}
+	p.calls++
+	return p.values[index], nil
+}
+
+// IsExpired keeps the sequence provider refreshable so each target refresh re-reads it.
+func (p *sequenceCredentialsProvider) IsExpired() bool {
+	return true
+}
+
+// TestConfigModelCanDecodeProviderSchema verifies internal source-selection metadata
+// does not interfere with Terraform Plugin Framework configuration decoding.
+func TestConfigModelCanDecodeProviderSchema(t *testing.T) {
+	ctx := context.Background()
+	var schemaResponse frameworkprovider.SchemaResponse
+	(&VolcengineCCProvider{}).Schema(ctx, frameworkprovider.SchemaRequest{}, &schemaResponse)
+	terraformType := schemaResponse.Schema.Type().TerraformType(ctx)
+	objectType, ok := terraformType.(tftypes.Object)
+	if !ok {
+		t.Fatalf("expected provider schema object type, got %T", terraformType)
+	}
+	values := make(map[string]tftypes.Value, len(objectType.AttributeTypes))
+	for name, attributeType := range objectType.AttributeTypes {
+		values[name] = tftypes.NewValue(attributeType, nil)
+	}
+	config := tfsdk.Config{
+		Raw:    tftypes.NewValue(objectType, values),
+		Schema: schemaResponse.Schema,
+	}
+
+	var model configModel
+	diags := config.Get(ctx, &model)
+	if diags.HasError() {
+		t.Fatalf("decode provider configuration: %v", diags)
+	}
+}
+
+// TestBuildSourceCredentialsExplicitProfileOverridesEnvironmentCredentials verifies an
+// explicitly selected Profile is not silently bypassed by environment-derived AK/SK.
+func TestBuildSourceCredentialsExplicitProfileOverridesEnvironmentCredentials(t *testing.T) {
+	profilePath := writeProfileConfig(t, `{
+		"current": "platform-admin",
+		"profiles": {
+			"platform-admin": {
+				"mode": "ak",
+				"access-key": "profile-ak",
+				"secret-key": "profile-sk"
+			}
+		}
+	}`)
+	config := testConfigModel()
+	config.AccessKey = types.StringValue("environment-ak")
+	config.SecretKey = types.StringValue("environment-sk")
+	config.Profile = types.StringValue("platform-admin")
+	config.FilePath = types.StringValue(profilePath)
+	config.profileExplicit = true
+
+	source, sourceKind, diags := buildSourceCredentials(config)
+	if diags.HasError() {
+		t.Fatalf("buildSourceCredentials returned diagnostics: %v", diags)
+	}
+	if sourceKind != credentialSourceProfile {
+		t.Fatalf("expected Profile source, got %v", sourceKind)
+	}
+
+	value, err := source.Get()
+	if err != nil {
+		t.Fatalf("retrieve Profile credentials: %v", err)
+	}
+	if value.AccessKeyID != "profile-ak" || value.SecretAccessKey != "profile-sk" {
+		t.Fatalf("expected Profile credentials, got access key %q", value.AccessKeyID)
+	}
+}
+
+// TestBuildSourceCredentialsRejectsExplicitProfileAndAccessKey verifies ambiguous
+// explicit authentication sources return a diagnostic.
+func TestBuildSourceCredentialsRejectsExplicitProfileAndAccessKey(t *testing.T) {
+	config := testConfigModel()
+	config.AccessKey = types.StringValue("explicit-ak")
+	config.SecretKey = types.StringValue("explicit-sk")
+	config.Profile = types.StringValue("platform-admin")
+	config.accessKeyExplicit = true
+	config.secretKeyExplicit = true
+	config.profileExplicit = true
+
+	_, _, diags := buildSourceCredentials(config)
+	if !diags.HasError() {
+		t.Fatal("expected conflicting authentication diagnostic")
+	}
+	if !strings.Contains(diags.Errors()[0].Summary(), "Conflicting Authentication Configuration") {
+		t.Fatalf("unexpected diagnostic: %v", diags)
+	}
+}
+
+// TestBuildCredentialsWrapsProfileAsAssumeRoleSource verifies Profile credentials and
+// AssumeRole options are passed through their separate source and target layers.
+func TestBuildCredentialsWrapsProfileAsAssumeRoleSource(t *testing.T) {
+	profilePath := writeProfileConfig(t, `{
+		"profiles": {
+			"platform-admin": {
+				"mode": "ak",
+				"access-key": "profile-ak",
+				"secret-key": "profile-sk",
+				"session-token": "profile-token"
+			}
+		}
+	}`)
+	config := testConfigModel()
+	config.Profile = types.StringValue("platform-admin")
+	config.FilePath = types.StringValue(profilePath)
+	config.profileExplicit = true
+	config.AssumeRole = &AssumeRoleData{
+		AssumeRoleTRN: types.StringValue("trn:iam::222222222222:role/terraform-execution"),
+		Duration:      types.Int32Value(1800),
+		Policy:        types.StringValue(`{"Statement":[]}`),
+	}
+	config.Endpoints = &endpointData{
+		STS: types.StringValue("sts.example.com"),
+	}
+
+	var capturedSource credentials.Value
+	var capturedStsValue credentials.StsValue
+	factory := func(source *credentials.Credentials, stsValue credentials.StsValue, _ sourceCredentialsValidator) *credentials.Credentials {
+		var err error
+		capturedSource, err = source.Get()
+		if err != nil {
+			t.Fatalf("retrieve captured source credentials: %v", err)
+		}
+		capturedStsValue = stsValue
+		return credentials.NewStaticCredentials("target-ak", "target-sk", "target-token")
+	}
+
+	finalCredentials, diags := buildCredentialsWithFactory(config, factory)
+	if diags.HasError() {
+		t.Fatalf("buildCredentialsWithFactory returned diagnostics: %v", diags)
+	}
+	if finalCredentials == nil {
+		t.Fatal("expected final credentials")
+	}
+	if capturedSource.AccessKeyID != "profile-ak" ||
+		capturedSource.SecretAccessKey != "profile-sk" ||
+		capturedSource.SessionToken != "profile-token" {
+		t.Fatalf("unexpected AssumeRole source credentials: %#v", capturedSource)
+	}
+	if capturedStsValue.AccountId != "222222222222" ||
+		capturedStsValue.RoleName != "terraform-execution" ||
+		capturedStsValue.DurationSeconds != 1800 ||
+		capturedStsValue.Policy != `{"Statement":[]}` ||
+		capturedStsValue.Host != "sts.example.com" {
+		t.Fatalf("unexpected AssumeRole configuration: %#v", capturedStsValue)
+	}
+}
+
+// TestSourceAssumeRoleProviderRefreshesSourceCredentials verifies a target refresh
+// obtains fresh source credentials and forwards the current session token to STS.
+func TestSourceAssumeRoleProviderRefreshesSourceCredentials(t *testing.T) {
+	sourceProvider := &sequenceCredentialsProvider{
+		values: []credentials.Value{
+			{
+				AccessKeyID:     "source-ak-1",
+				SecretAccessKey: "source-sk-1",
+				SessionToken:    "source-token-1",
+			},
+			{
+				AccessKeyID:     "source-ak-2",
+				SecretAccessKey: "source-sk-2",
+				SessionToken:    "source-token-2",
+			},
+		},
+	}
+	source := credentials.NewExpireAbleCredentials(sourceProvider)
+
+	var stsCalls []credentials.StsValue
+	retrieve := func(stsValue credentials.StsValue) (credentials.Value, error) {
+		stsCalls = append(stsCalls, stsValue)
+		callNumber := len(stsCalls)
+		return credentials.Value{
+			AccessKeyID:     fmt.Sprintf("target-ak-%d", callNumber),
+			SecretAccessKey: fmt.Sprintf("target-sk-%d", callNumber),
+			SessionToken:    fmt.Sprintf("target-token-%d", callNumber),
+		}, nil
+	}
+	target := newAssumeRoleCredentialsWithRetriever(source, credentials.StsValue{
+		AccountId:       "222222222222",
+		RoleName:        "terraform-execution",
+		DurationSeconds: 3600,
+	}, nil, retrieve)
+
+	first, err := target.Get()
+	if err != nil {
+		t.Fatalf("retrieve first target credentials: %v", err)
+	}
+	if first.AccessKeyID != "target-ak-1" {
+		t.Fatalf("unexpected first target access key: %q", first.AccessKeyID)
+	}
+
+	cached, err := target.Get()
+	if err != nil {
+		t.Fatalf("retrieve cached target credentials: %v", err)
+	}
+	if cached.AccessKeyID != "target-ak-1" || len(stsCalls) != 1 {
+		t.Fatalf("expected cached target credentials, got %#v with %d STS calls", cached, len(stsCalls))
+	}
+
+	target.Expire()
+	second, err := target.Get()
+	if err != nil {
+		t.Fatalf("retrieve refreshed target credentials: %v", err)
+	}
+	if second.AccessKeyID != "target-ak-2" {
+		t.Fatalf("unexpected refreshed target access key: %q", second.AccessKeyID)
+	}
+	if sourceProvider.calls != 2 || len(stsCalls) != 2 {
+		t.Fatalf("expected two source and STS retrievals, got source=%d STS=%d", sourceProvider.calls, len(stsCalls))
+	}
+	if stsCalls[0].AccessKey != "source-ak-1" ||
+		stsCalls[0].SecurityKey != "source-sk-1" ||
+		stsCalls[0].SessionToken != "source-token-1" {
+		t.Fatalf("unexpected first STS source: %#v", stsCalls[0])
+	}
+	if stsCalls[1].AccessKey != "source-ak-2" ||
+		stsCalls[1].SecurityKey != "source-sk-2" ||
+		stsCalls[1].SessionToken != "source-token-2" {
+		t.Fatalf("unexpected refreshed STS source: %#v", stsCalls[1])
+	}
+}
+
+// TestSourceAssumeRoleProviderRevalidatesProfileMode verifies every target refresh
+// rechecks the Profile mode before obtaining or using refreshed source credentials.
+func TestSourceAssumeRoleProviderRevalidatesProfileMode(t *testing.T) {
+	profilePath := writeProfileConfig(t, `{
+		"profiles": {
+			"platform-admin": {
+				"mode": "ak"
+			}
+		}
+	}`)
+	source := credentials.NewStaticCredentials("source-ak", "source-sk", "")
+	stsCalls := 0
+	target := newAssumeRoleCredentialsWithRetriever(
+		source,
+		credentials.StsValue{
+			AccountId:       "222222222222",
+			RoleName:        "terraform-execution",
+			DurationSeconds: 3600,
+		},
+		func() error {
+			return validateProfileAssumeRoleMode(profilePath, "platform-admin")
+		},
+		func(credentials.StsValue) (credentials.Value, error) {
+			stsCalls++
+			return credentials.Value{
+				AccessKeyID:     "target-ak",
+				SecretAccessKey: "target-sk",
+				SessionToken:    "target-token",
+			}, nil
+		},
+	)
+
+	if _, err := target.Get(); err != nil {
+		t.Fatalf("retrieve target credentials from AK Profile: %v", err)
+	}
+	if err := os.WriteFile(profilePath, []byte(`{
+		"profiles": {
+			"platform-admin": {
+				"mode": "ramrolearn"
+			}
+		}
+	}`), 0o600); err != nil {
+		t.Fatalf("replace Profile configuration: %v", err)
+	}
+
+	target.Expire()
+	_, err := target.Get()
+	if err == nil {
+		t.Fatal("expected refreshed ramrolearn Profile to be rejected")
+	}
+	if !strings.Contains(err.Error(), "already contains a RAM role chain") {
+		t.Fatalf("unexpected refresh error: %v", err)
+	}
+	if stsCalls != 1 {
+		t.Fatalf("expected Profile validation to stop the second STS call, got %d calls", stsCalls)
+	}
+}
+
+// TestBuildCredentialsRejectsDefaultSourceForAssumeRole verifies V1 does not wrap an
+// opaque default chain whose eventual Profile mode cannot be proven to be single-hop.
+func TestBuildCredentialsRejectsDefaultSourceForAssumeRole(t *testing.T) {
+	config := testConfigModel()
+	config.AssumeRole = &AssumeRoleData{
+		AssumeRoleTRN: types.StringValue("trn:iam::222222222222:role/terraform-execution"),
+		Duration:      types.Int32Value(3600),
+		Policy:        types.StringNull(),
+	}
+
+	_, diags := buildCredentialsWithFactory(config, func(*credentials.Credentials, credentials.StsValue, sourceCredentialsValidator) *credentials.Credentials {
+		t.Fatal("AssumeRole factory must not run for the default credential chain")
+		return nil
+	})
+	if !diags.HasError() {
+		t.Fatal("expected default-chain AssumeRole diagnostic")
+	}
+	if !strings.Contains(diags.Errors()[0].Summary(), "AssumeRole Source Credentials Required") {
+		t.Fatalf("unexpected diagnostic: %v", diags)
+	}
+}
+
+// TestValidateProfileAssumeRoleModeRejectsRamRoleArn verifies V1 rejects a Profile
+// that already contains a RAM role assumption.
+func TestValidateProfileAssumeRoleModeRejectsRamRoleArn(t *testing.T) {
+	profilePath := writeProfileConfig(t, `{
+		"profiles": {
+			"role-chain": {
+				"mode": "ramrolearn"
+			}
+		}
+	}`)
+
+	err := validateProfileAssumeRoleMode(profilePath, "role-chain")
+	if err == nil {
+		t.Fatal("expected RAM role chain Profile to be rejected")
+	}
+	if !strings.Contains(err.Error(), "already contains a RAM role chain") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// TestBuildCredentialsRejectsRamRoleArnProfile verifies the V1 role-chain boundary is
+// enforced by the final credential construction path.
+func TestBuildCredentialsRejectsRamRoleArnProfile(t *testing.T) {
+	profilePath := writeProfileConfig(t, `{
+		"profiles": {
+			"role-chain": {
+				"mode": "ramrolearn"
+			}
+		}
+	}`)
+	config := testConfigModel()
+	config.Profile = types.StringValue("role-chain")
+	config.FilePath = types.StringValue(profilePath)
+	config.profileExplicit = true
+	config.AssumeRole = &AssumeRoleData{
+		AssumeRoleTRN: types.StringValue("trn:iam::222222222222:role/terraform-execution"),
+		Duration:      types.Int32Value(3600),
+		Policy:        types.StringNull(),
+	}
+
+	_, diags := buildCredentialsWithFactory(config, func(*credentials.Credentials, credentials.StsValue, sourceCredentialsValidator) *credentials.Credentials {
+		t.Fatal("AssumeRole factory must not run for a role-chain Profile")
+		return nil
+	})
+	if !diags.HasError() {
+		t.Fatal("expected role-chain Profile diagnostic")
+	}
+	if !strings.Contains(diags.Errors()[0].Detail(), "V1 does not support another AssumeRole hop") {
+		t.Fatalf("unexpected diagnostic: %v", diags)
+	}
+}
+
+// TestValidateProfileAssumeRoleModeAllowsAK verifies a direct AK Profile remains a
+// supported AssumeRole source.
+func TestValidateProfileAssumeRoleModeAllowsAK(t *testing.T) {
+	profilePath := writeProfileConfig(t, `{
+		"profiles": {
+			"platform-admin": {
+				"mode": "ak"
+			}
+		}
+	}`)
+
+	if err := validateProfileAssumeRoleMode(profilePath, "platform-admin"); err != nil {
+		t.Fatalf("expected AK Profile to be accepted: %v", err)
+	}
+}
+
+// testConfigModel returns a minimal resolved configuration for credential unit tests.
+func testConfigModel() *configModel {
+	return &configModel{
+		AccessKey:    types.StringNull(),
+		SecretKey:    types.StringNull(),
+		SessionToken: types.StringNull(),
+		Region:       types.StringValue("cn-beijing"),
+		DisableSSL:   types.BoolValue(false),
+		Profile:      types.StringNull(),
+		FilePath:     types.StringNull(),
+		AssumeRole:   nil,
+		Endpoints:    &endpointData{},
+	}
+}
+
+// writeProfileConfig writes an isolated CLI Profile configuration for a test.
+func writeProfileConfig(t *testing.T, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("write Profile configuration: %v", err)
+	}
+	return path
 }
