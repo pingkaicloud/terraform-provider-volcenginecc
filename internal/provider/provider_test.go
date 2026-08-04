@@ -794,12 +794,9 @@ func TestBuildSourceCredentialsExplicitProfileOverridesEnvironmentCredentials(t 
 	config.FilePath = types.StringValue(profilePath)
 	config.profileExplicit = true
 
-	source, sourceKind, diags := buildSourceCredentials(config)
+	source, diags := buildSourceCredentials(config)
 	if diags.HasError() {
 		t.Fatalf("buildSourceCredentials returned diagnostics: %v", diags)
-	}
-	if sourceKind != credentialSourceProfile {
-		t.Fatalf("expected Profile source, got %v", sourceKind)
 	}
 
 	value, err := source.Get()
@@ -822,7 +819,7 @@ func TestBuildSourceCredentialsRejectsExplicitProfileAndAccessKey(t *testing.T) 
 	config.secretKeyExplicit = true
 	config.profileExplicit = true
 
-	_, _, diags := buildSourceCredentials(config)
+	_, diags := buildSourceCredentials(config)
 	if !diags.HasError() {
 		t.Fatal("expected conflicting authentication diagnostic")
 	}
@@ -859,7 +856,7 @@ func TestBuildCredentialsWrapsProfileAsAssumeRoleSource(t *testing.T) {
 
 	var capturedSource credentials.Value
 	var capturedStsValue credentials.StsValue
-	factory := func(source *credentials.Credentials, stsValue credentials.StsValue, _ sourceCredentialsValidator) *credentials.Credentials {
+	factory := func(source *credentials.Credentials, stsValue credentials.StsValue) *credentials.Credentials {
 		var err error
 		capturedSource, err = source.Get()
 		if err != nil {
@@ -923,7 +920,7 @@ func TestSourceAssumeRoleProviderRefreshesSourceCredentials(t *testing.T) {
 		AccountId:       "222222222222",
 		RoleName:        "terraform-execution",
 		DurationSeconds: 3600,
-	}, nil, retrieve)
+	}, retrieve)
 
 	first, err := target.Get()
 	if err != nil {
@@ -964,67 +961,9 @@ func TestSourceAssumeRoleProviderRefreshesSourceCredentials(t *testing.T) {
 	}
 }
 
-// TestSourceAssumeRoleProviderRevalidatesProfileMode verifies every target refresh
-// rechecks the Profile mode before obtaining or using refreshed source credentials.
-func TestSourceAssumeRoleProviderRevalidatesProfileMode(t *testing.T) {
-	profilePath := writeProfileConfig(t, `{
-		"profiles": {
-			"platform-admin": {
-				"mode": "ak"
-			}
-		}
-	}`)
-	source := credentials.NewStaticCredentials("source-ak", "source-sk", "")
-	stsCalls := 0
-	target := newAssumeRoleCredentialsWithRetriever(
-		source,
-		credentials.StsValue{
-			AccountId:       "222222222222",
-			RoleName:        "terraform-execution",
-			DurationSeconds: 3600,
-		},
-		func() error {
-			return validateProfileAssumeRoleMode(profilePath, "platform-admin")
-		},
-		func(credentials.StsValue) (credentials.Value, error) {
-			stsCalls++
-			return credentials.Value{
-				AccessKeyID:     "target-ak",
-				SecretAccessKey: "target-sk",
-				SessionToken:    "target-token",
-			}, nil
-		},
-	)
-
-	if _, err := target.Get(); err != nil {
-		t.Fatalf("retrieve target credentials from AK Profile: %v", err)
-	}
-	if err := os.WriteFile(profilePath, []byte(`{
-		"profiles": {
-			"platform-admin": {
-				"mode": "ramrolearn"
-			}
-		}
-	}`), 0o600); err != nil {
-		t.Fatalf("replace Profile configuration: %v", err)
-	}
-
-	target.Expire()
-	_, err := target.Get()
-	if err == nil {
-		t.Fatal("expected refreshed ramrolearn Profile to be rejected")
-	}
-	if !strings.Contains(err.Error(), "already contains a RAM role chain") {
-		t.Fatalf("unexpected refresh error: %v", err)
-	}
-	if stsCalls != 1 {
-		t.Fatalf("expected Profile validation to stop the second STS call, got %d calls", stsCalls)
-	}
-}
-
-// TestBuildCredentialsRejectsDefaultSourceForAssumeRole verifies V1 does not wrap an
-// opaque default chain whose eventual Profile mode cannot be proven to be single-hop.
-func TestBuildCredentialsRejectsDefaultSourceForAssumeRole(t *testing.T) {
+// TestBuildCredentialsWrapsDefaultSourceForAssumeRole verifies the default credential
+// chain is treated like every other refreshable source and passed to AssumeRole.
+func TestBuildCredentialsWrapsDefaultSourceForAssumeRole(t *testing.T) {
 	config := testConfigModel()
 	config.AssumeRole = &AssumeRoleData{
 		AssumeRoleTRN: types.StringValue("trn:iam::222222222222:role/terraform-execution"),
@@ -1032,21 +971,31 @@ func TestBuildCredentialsRejectsDefaultSourceForAssumeRole(t *testing.T) {
 		Policy:        types.StringNull(),
 	}
 
-	_, diags := buildCredentialsWithFactory(config, func(*credentials.Credentials, credentials.StsValue, sourceCredentialsValidator) *credentials.Credentials {
-		t.Fatal("AssumeRole factory must not run for the default credential chain")
-		return nil
+	factoryCalled := false
+	finalCredentials, diags := buildCredentialsWithFactory(config, func(source *credentials.Credentials, stsValue credentials.StsValue) *credentials.Credentials {
+		factoryCalled = true
+		if source == nil {
+			t.Fatal("expected default source credentials")
+		}
+		if _, ok := source.GetProvider().(*credentials.DefaultCredentialProvider); !ok {
+			t.Fatalf("expected DefaultCredentialProvider, got %T", source.GetProvider())
+		}
+		if stsValue.AccountId != "222222222222" || stsValue.RoleName != "terraform-execution" {
+			t.Fatalf("unexpected AssumeRole configuration: %#v", stsValue)
+		}
+		return credentials.NewStaticCredentials("target-ak", "target-sk", "target-token")
 	})
-	if !diags.HasError() {
-		t.Fatal("expected default-chain AssumeRole diagnostic")
+	if diags.HasError() {
+		t.Fatalf("buildCredentialsWithFactory returned diagnostics: %v", diags)
 	}
-	if !strings.Contains(diags.Errors()[0].Summary(), "AssumeRole Source Credentials Required") {
-		t.Fatalf("unexpected diagnostic: %v", diags)
+	if !factoryCalled || finalCredentials == nil {
+		t.Fatal("expected default credential chain to be wrapped for AssumeRole")
 	}
 }
 
-// TestValidateProfileAssumeRoleModeRejectsRamRoleArn verifies V1 rejects a Profile
-// that already contains a RAM role assumption.
-func TestValidateProfileAssumeRoleModeRejectsRamRoleArn(t *testing.T) {
+// TestBuildCredentialsWrapsRamRoleArnProfile verifies a Profile that resolves its
+// own role credentials remains a valid source for the Provider-level AssumeRole.
+func TestBuildCredentialsWrapsRamRoleArnProfile(t *testing.T) {
 	profilePath := writeProfileConfig(t, `{
 		"profiles": {
 			"role-chain": {
@@ -1055,25 +1004,6 @@ func TestValidateProfileAssumeRoleModeRejectsRamRoleArn(t *testing.T) {
 		}
 	}`)
 
-	err := validateProfileAssumeRoleMode(profilePath, "role-chain")
-	if err == nil {
-		t.Fatal("expected RAM role chain Profile to be rejected")
-	}
-	if !strings.Contains(err.Error(), "already contains a RAM role chain") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-// TestBuildCredentialsRejectsRamRoleArnProfile verifies the V1 role-chain boundary is
-// enforced by the final credential construction path.
-func TestBuildCredentialsRejectsRamRoleArnProfile(t *testing.T) {
-	profilePath := writeProfileConfig(t, `{
-		"profiles": {
-			"role-chain": {
-				"mode": "ramrolearn"
-			}
-		}
-	}`)
 	config := testConfigModel()
 	config.Profile = types.StringValue("role-chain")
 	config.FilePath = types.StringValue(profilePath)
@@ -1084,31 +1014,19 @@ func TestBuildCredentialsRejectsRamRoleArnProfile(t *testing.T) {
 		Policy:        types.StringNull(),
 	}
 
-	_, diags := buildCredentialsWithFactory(config, func(*credentials.Credentials, credentials.StsValue, sourceCredentialsValidator) *credentials.Credentials {
-		t.Fatal("AssumeRole factory must not run for a role-chain Profile")
-		return nil
-	})
-	if !diags.HasError() {
-		t.Fatal("expected role-chain Profile diagnostic")
-	}
-	if !strings.Contains(diags.Errors()[0].Detail(), "V1 does not support another AssumeRole hop") {
-		t.Fatalf("unexpected diagnostic: %v", diags)
-	}
-}
-
-// TestValidateProfileAssumeRoleModeAllowsAK verifies a direct AK Profile remains a
-// supported AssumeRole source.
-func TestValidateProfileAssumeRoleModeAllowsAK(t *testing.T) {
-	profilePath := writeProfileConfig(t, `{
-		"profiles": {
-			"platform-admin": {
-				"mode": "ak"
-			}
+	factoryCalled := false
+	finalCredentials, diags := buildCredentialsWithFactory(config, func(source *credentials.Credentials, _ credentials.StsValue) *credentials.Credentials {
+		factoryCalled = true
+		if source == nil {
+			t.Fatal("expected Profile source credentials")
 		}
-	}`)
-
-	if err := validateProfileAssumeRoleMode(profilePath, "platform-admin"); err != nil {
-		t.Fatalf("expected AK Profile to be accepted: %v", err)
+		return credentials.NewStaticCredentials("target-ak", "target-sk", "target-token")
+	})
+	if diags.HasError() {
+		t.Fatalf("buildCredentialsWithFactory returned diagnostics: %v", diags)
+	}
+	if !factoryCalled || finalCredentials == nil {
+		t.Fatal("expected ramrolearn Profile to be wrapped for Provider AssumeRole")
 	}
 }
 

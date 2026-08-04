@@ -367,22 +367,12 @@ func (p *VolcengineCCProvider) DataSources(ctx context.Context) []func() datasou
 	return dataSources
 }
 
-type credentialSourceKind int
-
-const (
-	credentialSourceDefault credentialSourceKind = iota
-	credentialSourceStatic
-	credentialSourceProfile
-)
-
-type sourceCredentialsValidator func() error
-
-type assumeRoleCredentialsFactory func(*credentials.Credentials, credentials.StsValue, sourceCredentialsValidator) *credentials.Credentials
+type assumeRoleCredentialsFactory func(*credentials.Credentials, credentials.StsValue) *credentials.Credentials
 
 // buildSourceCredentials 选择调用云服务或 STS 的源凭证。Terraform 中显式指定的
 // Profile 优先于环境变量注入的 AK/SK；同时显式配置 Profile 与 AK/SK 时返回冲突诊断，
 // 避免在用户不知情的情况下切换身份。
-func buildSourceCredentials(c *configModel) (*credentials.Credentials, credentialSourceKind, diag.Diagnostics) {
+func buildSourceCredentials(c *configModel) (*credentials.Credentials, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	switch {
 	case c.profileExplicit && (c.accessKeyExplicit || c.secretKeyExplicit):
@@ -390,15 +380,15 @@ func buildSourceCredentials(c *configModel) (*credentials.Credentials, credentia
 			"Conflicting Authentication Configuration",
 			"Profile cannot be configured together with AccessKey or SecretKey. Choose exactly one explicit source credential.",
 		)
-		return nil, credentialSourceDefault, diags
+		return nil, diags
 	case c.profileExplicit:
-		return clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString()), credentialSourceProfile, diags
+		return clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString()), diags
 	case c.AccessKey.ValueString() != "" && c.SecretKey.ValueString() != "":
-		return credentials.NewStaticCredentials(c.AccessKey.ValueString(), c.SecretKey.ValueString(), c.SessionToken.ValueString()), credentialSourceStatic, diags
+		return credentials.NewStaticCredentials(c.AccessKey.ValueString(), c.SecretKey.ValueString(), c.SessionToken.ValueString()), diags
 	case c.Profile.ValueString() != "" || c.FilePath.ValueString() != "":
-		return clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString()), credentialSourceProfile, diags
+		return clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString()), diags
 	default:
-		return defaults.NewDefaultCredentialProvider(), credentialSourceDefault, diags
+		return defaults.NewDefaultCredentialProvider(), diags
 	}
 }
 
@@ -409,21 +399,15 @@ func buildCredentials(c *configModel) (*credentials.Credentials, diag.Diagnostic
 }
 
 // buildCredentialsWithFactory 使用可注入的工厂构造最终凭证，使测试能够验证源凭证
-// 选择与 AssumeRole 参数，而无需发起真实 STS 请求。
+// 选择与 AssumeRole 参数，而无需发起真实 STS 请求。源凭证的产生过程对 Provider
+// 保持透明；静态凭证、Profile 和默认凭证链都可以作为一次 Provider AssumeRole 的输入。
 func buildCredentialsWithFactory(c *configModel, factory assumeRoleCredentialsFactory) (*credentials.Credentials, diag.Diagnostics) {
-	sourceCredentials, sourceKind, diags := buildSourceCredentials(c)
+	sourceCredentials, diags := buildSourceCredentials(c)
 	if diags.HasError() {
 		return nil, diags
 	}
 	if !hasAssumeRole(c) {
 		return sourceCredentials, diags
-	}
-	if sourceKind == credentialSourceDefault {
-		diags.AddError(
-			"AssumeRole Source Credentials Required",
-			"V1 requires AssumeRole source credentials to be selected by explicit AK/SK, AK/SK environment variables, or Profile. The default credential chain cannot be combined with AssumeRole because its source mode cannot be verified as a single hop.",
-		)
-		return nil, diags
 	}
 
 	accountId, roleName, err := ParseTrn(c.AssumeRole.AssumeRoleTRN.ValueString())
@@ -431,17 +415,6 @@ func buildCredentialsWithFactory(c *configModel, factory assumeRoleCredentialsFa
 		diags.AddError("Invalid AssumeRole TRN", err.Error())
 		return nil, diags
 	}
-	var validateSource sourceCredentialsValidator
-	if sourceKind == credentialSourceProfile {
-		validateSource = func() error {
-			return validateProfileAssumeRoleMode(c.FilePath.ValueString(), c.Profile.ValueString())
-		}
-		if err := validateSource(); err != nil {
-			diags.AddError("Unsupported Profile for AssumeRole", err.Error())
-			return nil, diags
-		}
-	}
-
 	if c.AssumeRole.Duration.IsNull() || c.AssumeRole.Duration.IsUnknown() {
 		c.AssumeRole.Duration = types.Int32Value(int32(defaultAssumeRoleDuration.Seconds()))
 	}
@@ -463,7 +436,7 @@ func buildCredentialsWithFactory(c *configModel, factory assumeRoleCredentialsFa
 		stsValue.Schema = "http"
 	}
 
-	return factory(sourceCredentials, stsValue, validateSource), diags
+	return factory(sourceCredentials, stsValue), diags
 }
 
 // hasAssumeRole reports whether the resolved configuration contains a usable target role TRN.

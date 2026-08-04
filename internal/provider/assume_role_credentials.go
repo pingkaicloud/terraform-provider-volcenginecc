@@ -18,35 +18,27 @@ type sourceAssumeRoleProvider struct {
 	source   *credentials.Credentials
 	stsValue credentials.StsValue
 	retrieve assumeRoleRetriever
-	validate sourceCredentialsValidator
 }
 
 // newAssumeRoleCredentials creates refreshable target-role credentials backed by source.
 // Every target refresh obtains the latest source AK/SK/session token before calling STS.
-func newAssumeRoleCredentials(source *credentials.Credentials, stsValue credentials.StsValue, validate sourceCredentialsValidator) *credentials.Credentials {
-	return newAssumeRoleCredentialsWithRetriever(source, stsValue, validate, retrieveAssumeRoleCredentials)
+func newAssumeRoleCredentials(source *credentials.Credentials, stsValue credentials.StsValue) *credentials.Credentials {
+	return newAssumeRoleCredentialsWithRetriever(source, stsValue, retrieveAssumeRoleCredentials)
 }
 
 // newAssumeRoleCredentialsWithRetriever creates source-aware AssumeRole credentials with
 // an injectable STS retrieval function for deterministic tests.
-func newAssumeRoleCredentialsWithRetriever(source *credentials.Credentials, stsValue credentials.StsValue, validate sourceCredentialsValidator, retrieve assumeRoleRetriever) *credentials.Credentials {
+func newAssumeRoleCredentialsWithRetriever(source *credentials.Credentials, stsValue credentials.StsValue, retrieve assumeRoleRetriever) *credentials.Credentials {
 	return credentials.NewExpireAbleCredentials(&sourceAssumeRoleProvider{
 		source:   source,
 		stsValue: stsValue,
 		retrieve: retrieve,
-		validate: validate,
 	})
 }
 
 // Retrieve refreshes the source credentials first, then uses those exact values to obtain
-// target-role credentials. This preserves refresh behavior for temporary Profile credentials.
+// target-role credentials. This preserves refresh behavior for temporary source credentials.
 func (p *sourceAssumeRoleProvider) Retrieve() (credentials.Value, error) {
-	if p.validate != nil {
-		if err := p.validate(); err != nil {
-			return credentials.Value{ProviderName: "SourceAssumeRoleProvider"}, fmt.Errorf("validate AssumeRole source credentials: %w", err)
-		}
-	}
-
 	sourceValue, err := p.source.Get()
 	if err != nil {
 		return credentials.Value{ProviderName: "SourceAssumeRoleProvider"}, fmt.Errorf("retrieve AssumeRole source credentials: %w", err)
