@@ -747,8 +747,8 @@ func (p *sequenceCredentialsProvider) IsExpired() bool {
 	return true
 }
 
-// TestConfigModelCanDecodeProviderSchema verifies internal source-selection metadata
-// does not interfere with Terraform Plugin Framework configuration decoding.
+// TestConfigModelCanDecodeProviderSchema verifies internal fields do not interfere with
+// Terraform Plugin Framework configuration decoding.
 func TestConfigModelCanDecodeProviderSchema(t *testing.T) {
 	ctx := context.Background()
 	var schemaResponse frameworkprovider.SchemaResponse
@@ -774,9 +774,9 @@ func TestConfigModelCanDecodeProviderSchema(t *testing.T) {
 	}
 }
 
-// TestBuildSourceCredentialsExplicitProfileOverridesEnvironmentCredentials verifies an
-// explicitly selected Profile is not silently bypassed by environment-derived AK/SK.
-func TestBuildSourceCredentialsExplicitProfileOverridesEnvironmentCredentials(t *testing.T) {
+// TestBuildSourceCredentialsPrefersCompleteAKSKWithWarning verifies the original source
+// precedence is preserved while users are warned when Profile inputs are ignored.
+func TestBuildSourceCredentialsPrefersCompleteAKSKWithWarning(t *testing.T) {
 	profilePath := writeProfileConfig(t, `{
 		"current": "platform-admin",
 		"profiles": {
@@ -787,44 +787,73 @@ func TestBuildSourceCredentialsExplicitProfileOverridesEnvironmentCredentials(t 
 			}
 		}
 	}`)
+	tests := map[string]func(*configModel){
+		"profile": func(config *configModel) {
+			config.Profile = types.StringValue("platform-admin")
+		},
+		"file_path": func(config *configModel) {
+			config.FilePath = types.StringValue(profilePath)
+		},
+	}
+	for name, configure := range tests {
+		t.Run(name, func(t *testing.T) {
+			config := testConfigModel()
+			config.AccessKey = types.StringValue("selected-ak")
+			config.SecretKey = types.StringValue("selected-sk")
+			configure(config)
+
+			source, diags := buildSourceCredentials(config)
+			if diags.HasError() {
+				t.Fatalf("buildSourceCredentials returned errors: %v", diags)
+			}
+			if diags.WarningsCount() != 1 {
+				t.Fatalf("expected one multiple-source warning, got %v", diags)
+			}
+			warning := diags.Warnings()[0]
+			if !strings.Contains(warning.Summary(), "Multiple Credential Sources Configured") ||
+				!strings.Contains(warning.Detail(), "selected AccessKey/SecretKey") ||
+				!strings.Contains(warning.Detail(), "ignored Profile/file_path") {
+				t.Fatalf("unexpected warning: %v", warning)
+			}
+
+			value, err := source.Get()
+			if err != nil {
+				t.Fatalf("retrieve selected credentials: %v", err)
+			}
+			if value.AccessKeyID != "selected-ak" || value.SecretAccessKey != "selected-sk" {
+				t.Fatalf("expected AK/SK credentials, got %#v", value)
+			}
+		})
+	}
+}
+
+// TestBuildSourceCredentialsUsesProfileWithoutWarningForIncompleteAKSK verifies a partial
+// AK/SK pair is not treated as a competing usable source.
+func TestBuildSourceCredentialsUsesProfileWithoutWarningForIncompleteAKSK(t *testing.T) {
+	profilePath := writeProfileConfig(t, `{
+		"profiles": {
+			"platform-admin": {
+				"mode": "ak",
+				"access-key": "profile-ak",
+				"secret-key": "profile-sk"
+			}
+		}
+	}`)
 	config := testConfigModel()
-	config.AccessKey = types.StringValue("environment-ak")
-	config.SecretKey = types.StringValue("environment-sk")
+	config.AccessKey = types.StringValue("incomplete-ak")
 	config.Profile = types.StringValue("platform-admin")
 	config.FilePath = types.StringValue(profilePath)
-	config.profileExplicit = true
 
 	source, diags := buildSourceCredentials(config)
-	if diags.HasError() {
-		t.Fatalf("buildSourceCredentials returned diagnostics: %v", diags)
+	if diags.HasError() || diags.WarningsCount() != 0 {
+		t.Fatalf("expected Profile without diagnostics, got %v", diags)
 	}
-
 	value, err := source.Get()
 	if err != nil {
 		t.Fatalf("retrieve Profile credentials: %v", err)
 	}
 	if value.AccessKeyID != "profile-ak" || value.SecretAccessKey != "profile-sk" {
-		t.Fatalf("expected Profile credentials, got access key %q", value.AccessKeyID)
-	}
-}
-
-// TestBuildSourceCredentialsRejectsExplicitProfileAndAccessKey verifies ambiguous
-// explicit authentication sources return a diagnostic.
-func TestBuildSourceCredentialsRejectsExplicitProfileAndAccessKey(t *testing.T) {
-	config := testConfigModel()
-	config.AccessKey = types.StringValue("explicit-ak")
-	config.SecretKey = types.StringValue("explicit-sk")
-	config.Profile = types.StringValue("platform-admin")
-	config.accessKeyExplicit = true
-	config.secretKeyExplicit = true
-	config.profileExplicit = true
-
-	_, diags := buildSourceCredentials(config)
-	if !diags.HasError() {
-		t.Fatal("expected conflicting authentication diagnostic")
-	}
-	if !strings.Contains(diags.Errors()[0].Summary(), "Conflicting Authentication Configuration") {
-		t.Fatalf("unexpected diagnostic: %v", diags)
+		t.Fatalf("expected Profile credentials, got %#v", value)
 	}
 }
 
@@ -844,7 +873,6 @@ func TestBuildCredentialsWrapsProfileAsAssumeRoleSource(t *testing.T) {
 	config := testConfigModel()
 	config.Profile = types.StringValue("platform-admin")
 	config.FilePath = types.StringValue(profilePath)
-	config.profileExplicit = true
 	config.AssumeRole = &AssumeRoleData{
 		AssumeRoleTRN: types.StringValue("trn:iam::222222222222:role/terraform-execution"),
 		Duration:      types.Int32Value(1800),
@@ -884,6 +912,42 @@ func TestBuildCredentialsWrapsProfileAsAssumeRoleSource(t *testing.T) {
 		capturedStsValue.Policy != `{"Statement":[]}` ||
 		capturedStsValue.Host != "sts.example.com" {
 		t.Fatalf("unexpected AssumeRole configuration: %#v", capturedStsValue)
+	}
+}
+
+// TestBuildCredentialsPreservesMultipleSourceWarningForAssumeRole verifies a warning does
+// not block AssumeRole and the higher-priority AK/SK source reaches the target wrapper.
+func TestBuildCredentialsPreservesMultipleSourceWarningForAssumeRole(t *testing.T) {
+	config := testConfigModel()
+	config.AccessKey = types.StringValue("selected-ak")
+	config.SecretKey = types.StringValue("selected-sk")
+	config.SessionToken = types.StringValue("selected-token")
+	config.Profile = types.StringValue("ignored-profile")
+	config.AssumeRole = &AssumeRoleData{
+		AssumeRoleTRN: types.StringValue("trn:iam::222222222222:role/terraform-execution"),
+		Duration:      types.Int32Value(3600),
+		Policy:        types.StringNull(),
+	}
+
+	var capturedSource credentials.Value
+	finalCredentials, diags := buildCredentialsWithFactory(config, func(source *credentials.Credentials, _ credentials.StsValue) *credentials.Credentials {
+		var err error
+		capturedSource, err = source.Get()
+		if err != nil {
+			t.Fatalf("retrieve selected source credentials: %v", err)
+		}
+		return credentials.NewStaticCredentials("target-ak", "target-sk", "target-token")
+	})
+	if diags.HasError() || diags.WarningsCount() != 1 {
+		t.Fatalf("expected one warning and no errors, got %v", diags)
+	}
+	if finalCredentials == nil {
+		t.Fatal("expected target credentials")
+	}
+	if capturedSource.AccessKeyID != "selected-ak" ||
+		capturedSource.SecretAccessKey != "selected-sk" ||
+		capturedSource.SessionToken != "selected-token" {
+		t.Fatalf("unexpected AssumeRole source credentials: %#v", capturedSource)
 	}
 }
 
@@ -1007,7 +1071,6 @@ func TestBuildCredentialsWrapsRamRoleArnProfile(t *testing.T) {
 	config := testConfigModel()
 	config.Profile = types.StringValue("role-chain")
 	config.FilePath = types.StringValue(profilePath)
-	config.profileExplicit = true
 	config.AssumeRole = &AssumeRoleData{
 		AssumeRoleTRN: types.StringValue("trn:iam::222222222222:role/terraform-execution"),
 		Duration:      types.Int32Value(3600),

@@ -163,7 +163,7 @@ func (p *VolcengineCCProvider) Schema(ctx context.Context, request provider.Sche
 				Description: "An `endpoints` block (documented below). Only one `endpoints` block may be in the configuration.",
 			},
 			"profile": schema.StringAttribute{
-				Description: "The Profile for Volcengine Provider. An explicitly configured Profile is used as the source credential and can also be sourced from the `VOLCENGINE_PROFILE` environment variable",
+				Description: "The Profile for Volcengine Provider. It can be sourced from the `VOLCENGINE_PROFILE` environment variable. Complete AccessKey and SecretKey credentials take precedence when both sources are configured",
 				Optional:    true,
 			},
 			"file_path": schema.StringAttribute{
@@ -190,9 +190,6 @@ type configModel struct {
 	Profile             types.String    `tfsdk:"profile"`
 	FilePath            types.String    `tfsdk:"file_path"`
 	terraformVersion    string
-	accessKeyExplicit   bool
-	secretKeyExplicit   bool
-	profileExplicit     bool
 }
 type AssumeRoleData struct {
 	AssumeRoleTRN types.String `tfsdk:"assume_role_trn"`
@@ -218,9 +215,6 @@ func (p *VolcengineCCProvider) Configure(ctx context.Context, request provider.C
 	}
 
 	config.terraformVersion = request.TerraformVersion
-	config.accessKeyExplicit = isKnownNonEmptyString(config.AccessKey)
-	config.secretKeyExplicit = isKnownNonEmptyString(config.SecretKey)
-	config.profileExplicit = isKnownNonEmptyString(config.Profile)
 	if config.AccessKey.IsNull() || config.AccessKey.IsUnknown() {
 		config.AccessKey = types.StringValue(os.Getenv("VOLCENGINE_ACCESS_KEY"))
 	}
@@ -239,9 +233,9 @@ func (p *VolcengineCCProvider) Configure(ctx context.Context, request provider.C
 	if config.Region.IsNull() || config.Region.IsUnknown() {
 		config.Region = types.StringValue(os.Getenv("VOLCENGINE_REGION"))
 	}
-	// 认证分两阶段解析：先保留 Terraform 显式选择的 Profile 或 AK/SK，
-	// 再由 buildSourceCredentials 选择源凭证；未显式选择时才回退到环境变量或默认凭证链。
-	// 源凭证确定后，buildCredentials 再按需使用 AssumeRole 包装它。
+	// 认证分两阶段解析：先用环境变量填充 Terraform 未配置的字段，再按
+	// AK/SK、Profile、默认凭证链的顺序选择源凭证。源凭证确定后，
+	// buildCredentials 再按需使用 AssumeRole 包装它。
 	if config.Region.ValueString() == "" {
 		response.Diagnostics.AddError("Missing Region", "Region must be set")
 	}
@@ -369,21 +363,19 @@ func (p *VolcengineCCProvider) DataSources(ctx context.Context) []func() datasou
 
 type assumeRoleCredentialsFactory func(*credentials.Credentials, credentials.StsValue) *credentials.Credentials
 
-// buildSourceCredentials 选择调用云服务或 STS 的源凭证。Terraform 中显式指定的
-// Profile 优先于环境变量注入的 AK/SK；同时显式配置 Profile 与 AK/SK 时返回冲突诊断，
-// 避免在用户不知情的情况下切换身份。
+// buildSourceCredentials 根据环境变量填充后的最终字段选择调用云服务或 STS 的源凭证。
+// 完整 AK/SK 沿用原有优先级，高于 Profile/file_path；两种来源同时存在时继续使用
+// AK/SK 并返回警告，避免用户在不知情的情况下使用了非预期身份。
 func buildSourceCredentials(c *configModel) (*credentials.Credentials, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	switch {
-	case c.profileExplicit && (c.accessKeyExplicit || c.secretKeyExplicit):
-		diags.AddError(
-			"Conflicting Authentication Configuration",
-			"Profile cannot be configured together with AccessKey or SecretKey. Choose exactly one explicit source credential.",
-		)
-		return nil, diags
-	case c.profileExplicit:
-		return clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString()), diags
 	case c.AccessKey.ValueString() != "" && c.SecretKey.ValueString() != "":
+		if c.Profile.ValueString() != "" || c.FilePath.ValueString() != "" {
+			diags.AddWarning(
+				"Multiple Credential Sources Configured",
+				"Both complete AccessKey/SecretKey credentials and Profile/file_path credentials are configured. The provider selected AccessKey/SecretKey according to the credential precedence and ignored Profile/file_path. Remove the unused credential configuration or environment variables to avoid using an unintended identity.",
+			)
+		}
 		return credentials.NewStaticCredentials(c.AccessKey.ValueString(), c.SecretKey.ValueString(), c.SessionToken.ValueString()), diags
 	case c.Profile.ValueString() != "" || c.FilePath.ValueString() != "":
 		return clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString()), diags
@@ -445,7 +437,7 @@ func hasAssumeRole(c *configModel) bool {
 }
 
 // isKnownNonEmptyString reports whether a Terraform string is configured with a known,
-// non-empty value. It is used before environment fallback to retain explicit-source intent.
+// non-empty value.
 func isKnownNonEmptyString(value types.String) bool {
 	return !value.IsNull() && !value.IsUnknown() && value.ValueString() != ""
 }

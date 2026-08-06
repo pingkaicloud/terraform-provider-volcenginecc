@@ -130,7 +130,7 @@ provider "volcenginecc" {
 
 ### Environment variables
 
-You can provide your credentials via VOLCENGINE_ACCESS_KEY and VOLCENGINE_SECRET_KEY environment variables, representing your volcengine public key and private key respectively. VOLCENGINE_REGION, VOLCENGINE_PROFILE, and VOLCENGINE_FILE_PATH are also used, if applicable:
+Set `VOLCENGINE_REGION` and choose either AK/SK or Profile credentials. If both sources are configured, AK/SK takes precedence and the provider returns a warning:
 
 ```shell
 provider "volcenginecc" {
@@ -141,11 +141,16 @@ provider "volcenginecc" {
 Usage:
 
 ```shell
+$ export VOLCENGINE_REGION="cn-beijing"
+
+# Option 1: AK/SK credentials
 $ export VOLCENGINE_ACCESS_KEY="your_public_key"
 $ export VOLCENGINE_SECRET_KEY="your_private_key"
-$ export VOLCENGINE_REGION="cn-beijing"
-$ export VOLCENGINE_PROFILE="your_profile"
-$ export VOLCENGINE_FILE_PATH="your_file_path" # if empty, default path is ~/.volcengine
+$ export VOLCENGINE_SESSION_TOKEN="your_session_token" # optional, used for STS temporary credentials
+
+# Option 2: Profile credentials (do not set AK/SK at the same time)
+# export VOLCENGINE_PROFILE="your_profile"
+# export VOLCENGINE_FILE_PATH="your_file_path" # defaults to ~/.volcengine/config.json
 ```
 
 ## Authenticated Cloud Control proxy
@@ -212,7 +217,7 @@ The equivalent environment variables are `VOLCENGINE_NO_PROXY` (with `NO_PROXY` 
 - `access_key` (String) The Access Key for Volcengine Provider. It can also be sourced from the `VOLCENGINE_ACCESS_KEY` environment variable
 - `secret_key` (String) The Secret Key for Volcengine Provider. It can also be sourced from the `VOLCENGINE_SECRET_KEY` environment variable
 - `session_token` (String) The Session Token for Volcengine Provider. It can also be sourced from the `VOLCENGINE_SESSION_TOKEN` environment variable
-- `profile` (String) The Profile for Volcengine Provider. An explicitly configured Profile is used as the source credential and can also be sourced from the `VOLCENGINE_PROFILE` environment variable
+- `profile` (String) The Profile for Volcengine Provider. It can be sourced from the `VOLCENGINE_PROFILE` environment variable. Complete AccessKey and SecretKey credentials take precedence when both sources are configured
 - `file_path` (String) The File Path for Volcengine Provider. It specifies the path to the profile configuration file. If not specified, the default file `~/.volcengine/config.json` will be used, and can also be sourced from the `VOLCENGINE_FILE_PATH` environment variable
 - `assume_role` (Attributes) An `assume_role` block that uses the selected source credentials to obtain target-role credentials. Only one `assume_role` block may be in the configuration. (see [below for nested schema](#nestedatt--assume_role))
 - `customer_headers` (String) CUSTOMER HEADERS for Volcengine Provider. The customer_headers field uses commas (,) to separate multiple headers, and colons (:) to separate each header key from its corresponding value.
