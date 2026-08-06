@@ -327,12 +327,15 @@
       "permissions": [
         "alb:CreateLoadBalancer",
         "alb:DescribeLoadBalancers",
-        "alb:ModifyLoadBalancerAttributes"
+        "alb:ModifyLoadBalancerAttributes",
+        "alb:EnableTLSAccessLog",
+        "alb:EnableHealthLog",
+        "alb:DescribeLoadBalancerAttributes"
       ]
     },
     "delete": {
       "permissions": [
-        "alb:DescribeLoadBalancers",
+        "alb:DescribeLoadBalancerAttributes",
         "alb:DeleteLoadBalancer"
       ]
     },
@@ -343,7 +346,8 @@
     },
     "read": {
       "permissions": [
-        "alb:DescribeLoadBalancers"
+        "alb:DescribeLoadBalancers",
+        "alb:DescribeLoadBalancerAttributes"
       ]
     },
     "update": {
@@ -351,7 +355,12 @@
         "alb:ModifyLoadBalancerAttributes",
         "alb:TagResources",
         "alb:UntagResources",
-        "alb:DescribeLoadBalancers"
+        "alb:EnableHealthLog",
+        "alb:DisableHealthLog",
+        "alb:EnableTLSAccessLog",
+        "alb:DisableTLSAccessLog",
+        "alb:DescribeLoadBalancers",
+        "alb:DescribeLoadBalancerAttributes"
       ]
     }
   },

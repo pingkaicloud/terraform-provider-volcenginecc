@@ -1132,3 +1132,10 @@ resource_schema "volcengine_efs_mount_point" {
   cloudcontrol_type_name = "Volcengine::EFS::MountPoint"
 }
 
+resource_schema "volcengine_resourceshare_resource_share" {
+  cloudcontrol_type_name = "Volcengine::ResourceShare::ResourceShare"
+}
+
+resource_schema "volcengine_certificateservice_child_cert_instance" {
+  cloudcontrol_type_name = "Volcengine::CertificateService::ChildCertInstance"
+}

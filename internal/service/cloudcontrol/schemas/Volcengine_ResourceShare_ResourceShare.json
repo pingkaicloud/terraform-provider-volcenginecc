@@ -1,0 +1,146 @@
+{
+  "additionalProperties": false,
+  "definitions": {
+    "Tag": {
+      "description": "Tag",
+      "properties": {
+        "Key": {
+          "description": "Tag key",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "Volcano Engine Resource Share unit. Resource share units allow you to share resources under your account (such as subnets) with specified principals (Principal, which can be an account, organization, or organizational unit) for their use",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/ResourceShareName",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value",
+      "/properties/ResourceShareTrn",
+      "/properties/Status"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "resource_share:CreateResourceShare",
+        "resource_share:DescribeResourceShares",
+        "resource_share:ListResourceShareAssociations"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "resource_share:DeleteResourceShare",
+        "resource_share:DescribeResourceShares"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "resource_share:DescribeResourceShares"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "resource_share:DescribeResourceShares",
+        "resource_share:ListResourceShareAssociations"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "resource_share:UpdateResourceShare",
+        "resource_share:AssociateResourceShare",
+        "resource_share:DisassociateResourceShare",
+        "resource_share:TagResources",
+        "resource_share:UntagResources",
+        "resource_share:DescribeResourceShares",
+        "resource_share:ListResourceShareAssociations"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/ResourceShareTrn"
+  ],
+  "properties": {
+    "AllowShareType": {
+      "description": "Resource share unit type. Values can be ORG - allows sharing only within the organization; ANY - allows sharing with any account. Default is ANY",
+      "type": "string"
+    },
+    "CreateTime": {
+      "description": "Creation time",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "OwningAccountId": {
+      "description": "Resource share unit creator account ID",
+      "type": "integer"
+    },
+    "Principals": {
+      "description": "Associated Principals (Principal refers to the recipient, which can be a user, organization, or organizational unit)",
+      "type": "string"
+    },
+    "ResourceShareId": {
+      "description": "Resource share unit ID",
+      "type": "string"
+    },
+    "ResourceShareName": {
+      "description": "Resource share unit name",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "ResourceShareTrn": {
+      "description": "Resource share unit Trn",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "ResourceTrns": {
+      "description": "Associated resources",
+      "type": "string"
+    },
+    "Status": {
+      "description": "Resource share unit status, including UNKNOWN - unknown status; ACTIVE - active status; DELETING - deleting status; DELETED - deleted status; FAILED - share failed status; NEW - newly created status",
+      "semantic": "status",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "Tag key-value pair",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "UpdateTime": {
+      "description": "Update time",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/ResourceShareTrn",
+    "/properties/ResourceShareId",
+    "/properties/OwningAccountId",
+    "/properties/Status",
+    "/properties/CreateTime",
+    "/properties/UpdateTime"
+  ],
+  "required": [
+    "ResourceShareName"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::ResourceShare::ResourceShare"
+}

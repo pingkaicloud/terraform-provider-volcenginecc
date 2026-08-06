@@ -1393,5 +1393,15 @@
         "resource": "volcenginecc_efs_mount_point",
         "identifier": ["FileSystemId","MountPointId"],
         "path": "./examples/resources/volcenginecc_efs_mount_point/import.sh"
+    },
+    {
+        "resource": "volcenginecc_resourceshare_resource_share",
+        "identifier": ["ResourceShareTrn"],
+        "path": "./examples/resources/volcenginecc_resourceshare_resource_share/import.sh"
+    },
+    {
+        "resource": "volcenginecc_certificateservice_child_cert_instance",
+        "identifier": ["InstanceId"],
+        "path": "./examples/resources/volcenginecc_certificateservice_child_cert_instance/import.sh"
     }
 ]

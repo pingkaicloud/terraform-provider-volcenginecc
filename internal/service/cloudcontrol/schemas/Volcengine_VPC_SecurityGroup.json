@@ -112,13 +112,17 @@
         "vpc:CreateSecurityGroup",
         "vpc:RevokeSecurityGroupIngress",
         "vpc:RevokeSecurityGroupEgress",
+        "vpc:AuthorizeSecurityGroupIngress",
+        "vpc:AuthorizeSecurityGroupEgress",
         "vpc:DescribeSecurityGroupAttributes"
       ]
     },
     "delete": {
       "permissions": [
+        "vpc:DeleteSecurityGroup",
         "vpc:DescribeSecurityGroups",
-        "vpc:DescribeSecurityGroupAttributes"
+        "vpc:DescribeNetworkInterfaces",
+        "vpc:ModifyNetworkInterfaceAttributes"
       ]
     },
     "list": {
@@ -141,7 +145,8 @@
         "vpc:UntagResources",
         "vpc:TagResources",
         "vpc:DescribeVpcAttributes",
-        "vpc:DescribePrefixLists"
+        "vpc:DescribePrefixLists",
+        "vpc:DescribeSecurityGroupAttributes"
       ]
     }
   },

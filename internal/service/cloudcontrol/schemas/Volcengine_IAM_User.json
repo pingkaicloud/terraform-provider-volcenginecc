@@ -184,6 +184,7 @@
         "iam:SetSecurityConfig",
         "iam:GetUser",
         "iam:GetLoginProfile",
+        "iam:CreateLoginProfile",
         "iam:UpdateLoginProfile",
         "iam:ListAccessKeys",
         "iam:GetAccessKeyLastUsed"
@@ -192,8 +193,7 @@
     "delete": {
       "permissions": [
         "iam:DeleteUser",
-        "iam:GetUser",
-        "iam:ListAccessKeys"
+        "iam:GetUser"
       ]
     },
     "list": {
@@ -225,6 +225,7 @@
         "iam:AddUserToGroup",
         "iam:RemoveUserFromGroup",
         "iam:GetLoginProfile",
+        "iam:CreateLoginProfile",
         "iam:UpdateLoginProfile",
         "iam:GetSecurityConfig",
         "iam:SetSecurityConfig",

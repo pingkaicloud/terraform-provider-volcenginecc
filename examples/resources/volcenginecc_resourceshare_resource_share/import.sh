@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_resourceshare_resource_share.example "resource_share_trn"
