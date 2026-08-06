@@ -280,6 +280,8 @@
 //go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_waf_cc_rules -cctype Volcengine::WAF::CcRule -package waf ../volcengine/waf/cc_rule_plural_data_source_gen.go ../volcengine/waf/cc_rule_plural_data_source_gen_test.go
 //go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_cloudmonitor_contacts -cctype Volcengine::CloudMonitor::Contact -package cloudmonitor ../volcengine/cloudmonitor/contact_plural_data_source_gen.go ../volcengine/cloudmonitor/contact_plural_data_source_gen_test.go
 //go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_efs_mount_points -cctype Volcengine::EFS::MountPoint -package efs ../volcengine/efs/mount_point_plural_data_source_gen.go ../volcengine/efs/mount_point_plural_data_source_gen_test.go
+//go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_resourceshare_resource_shares -cctype Volcengine::ResourceShare::ResourceShare -package resourceshare ../volcengine/resourceshare/resource_share_plural_data_source_gen.go ../volcengine/resourceshare/resource_share_plural_data_source_gen_test.go
+//go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_certificateservice_child_cert_instances -cctype Volcengine::CertificateService::ChildCertInstance -package certificateservice ../volcengine/certificateservice/child_cert_instance_plural_data_source_gen.go ../volcengine/certificateservice/child_cert_instance_plural_data_source_gen_test.go
 
 package provider
 
@@ -292,6 +294,7 @@ import (
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/cbr"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/cdn"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/cen"
+	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/certificateservice"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/clb"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/cloudidentity"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/cloudmonitor"
@@ -320,6 +323,7 @@ import (
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/rdsmysql"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/rdspostgresql"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/redis"
+	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/resourceshare"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/rocketmq"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/storageebs"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/tls"

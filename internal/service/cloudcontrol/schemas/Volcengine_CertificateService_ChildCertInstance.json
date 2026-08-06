@@ -1,0 +1,422 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/Plan",
+    "/properties/San",
+    "/properties/OrganizationId",
+    "/properties/CommonName",
+    "/properties/KeyAlg",
+    "/properties/ValidationType",
+    "/properties/Csr",
+    "/properties/PrivateKey",
+    "/properties/ProjectName",
+    "/properties/ImportCertificateInfo",
+    "/properties/ImportGmCertificateInfo",
+    "/properties/Repeatable",
+    "/properties/NoVerifyAndFixChain"
+  ],
+  "definitions": {
+    "GetInstanceCertificateDetail": {
+      "description": "Certificate details",
+      "properties": {
+        "Chain": {
+          "description": "Certificate chain (PEM format). The certificate chain consists of the leaf certificate, intermediate certificate, and root certificate",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "FingerPrintSha1": {
+          "description": "SHA-1 fingerprint",
+          "type": "string"
+        },
+        "FingerPrintSha256": {
+          "description": "SHA-256 fingerprint",
+          "type": "string"
+        },
+        "Issuer": {
+          "$ref": "#/definitions/Subject",
+          "description": "Issuer information of the certificate"
+        },
+        "KeyAlgorithm": {
+          "description": "Key algorithm",
+          "type": "string"
+        },
+        "PrivateKey": {
+          "description": "Private key",
+          "type": "string"
+        },
+        "SerialNumber": {
+          "description": "Serial number",
+          "type": "string"
+        },
+        "SignatureAlgorithm": {
+          "description": "Signature algorithm",
+          "type": "string"
+        },
+        "Subject": {
+          "$ref": "#/definitions/Subject",
+          "description": "Certificate subject information"
+        }
+      },
+      "type": "object"
+    },
+    "ImportCertificateRequestCert": {
+      "description": "Upload certificate - international certificate information",
+      "properties": {
+        "CertificateChain": {
+          "description": "Content of the certificate (or certificate chain)",
+          "type": "string"
+        },
+        "PrivateKey": {
+          "description": "The content of the private key corresponding to the certificate",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ImportCertificateRequestGmCert": {
+      "description": "Upload certificate - SM certificate information",
+      "properties": {
+        "EncryptCertificateChain": {
+          "description": "Content of the encrypted certificate (or certificate chain)",
+          "type": "string"
+        },
+        "EncryptPrivateKey": {
+          "description": "The content of the private key corresponding to the encrypted certificate",
+          "type": "string"
+        },
+        "SignCertificateChain": {
+          "description": "Content of the signed certificate (or certificate chain)",
+          "type": "string"
+        },
+        "SignPrivateKey": {
+          "description": "The content of the private key corresponding to the signature certificate",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Subject": {
+      "description": "Certificate subject information",
+      "properties": {
+        "Address": {
+          "description": "Address (Street)",
+          "type": "string"
+        },
+        "CommonName": {
+          "description": "Common name (CN)",
+          "type": "string"
+        },
+        "Country": {
+          "description": "Country (C)",
+          "type": "string"
+        },
+        "Locality": {
+          "description": "City (L)",
+          "type": "string"
+        },
+        "Organization": {
+          "description": "Organization name (O)",
+          "type": "string"
+        },
+        "OrganizationUnit": {
+          "description": "Department (OU)",
+          "type": "string"
+        },
+        "PostalCode": {
+          "description": "Postal code (PostalCode)",
+          "type": "string"
+        },
+        "Province": {
+          "description": "Province or state (ST)",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Tag": {
+      "description": "Tag",
+      "properties": {
+        "Key": {
+          "description": "Tag key",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key",
+        "Value"
+      ],
+      "type": "object"
+    },
+    "UpdateInstanceOptions": {
+      "description": "Update instance options",
+      "properties": {
+        "ExpiredNotice": {
+          "description": "Set the status of certificate expiration alerts. Options: Enabled, Disabled",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "Certificate instance",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/InstanceId",
+      "/properties/Status",
+      "/properties/Tag",
+      "/properties/CommonName",
+      "/properties/InstanceType",
+      "/properties/ProjectName",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "certificate_service:ImportCertificate",
+        "certificate_service:QuickApplyCertificate",
+        "certificate_service:CertificateGetInstance"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "certificate_service:CertificateDeleteInstance",
+        "certificate_service:CertificateGetInstanceList"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "certificate_service:CertificateGetInstanceList"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "certificate_service:CertificateGetInstance"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "certificate_service:CertificateUpdateInstance",
+        "certificate_service:CertificateGetInstance",
+        "certificate_service:TagResources",
+        "certificate_service:UntagResources"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/InstanceId"
+  ],
+  "properties": {
+    "AccountId": {
+      "description": "Account ID",
+      "type": "string"
+    },
+    "CertificateDetail": {
+      "$ref": "#/definitions/GetInstanceCertificateDetail",
+      "description": "Certificate details",
+      "type": "object"
+    },
+    "CertificateDomainType": {
+      "description": "Domain type of the certificate. Valid values: Single (single domain), Wildcard (wildcard domain), Multi (multi-domain)",
+      "type": "string"
+    },
+    "CommonName": {
+      "description": "Common name (CN) of the certificate",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "CreatedTime": {
+      "description": "Creation time of the certificate instance",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Csr": {
+      "description": "Your self-generated CSR (Certificate Signing Request)",
+      "type": "string"
+    },
+    "EncryptionCertificateDetail": {
+      "$ref": "#/definitions/GetInstanceCertificateDetail",
+      "description": "Applicable only to SM certificates; indicates details of the SM certificate",
+      "type": "object"
+    },
+    "ImportCertificateInfo": {
+      "$ref": "#/definitions/ImportCertificateRequestCert",
+      "description": "Details of the SSL certificate (non-SM certificate) to be uploaded",
+      "type": "object"
+    },
+    "ImportGmCertificateInfo": {
+      "$ref": "#/definitions/ImportCertificateRequestGmCert",
+      "description": "Details of the SSL certificate (SM certificate) to be uploaded",
+      "type": "object"
+    },
+    "InstanceId": {
+      "description": "Certificate instance ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "InstanceLevel": {
+      "description": "Certificate type. Valid values: dv (domain validation), ov (organization validation), ev (extended validation)",
+      "type": "string"
+    },
+    "InstanceType": {
+      "description": "Certificate instance type. Options: Free, Test (paid), Paid (formal certificate [paid]), Imported (uploaded certificate)",
+      "type": "string"
+    },
+    "IsCertificateRevoked": {
+      "description": "Whether the certificate has been revoked",
+      "type": "boolean"
+    },
+    "IsCertificateSm": {
+      "description": "Whether the certificate is an SM certificate",
+      "type": "boolean"
+    },
+    "Issuer": {
+      "description": "Common name (CN) of the certificate issuer",
+      "type": "string"
+    },
+    "KeyAlg": {
+      "description": "Set the key algorithm used by the certificate. Options: rsa (non-SM certificate only), ecc (non-SM certificate only), SM2 (SM certificate only)",
+      "type": "string"
+    },
+    "NoVerifyAndFixChain": {
+      "description": "Ignore certificate integrity check. Default: false",
+      "type": "boolean"
+    },
+    "NotAfter": {
+      "description": "End time of certificate validity period",
+      "type": "string"
+    },
+    "NotBefore": {
+      "description": "Start time of certificate validity period",
+      "type": "string"
+    },
+    "Options": {
+      "$ref": "#/definitions/UpdateInstanceOptions",
+      "description": "Operation options",
+      "type": "object"
+    },
+    "OrderBrand": {
+      "description": "Certificate brand",
+      "type": "string"
+    },
+    "OrderOrganizationId": {
+      "description": "ID of the information template associated with the certificate order",
+      "type": "string"
+    },
+    "OrderPeriod": {
+      "description": "Duration of certificate service (unit: month)",
+      "type": "integer"
+    },
+    "OrderPlan": {
+      "description": "Certificate specification",
+      "type": "string"
+    },
+    "OrganizationId": {
+      "description": "Specify the information template ID for certificate application. Required when purchasing a certificate",
+      "type": "string"
+    },
+    "Plan": {
+      "description": "Specify the specifications for the SSL certificate you wish to order. Required when purchasing a certificate",
+      "type": "string"
+    },
+    "PrivateKey": {
+      "description": "Private key corresponding to the CSR",
+      "type": "string"
+    },
+    "ProjectName": {
+      "description": "Name of the project to which the certificate instance belongs",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "Repeatable": {
+      "description": "Allow uploading the same certificate. Default: false",
+      "type": "boolean"
+    },
+    "San": {
+      "description": "Subject Alternative Name (SAN) of the certificate. Subject Alternative Name includes all domains protected by the certificate",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "SourceId": {
+      "description": "For certificates obtained through renewal, indicates the ID of the previous certificate instance that was renewed",
+      "type": "string"
+    },
+    "Status": {
+      "description": "Certificate instance status. Options: NotSubmitted, Pending, Issued, Cancelling, Canceled, Revoking, Revoked, Failed, Unknown",
+      "semantic": "status",
+      "type": "string"
+    },
+    "Tag": {
+      "description": "Remarks for the certificate instance",
+      "semantic": "description",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "Resource tag list bound to the certificate instance",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "ValidationType": {
+      "description": "Set the domain ownership verification method. Valid values: dns_cname, dns_txt, https, http. Required when purchasing a certificate",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/InstanceId",
+    "/properties/AccountId",
+    "/properties/SourceId",
+    "/properties/Status",
+    "/properties/InstanceType",
+    "/properties/InstanceLevel",
+    "/properties/OrderBrand",
+    "/properties/OrderOrganizationId",
+    "/properties/OrderPeriod",
+    "/properties/OrderPlan",
+    "/properties/CertificateDomainType",
+    "/properties/IsCertificateSm",
+    "/properties/IsCertificateRevoked",
+    "/properties/Issuer",
+    "/properties/NotBefore",
+    "/properties/NotAfter",
+    "/properties/CreatedTime",
+    "/properties/CertificateDetail",
+    "/properties/EncryptionCertificateDetail"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::CertificateService::ChildCertInstance",
+  "writeOnlyProperties": [
+    "/properties/Csr",
+    "/properties/PrivateKey",
+    "/properties/KeyAlg",
+    "/properties/Options",
+    "/properties/OrganizationId",
+    "/properties/Plan",
+    "/properties/ValidationType",
+    "/properties/ImportCertificateInfo",
+    "/properties/ImportGmCertificateInfo",
+    "/properties/NoVerifyAndFixChain",
+    "/properties/Repeatable"
+  ]
+}
