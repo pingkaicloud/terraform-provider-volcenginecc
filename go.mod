@@ -19,6 +19,7 @@ require (
 	github.com/test-go/testify v1.1.4
 	github.com/volcengine/volcengine-go-sdk v1.2.36
 	github.com/xeipuuv/gojsonschema v1.2.0
+	golang.org/x/net v0.52.0
 	golang.org/x/text v0.36.0
 )
 
@@ -80,7 +81,6 @@ require (
 	github.com/zclconf/go-cty v1.18.1 // indirect
 	golang.org/x/crypto v0.49.0 // indirect
 	golang.org/x/mod v0.35.0 // indirect
-	golang.org/x/net v0.52.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/tools v0.43.0 // indirect
