@@ -353,6 +353,9 @@ func instanceDataSource(ctx context.Context) (datasource.DataSource, error) {
 		//
 		//	{
 		//	  "description": "Tags bound to the instance.",
+		//	  "elementIdentifier": [
+		//	    "/Key"
+		//	  ],
 		//	  "insertionOrder": false,
 		//	  "items": {
 		//	    "properties": {

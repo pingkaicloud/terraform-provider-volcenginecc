@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_ecs_scheduled_instance.example "scheduled_instance_id"

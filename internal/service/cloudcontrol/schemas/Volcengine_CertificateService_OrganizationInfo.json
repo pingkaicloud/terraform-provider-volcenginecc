@@ -1,0 +1,198 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/ProjectName"
+  ],
+  "definitions": {
+    "Contact": {
+      "description": "Contact information for the information template.",
+      "properties": {
+        "Email": {
+          "description": "Contact person's email address.",
+          "type": "string"
+        },
+        "FirstName": {
+          "description": "Contact person's given name.",
+          "type": "string"
+        },
+        "IdCardNo": {
+          "description": "Contact person's ID number.",
+          "type": "string"
+        },
+        "LastName": {
+          "description": "Contact person's surname.",
+          "type": "string"
+        },
+        "Phone": {
+          "description": "Contact person's phone number.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Tag": {
+      "description": "Resource tag.",
+      "properties": {
+        "Key": {
+          "description": "Tag key.",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key",
+        "Value"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "Organization Info template in Certificate Center. Used to reuse enterprise or individual identity information when applying for SSL certificates, including organization name, address, contact person, and other details.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/OrganizationId",
+      "/properties/Type",
+      "/properties/Tag",
+      "/properties/ProjectName",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "certificate_service:CertificateAddOrganization",
+        "certificate_service:CertificateGetOrganization",
+        "certificate_service:CertificateGetOrganizationList"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "certificate_service:CertificateDeleteOrganization",
+        "certificate_service:CertificateGetOrganization"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "certificate_service:CertificateGetOrganizationList"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "certificate_service:CertificateGetOrganization",
+        "certificate_service:CertificateGetOrganizationList"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "certificate_service:CertificateUpdateOrganization",
+        "certificate_service:CertificateGetOrganization",
+        "certificate_service:CertificateGetOrganizationList",
+        "certificate_service:TagResources",
+        "certificate_service:UntagResources"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/OrganizationId"
+  ],
+  "properties": {
+    "Account": {
+      "description": "Account ID associated with the information template.",
+      "type": "string"
+    },
+    "Address": {
+      "description": "Enterprise address. Required when Type is Enterprise.",
+      "type": "string"
+    },
+    "BusinessLicenseNo": {
+      "description": "Enterprise unified social credit code.",
+      "type": "string"
+    },
+    "City": {
+      "description": "City where the enterprise is located. Required when Type is Enterprise.",
+      "type": "string"
+    },
+    "Contact": {
+      "$ref": "#/definitions/Contact",
+      "description": "Contact information for the information template.",
+      "type": "object"
+    },
+    "Country": {
+      "description": "Two-letter country code where the enterprise is located, e.g., CN. Required when Type is Enterprise.",
+      "type": "string"
+    },
+    "CreatedTime": {
+      "description": "Creation time of the information template.",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Department": {
+      "description": "Enterprise department.",
+      "type": "string"
+    },
+    "Email": {
+      "description": "Enterprise email address.",
+      "type": "string"
+    },
+    "Name": {
+      "description": "Enterprise name. Required when Type is Enterprise.",
+      "type": "string"
+    },
+    "OrganizationId": {
+      "description": "Information template ID, prefixed with org-, for example org-879f6502723b4e0f8762cf3528f4****.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "PostalCode": {
+      "description": "Postal code, only for mainland China.",
+      "type": "string"
+    },
+    "ProjectName": {
+      "description": "Project name associated with the information template. Default is default.",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "Province": {
+      "description": "Province where the enterprise is located. Required when Type is Enterprise.",
+      "type": "string"
+    },
+    "Tag": {
+      "description": "Name of the information template.",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "List of resource tags bound to the information template.",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "Type": {
+      "description": "Information template type. Individual: Personal, can only apply for DV certificates. Enterprise: Enterprise, can apply for DV/OV/EV certificates.",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/OrganizationId",
+    "/properties/Account",
+    "/properties/CreatedTime"
+  ],
+  "required": [
+    "Type",
+    "Tag",
+    "Contact"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::CertificateService::OrganizationInfo"
+}

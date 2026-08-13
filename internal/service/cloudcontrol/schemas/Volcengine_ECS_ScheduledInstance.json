@@ -1,0 +1,586 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/AutoReleaseAt",
+    "/properties/InstanceCount",
+    "/properties/CpuMaxFrequency",
+    "/properties/DeletionProtection",
+    "/properties/DeliveryType",
+    "/properties/Description",
+    "/properties/EipAddress",
+    "/properties/ElasticScheduledInstanceType",
+    "/properties/EndDeliveryAt",
+    "/properties/HostName",
+    "/properties/HpcClusterId",
+    "/properties/HttpTokens",
+    "/properties/ImageId",
+    "/properties/InstallRunCommandAgent",
+    "/properties/InstanceName",
+    "/properties/InstanceTypeId",
+    "/properties/KeepImageCredential",
+    "/properties/KeyPairName",
+    "/properties/MinCount",
+    "/properties/NetworkInterfaces",
+    "/properties/Password",
+    "/properties/ProjectName",
+    "/properties/ScheduledInstanceDescription",
+    "/properties/ScheduledInstanceName",
+    "/properties/SecurityEnhancementStrategy",
+    "/properties/StartDeliveryAt",
+    "/properties/SuffixIndex",
+    "/properties/UniqueSuffix",
+    "/properties/UserData",
+    "/properties/Volumes",
+    "/properties/ZoneId"
+  ],
+  "definitions": {
+    "EipAddress": {
+      "description": "Public IP information bound to the instance.",
+      "properties": {
+        "BandwidthMbps": {
+          "description": "Maximum bandwidth for the public IP, in Mbps\n- Default: 1\n- Value range:\n  - If `ChargeType` is `PayByBandwidth`: 1–500\n  - If `ChargeType` is `PayByTraffic`: 1–200",
+          "type": "integer"
+        },
+        "BandwidthPackageId": {
+          "description": "Shared bandwidth package ID.",
+          "type": "string"
+        },
+        "ChargeType": {
+          "description": "Billing method for public IP. Values:\n- PayByBandwidth (default): Pay-as-you-go by bandwidth cap\n- PayByTraffic: Pay-as-you-go by actual traffic\n- PrePaid: Subscription",
+          "type": "string"
+        },
+        "ISP": {
+          "description": "Line type. Values: - BGP (default): BGP (multi-line). - If your account has applied for and enabled static single-line permissions, you can use the following values:  - ChinaMobile: China Mobile static single line.  - ChinaTelecom: China Telecom static single line.  - ChinaUnicom: China Unicom static single line.  - If your account has applied for and enabled BGP single-line permissions, you can use SingleLine_BGP.  - If your account has applied for and enabled static BGP permissions, you can use Static_BGP.",
+          "type": "string"
+        },
+        "ReleaseWithInstance": {
+          "description": "Whether the public IP is released with the instance. Only applies to pay-as-you-go public IPs. Options: - true: Public IP is released with the instance. When the instance is automatically reclaimed by the system (24 hours after unsubscribe, expiration, etc.) or deleted via [DeleteInstance] or [DeleteInstances] API, the public IP is released together with the instance. - false: Public IP is not released with the instance.",
+          "type": "boolean"
+        },
+        "SecurityProtectionInstanceId": {
+          "description": "ID of the bound security protection package. This parameter is returned only when `SecurityProtectionTypes` is not empty.",
+          "type": "string"
+        },
+        "SecurityProtectionTypes": {
+          "description": "Security protection type for public IP. - AntiDDoS_Enhanced: Public IP with enhanced protection (can be added to DDoS Native Protection (Enterprise Edition) instance). - Null: Public IP with basic protection.",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "type": "object"
+    },
+    "EipAddressConfig": {
+      "description": "Public IP configuration specified when creating the instance.",
+      "properties": {
+        "BandwidthMbps": {
+          "description": "The maximum bandwidth for the public IP address. Default value: 1. Unit: Mbps. - When `ChargeType` is set to `PayByBandwidth`: valid range is 1–500. - When `ChargeType` is set to `PayByTraffic`: valid range is 1–200.",
+          "type": "integer"
+        },
+        "BandwidthPackageId": {
+          "description": "ID of the shared bandwidth package, indicating that the public IP will be added to the shared bandwidth package. - You can call the [DescribeBandwidthPackages] API to query the ID of the shared bandwidth package. - The following conditions must be met to add a public IP to a shared bandwidth package:  - Both must have the same security protection type.  - Both must be in the same region.  - The billing method for the public IP must be pay-as-you-go.  - The shared bandwidth package must be of IPv4 type.",
+          "type": "string"
+        },
+        "ChargeType": {
+          "description": "Public IP billing method. Options: - PayByBandwidth (default): Pay-as-you-go by bandwidth cap. - PayByTraffic: Pay-as-you-go by actual traffic. - PrePaid: Subscription. :::tip When the instance billing type `InstanceChargeType` is set to `PostPaid`, this parameter cannot be set to `PrePaid`.:::",
+          "type": "string"
+        },
+        "ISP": {
+          "description": "Public IP line type. Defaults to BGP. Options: - BGP: BGP (multi-line). - If your account has applied for and enabled static single-line permissions, you can use: - ChinaMobile: China Mobile static single-line. - ChinaTelecom: China Telecom static single-line. - ChinaUnicom: China Unicom static single-line. - If your account has applied for and enabled BGP single-line permissions, you can use SingleLine_BGP. - If your account has applied for and enabled static BGP permissions, you can use Static_BGP.",
+          "type": "string"
+        },
+        "ReleaseWithInstance": {
+          "description": "Whether the public IP is released with the instance\n- true: The public IP is released with the instance\n- false (default): The public IP is not released with the instance",
+          "type": "boolean"
+        },
+        "SecurityProtectionInstanceId": {
+          "description": "DDoS Native Protection (Enterprise Edition) ID. - You can call the [DescInstanceList] API to query the DDoS Native Protection (Enterprise Edition) ID. - When `SecurityProtectionTypes` is set to `AntiDDoS_Enhanced`, this parameter is required.",
+          "type": "integer"
+        },
+        "SecurityProtectionTypes": {
+          "description": "Security protection type for public IP.\n- Parameter - N: Indicates the sequence number of the security protection type. Currently, only 1 is supported.\n- Values:\n  - AntiDDoS_Enhanced: Apply for a public IP with enhanced protection, which can be added to a DDoS native protection (Enterprise Edition) instance.\n    :::tip\n    - If `EipAddress.SecurityProtectionTypes.N` is set to `AntiDDoS_Enhanced`, `EipAddress.ChargeType` cannot be `PrePaid`, and `EipAddress.ISP` must be set to `BGP`.\n    - Enhanced protection public IP is in invitation-only testing. To try it, contact your account manager.\n    :::\n  - If not specified, the default protection type public IP will be applied.",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "type": "object"
+    },
+    "InstanceConfig": {
+      "description": "Instance configuration information for the elastic reservation order.",
+      "properties": {
+        "Description": {
+          "description": "Description of the instance.",
+          "type": "string"
+        },
+        "EipAddress": {
+          "$ref": "#/definitions/EipAddress",
+          "description": "Public IP information bound to the instance."
+        },
+        "HostName": {
+          "description": "Instance hostname.",
+          "type": "string"
+        },
+        "HpcClusterId": {
+          "description": "High performance computing cluster ID.",
+          "type": "string"
+        },
+        "ImageId": {
+          "description": "Image ID",
+          "type": "string"
+        },
+        "InstanceName": {
+          "description": "Instance name.",
+          "type": "string"
+        },
+        "InstanceTypeId": {
+          "description": "Instance type.",
+          "type": "string"
+        },
+        "KeyPairName": {
+          "description": "Key pair name.",
+          "type": "string"
+        },
+        "NetworkInterfaces": {
+          "description": "Network interface information attached to the instance.",
+          "insertionOrder": false,
+          "items": {
+            "$ref": "#/definitions/NetworkInterface"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "ProjectName": {
+          "description": "Project to which the instance belongs.",
+          "type": "string"
+        },
+        "Tags": {
+          "description": "Tag information for the instance.",
+          "insertionOrder": false,
+          "items": {
+            "$ref": "#/definitions/Tag"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "Volumes": {
+          "description": "Information about the cloud disks attached to the instance.",
+          "insertionOrder": false,
+          "items": {
+            "$ref": "#/definitions/VolumeRes"
+          },
+          "type": "array",
+          "uniqueItems": false
+        },
+        "ZoneId": {
+          "description": "Availability zone ID where the elastic reservation order is located.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "NetworkInterface": {
+      "description": "Network interface information attached to the instance.",
+      "properties": {
+        "SecurityGroupIds": {
+          "description": "Security group ID associated with the network interface.",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": false
+        },
+        "SubnetId": {
+          "description": "Private network subnet ID of the instance.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "NetworkInterfaceConfig": {
+      "description": "Network interface configuration information specified when creating the instance.",
+      "properties": {
+        "PrimaryIpAddress": {
+          "description": "Specify the primary IP address of the NIC. Currently, only one primary IP address can be specified for either the primary or auxiliary NIC. - Parameter - N: indicates the NIC index, N = 1 means primary NIC; N ≥ 2 means auxiliary NIC. - Separate multiple NICs with \u0026.",
+          "type": "string"
+        },
+        "PrivateIpAddresses": {
+          "description": "Specify the secondary IP address of the primary network interface. Currently, only the primary network interface supports specifying secondary IPs. - The first N: Indicates the sequence number of the primary network interface. Only one primary network interface can be bound. - The second N: Indicates the sequence number of the secondary IP on the primary network interface. The maximum number of assignable secondary IP addresses is the number of private IPs per single network interface for this [instance type] minus one primary private IP. - Separate multiple secondary IPs with \u0026.",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "SecurityGroupIds": {
+          "description": "Security group ID associated with the network interface.\n- The first N: Indicates the sequence number of the network interface, N = 1 is the primary network interface; N ≥ 2 is a secondary network interface.\n- The second N: Indicates the sequence number of the security group associated with the network interface, value range: 1–5.\n- Use \u0026 to separate multiple security group IDs.",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "SubnetId": {
+          "description": "Private network subnet ID of the instance. When creating an instance, you can bind auxiliary NICs at the same time. - Parameter - N: indicates the NIC index, N = 1 means primary NIC; N ≥ 2 means auxiliary NIC. - Separate multiple private network subnet IDs with \u0026.",
+          "type": "string"
+        },
+        "VpcId": {
+          "description": "Private network",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Tag": {
+      "description": "Flexible reservation order tag information.",
+      "properties": {
+        "Key": {
+          "description": "Resource tag key.",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Resource tag value",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "VolumeConfig": {
+      "description": "Cloud disk configuration information specified when creating an instance.",
+      "properties": {
+        "DeleteWithInstance": {
+          "description": "Whether the cloud disk is released with the instance. Values: - true (default): The cloud disk is released with the instance. - false: The cloud disk is not released with the instance. :::tip - Parameter - N: Indicates the sequence number of the cloud disk, value range: 1–16. N = 1 indicates the system disk, which is released with the instance by default and cannot be retained; N ≥ 2 indicates a data disk, which can be optionally released with the instance. - Separate multiple cloud disks with \u0026.:::",
+          "type": "boolean"
+        },
+        "ExtraPerformanceIOPS": {
+          "description": "Extra IOPS performance size for the cloud disk, supported only by ESSD FlexPL data disks, measured in operations/second. This parameter must be set when `ExtraPerformanceTypeId` is `Balance` or `IOPS`. The value ranges for each type are as follows:\n- IOPS type: 1–50000\n- Balance type: 1–50000\n:::tip\n- Parameter - N: Indicates the sequence number of the cloud disk, value range: 1–16. N = 1 indicates the system disk, so when N is 1, this parameter is ignored. N ≥ 2 indicates a data disk, and this parameter can be set normally.\n- Use \u0026 to separate multiple cloud disks.\n:::",
+          "type": "integer"
+        },
+        "ExtraPerformanceThroughputMB": {
+          "description": "Extra disk throughput performance in MB/s. Supported only by ESSD FlexPL data disks. Set this parameter when `ExtraPerformanceTypeId` is `Throughput`. Value range: 1–650. :::tip - Parameter - N: indicates the disk index, value range: 1–16. N = 1 means system disk; if N is 1, this parameter will be ignored. N ≥ 2 means data disk; you can set this parameter normally. - Separate multiple disks with \u0026. :::",
+          "type": "integer"
+        },
+        "ExtraPerformanceTypeId": {
+          "description": "Type of extra cloud disk performance, supported only by ESSD FlexPL data disks. Values:\n- Balance: Balanced extra performance\n- IOPS: IOPS extra performance\n- Throughput: Throughput extra performance\nFor more information about extra performance, see [Cloud Disk Extra Performance].\n:::tip\n- Parameter - N: Indicates the sequence number of the cloud disk. Value range: 1–16.\nN = 1 indicates the system disk. If N is set to 1, this parameter will be ignored.\nN ≥ 2 indicates a data disk. This parameter can be set normally.\n- Use \u0026 to separate multiple cloud disks.\n:::",
+          "type": "string"
+        },
+        "Size": {
+          "description": "Cloud disk capacity, in GiB. N ranges from 1 to 16, where N = 1 is the system disk, and N ≥ 2 are data disks. Separate multiple cloud disks with \u0026. Cloud disk capacity ranges:\n- System disk:\n  - ESSD_PL0: 20–2048\n  - ESSD_FlexPL: 20–2048\n  :::tip\n  Default: max{40, image size of ImageId}\n  :::\n- Data disk:\n  - ESSD_PL0: 10–32768\n  - ESSD_FlexPL: 10–32768\n  :::tip\n  If this parameter is not specified, the snapshot size corresponding to `Volumes.N.SnapshotId` is used as the data disk capacity. If `Volumes.N.SnapshotId` is not specified, an error LimitExceeded.DataVolumeSize is returned\n  :::",
+          "type": "integer"
+        },
+        "SnapshotId": {
+          "description": "Create a disk from a snapshot; only data disks are supported. You can call the [DescribeSnapshots] API to query the snapshot ID. - Parameter - N: Indicates the disk sequence number, value range: 1–16. N = 1 indicates the system disk; when N is 1, this parameter will be ignored. N ≥ 2 indicates a data disk; you can specify the target data disk snapshot ID. - Use \u0026 to separate multiple disks. :::tip- Only ultra-fast SSDs support creating disks from snapshots; performance SSDs do not support snapshot-related features. - Only snapshots in the 'Available' state support creating new disks. Snapshots in 'Creating', 'Rolling back', 'Deleting', or 'Error' states do not support creating new disks.:::",
+          "type": "string"
+        },
+        "VolumeType": {
+          "description": "Cloud disk type. Values: - ESSD_PL0: Ultra-fast SSD PL0 - ESSD_FlexPL: Ultra-fast SSD FlexPL :::tip - Parameter - N: Indicates the disk number, range: 1–16. N = 1 indicates the system disk; N ≥ 2 indicates a data disk. - Use \u0026 to separate multiple disks. :::",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "VolumeRes": {
+      "description": "Information about the cloud disks attached to the instance.",
+      "properties": {
+        "Kind": {
+          "description": "Disk type. Values: - system: System disk - data: Data disk",
+          "type": "string"
+        },
+        "Size": {
+          "description": "Cloud disk capacity, in GiB.",
+          "type": "integer"
+        },
+        "VolumeType": {
+          "description": "Cloud disk type. Values:\n- ESSD_PL0: Ultra-fast SSD PL0\n- ESSD_FlexPL: Ultra-fast SSD FlexPL",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "Volcano Engine Cloud Server (ECS) ScheduledInstance. A ScheduledInstance allows you to schedule the automatic delivery of a batch of ECS instances at a future time. Supports two types: Elastic Scheduled Instance (Esi) and Elastic Scheduled Instance - Segmented (Segmented).",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/DeliveryType",
+      "/properties/ElasticScheduledInstanceType",
+      "/properties/ImageId",
+      "/properties/InstanceTypeId",
+      "/properties/KeyPairName",
+      "/properties/ProjectName",
+      "/properties/ScheduledInstanceId",
+      "/properties/ScheduledInstanceName",
+      "/properties/Status",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value",
+      "/properties/ZoneId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "ecs:CreateScheduledInstances",
+        "ecs:DescribeScheduledInstances"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "ecs:DeleteScheduledInstance",
+        "ecs:DescribeScheduledInstances"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "ecs:DescribeScheduledInstances"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "ecs:DescribeScheduledInstances"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "ecs:TagResources",
+        "ecs:UntagResources",
+        "ecs:DescribeScheduledInstances"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/ScheduledInstanceId"
+  ],
+  "properties": {
+    "AutoReleaseAt": {
+      "description": "Instance automatic release time. Must be at a 10-minute mark. When `ElasticScheduledInstanceType` is set to Segmented, this parameter is required. Value range: - When `DeliveryType` is Reserve, the earliest release time is one hour after the reserved delivery time slot. - When `DeliveryType` is Immediate, the earliest release time is the next 10-minute mark after the current time. For example, if the current time is 5:02, the earliest automatic release time is 5:20.",
+      "type": "string"
+    },
+    "CpuMaxFrequency": {
+      "description": "Specify the maximum CPU frequency in GHz. Value range: between the base frequency and turbo frequency of the CPU.\n:::tip\n- Currently, only g3al (4xlarge, 8xlarge, 16xlarge, 32xlarge), c3al (4xlarge, 8xlarge, 16xlarge, 32xlarge), r3al (4xlarge, 8xlarge, 16xlarge), g4i, c4i, r4i, g4ie, c4ie, r4ie instances support this parameter.\nFor details on base/turbo frequency and more information, see [Instance Specifications].\n- This feature is in invitation-only testing. To use it, contact your account manager.\n:::",
+      "type": "number"
+    },
+    "CreatedAt": {
+      "description": "ScheduledInstance creation time.",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "DeletionProtection": {
+      "description": "Instance deletion protection attribute. Specifies whether the instance can be deleted via console or API. Values:\n- true: Enable instance deletion protection\n- false (default): Disable instance deletion protection",
+      "type": "boolean"
+    },
+    "DeliveryCount": {
+      "description": "Number of delivered instances",
+      "type": "integer"
+    },
+    "DeliveryType": {
+      "description": "Elastic Scheduled Instance - Segmented delivery type. Values: - Reserve (default): scheduled delivery - Immediate: immediate delivery :::tip - This parameter is required only when `ElasticScheduledInstanceType` is set to `Segmented`. - Elastic Scheduled Instance - Segmented is currently in invitation testing. To apply for a trial, please contact your account manager. :::",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Instance description. The default value is an empty string. - Must start with a letter or Chinese character. - Can only contain Chinese characters, letters, numbers, period '.', space, underscore '_', hyphen '-', equals sign '=', English comma ',', Chinese comma '，', and Chinese period '。' - Maximum length is 255 characters.",
+      "type": "string"
+    },
+    "EipAddress": {
+      "$ref": "#/definitions/EipAddressConfig",
+      "description": "Public IP configuration specified when creating the instance."
+    },
+    "ElasticScheduledInstanceType": {
+      "description": "Elastic scheduled instance type. Options: - Esi (default): Elastic scheduled instance. - Segmented: Elastic scheduled instance (time segment). :::tip Elastic scheduled instance (time segment) is currently in invite-only beta. To try it, please contact your account manager.:::",
+      "type": "string"
+    },
+    "EndDeliveryAt": {
+      "description": "Instance end delivery time. Must be on a 10-minute mark, and the interval with `StartDeliveryAt` must be 10 minutes\n- If `ElasticScheduledInstanceType` is `Esi`, the end delivery time must be within 4–8 hours after reservation\n- If `ElasticScheduledInstanceType` is `Segmented`:\n  - If `DeliveryType` is `Reserve`, the end delivery time must be within 24 hours after reservation\n  - If `DeliveryType` is `Immediate`, this parameter is not required",
+      "type": "string"
+    },
+    "HostName": {
+      "description": "Instance hostname, which is the computer name inside the instance operating system.\n- Linux instances:\n  - Letters, numbers, periods (\".\"), and hyphens (\"-\") are allowed.\n  - Cannot start or end with a hyphen or period, and hyphens and periods cannot be used consecutively.\n  - Length must be between 2 and 63 characters for Linux systems.\n- Windows instances:\n  - Letters, numbers, and hyphens (\"-\") are allowed, but the name cannot consist of only numbers.\n  - Cannot start or end with a hyphen, and hyphens cannot be used consecutively.\n  - Length must be between 2 and 15 characters for Windows systems.\n:::tip\n- If left blank, the hostname is automatically generated according to the iv- + initial hostname rule, for example, iv-3tigy72q3u3vj0******.\n- Initial hostname generation logic:\n  - Linux: Extract all characters after the instance ID i-.\n  - Windows: Extract the last 12 characters after the instance ID i-.\n- When creating instances in batches, you can use the `name_prefix[begin_number,bits]name_suffix` format to customize sequential hostnames. For details, see [Batch Set Sequential Instance Names or Hostnames].\n:::",
+      "type": "string"
+    },
+    "HpcClusterId": {
+      "description": "When creating a high-performance computing GPU instance, specify the high-performance computing cluster ID.",
+      "type": "string"
+    },
+    "HttpTokens": {
+      "description": "Instance metadata access mode: whether to enforce enhanced mode. Values: - optional (default): Not enforced (compatible mode), meaning instance metadata can be accessed either directly or via token-based authentication. - required: Enforced (enhanced mode only), meaning instance metadata can only be accessed via token-based authentication. :::tip - For details on how to view metadata and supported metadata items, see [View Instance Metadata]. - Enhanced mode is currently in invitation testing. To request access, contact your account manager. :::",
+      "type": "string"
+    },
+    "ImageId": {
+      "description": "The image ID used to launch the instance. You can use [DescribeImages] to query available image resources.",
+      "type": "string"
+    },
+    "InstallRunCommandAgent": {
+      "description": "Whether to install the Cloud Assistant Agent when creating the instance. Values:\n- true: Install during creation\n- false (default): Do not install during creation\n:::tip\nFor more information about Cloud Assistant, see [Cloud Assistant Overview].\n:::",
+      "type": "boolean"
+    },
+    "InstanceConfig": {
+      "$ref": "#/definitions/InstanceConfig",
+      "description": "Instance configuration information for the elastic reservation order."
+    },
+    "InstanceCount": {
+      "description": "Number of instances to create. Value range:\n- If `ElasticScheduledInstanceType` is set to `Esi`, value range is 1–500.\n- If `ElasticScheduledInstanceType` is set to `Segmented`, then:\n  - If `DeliveryType` is `Reserve`, value range is 1–500.\n  - If `DeliveryType` is `Immediate`, value range is 1–100.\n:::tip\nIf 0 is entered, the default is 1.\n:::",
+      "type": "integer"
+    },
+    "InstanceName": {
+      "description": "Instance name\n- Must start with a letter or Chinese character\n- Can only contain Chinese characters, letters, numbers, underscores \"_\", hyphens \"-\", and periods \".\"\n- Length must be between 1 and 128 characters\n:::tip\n- If the instance has a `SuffixIndex` sequential suffix, the instance name length includes the suffix\n- When creating instances in bulk, you can use the `name_prefix[begin_number,bits]name_suffix` format to customize sequential instance names. For details, see [Batch Set Sequential Instance Names or Host Names]\n:::",
+      "type": "string"
+    },
+    "InstanceTypeId": {
+      "description": "Instance type. - For supported instance types available for reservation, see [Elastic Scheduled Instance Overview]. - You can call [DescribeAvailableResource] to query inventory information for compute resources in the availability zone.",
+      "type": "string"
+    },
+    "InvalidAt": {
+      "description": "Elastic reservation order expiration time.",
+      "type": "string"
+    },
+    "KeepImageCredential": {
+      "description": "Whether to retain image settings. Values: - true: Retain image settings. If retained, the instance will use the preset password or key pair from the image for login. - false (default): Do not retain image settings. :::tip- Only custom images and shared images support this feature. - When this parameter is set to `true`, do not specify `PassWord` or `KeyPairName`.:::",
+      "type": "boolean"
+    },
+    "KeyPairName": {
+      "description": "To log in to the instance using an SSH key, specify the name of an existing key pair. You can call [DescribeKeyPairs] to view existing key pairs; if none are available, call [CreateKeyPair] to create one\n:::tip\n- Windows instances do not support SSH key login. Even if this parameter is provided, only the password `Password` is valid\n- Linux instances support login via password or key pair. If both `KeyPairName` and `Password` are set when calling this API, only `KeyPairName` takes effect\n:::",
+      "type": "string"
+    },
+    "MinCount": {
+      "description": "Specify the minimum number of Elastic Scheduled Instances to create. Value range: - ESI-General, ESI-Segmented (Scheduled Delivery): 1–500 - ESI-Segmented (Immediate Delivery): 1–100 :::tip - The minimum instance creation quantity `MinCount` ≤ creation quantity `Count`. - If inventory quantity \u003e creation quantity `Count`, create according to `Count`. - If minimum creation quantity `MinCount` ≤ inventory quantity ≤ creation quantity `Count`, create according to inventory quantity. - If inventory quantity \u003c minimum creation quantity `MinCount`, creation fails due to insufficient inventory. :::",
+      "type": "integer"
+    },
+    "NetworkInterfaces": {
+      "description": "Network interface configuration information specified when creating the instance.",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/NetworkInterfaceConfig"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "Password": {
+      "description": "If you want to log in to the instance using the 'password' method, specify the initial login password for the administrator account through this parameter. The Linux administrator account is root, and the Windows administrator account is Administrator. Password complexity requirements: - Length must be between 8 and 30 characters. - Password must contain at least three of the following: uppercase letters, lowercase letters, numbers, and special characters. - Allowed special characters: `~!@#$%^\u0026*()_-+=|{}[]:;'\u003c\u003e,.?/- Cannot start with '/' or '$6$'. :::tip Login credentials support three methods: 'password', 'key pair', and 'retain image settings'. When using the 'password' method to log in, it is recommended to increase password complexity for enhanced security.:::",
+      "type": "string"
+    },
+    "ProjectName": {
+      "description": "Project to which the resource belongs. Each resource can belong to only one project. - Can only contain letters, numbers, underscore '_', period '.', and hyphen '-'. - Maximum length is 64 characters.",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "ReleaseCount": {
+      "description": "Number of released instances.",
+      "type": "integer"
+    },
+    "ScheduledInstanceDescription": {
+      "description": "Description of the flexible reservation order. The default value is an empty string. - Must start with a letter or Chinese character. - Can only contain Chinese characters, letters, numbers, period '.', space, underscore '_', hyphen '-', equals sign '=', English comma ',', Chinese comma '，', and Chinese period '。' - Maximum length is 255 characters.",
+      "type": "string"
+    },
+    "ScheduledInstanceId": {
+      "description": "Elastic reservation order ID.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "ScheduledInstanceName": {
+      "description": "Name of the elastic reservation order. Values: - Cannot start with a number, hyphen, or underscore. - Can only contain Chinese characters, letters, numbers, underscores, and hyphens. - Length limit: 1–128 characters. - Special characters are not supported.",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "SecurityEnhancementStrategy": {
+      "description": "Whether to enable security hardening. Values: - Active: Enable security hardening, applies only to public images. - InActive: Disable security hardening, applies to all image types.",
+      "type": "string"
+    },
+    "StartDeliveryAt": {
+      "description": "Instance delivery start time. Must be on a 10-minute mark (e.g., 10:00, 10:10, 10:20, etc.). - When `ElasticScheduledInstanceType` is set to `Esi`, delivery time is within 4–8 hours after reservation. - When `ElasticScheduledInstanceType` is set to `Segmented`:   - If `DeliveryType` is `Reserve`, delivery time is within 24 hours after reservation.   - If `DeliveryType` is `Immediate`, this parameter is not required.",
+      "type": "string"
+    },
+    "Status": {
+      "description": "ScheduledInstance status.",
+      "semantic": "status",
+      "type": "string"
+    },
+    "SuffixIndex": {
+      "description": "Starting sequence number for ordered suffix. Value range: 1–999. Default is 1.",
+      "type": "integer"
+    },
+    "Tags": {
+      "description": "Flexible reservation order tag information.",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "UniqueSuffix": {
+      "description": "Indicates whether to automatically add an ordered suffix to `HostName` and `InstanceName` when creating multiple instances. Values: - true: Enable ordered suffix. - false (default): Disable ordered suffix. :::tip- When ordered suffix is enabled and `HostName` is empty, the system will automatically generate a host name without an ordered suffix. - When ordered suffix is enabled and the `[begin_number,bits]` naming format is specified for `HostName` or `InstanceName`, see [Batch Set Ordered Instance Names or Host Names] for the final effect.:::",
+      "type": "boolean"
+    },
+    "UpdatedAt": {
+      "description": "Elastic reservation order update time.",
+      "semantic": "updatedTime",
+      "type": "string"
+    },
+    "UserData": {
+      "description": "Instance custom data. Custom data must be Base64-encoded, and the size before encoding must not exceed 16KB. If not specified, defaults to empty.",
+      "type": "string"
+    },
+    "Volumes": {
+      "description": "Cloud disk configuration information specified when creating an instance.",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/VolumeConfig"
+      },
+      "type": "array",
+      "uniqueItems": false
+    },
+    "ZoneId": {
+      "description": "Availability zone ID where the instance is located. You can call [DescribeZones] to query the availability zones in a region.",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/CreatedAt",
+    "/properties/DeliveryCount",
+    "/properties/InstanceConfig",
+    "/properties/InvalidAt",
+    "/properties/ReleaseCount",
+    "/properties/ScheduledInstanceId",
+    "/properties/Status",
+    "/properties/UpdatedAt"
+  ],
+  "required": [
+    "ImageId",
+    "InstanceName",
+    "InstanceTypeId",
+    "NetworkInterfaces",
+    "ScheduledInstanceName",
+    "Volumes",
+    "ZoneId"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::ECS::ScheduledInstance",
+  "writeOnlyProperties": [
+    "/properties/CpuMaxFrequency",
+    "/properties/DeletionProtection",
+    "/properties/EipAddress",
+    "/properties/HttpTokens",
+    "/properties/InstallRunCommandAgent",
+    "/properties/KeepImageCredential",
+    "/properties/MinCount",
+    "/properties/NetworkInterfaces",
+    "/properties/Password",
+    "/properties/SecurityEnhancementStrategy",
+    "/properties/SuffixIndex",
+    "/properties/UniqueSuffix",
+    "/properties/UserData",
+    "/properties/Volumes"
+  ]
+}

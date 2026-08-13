@@ -1192,6 +1192,10 @@ func instanceDataSource(ctx context.Context) (datasource.DataSource, error) {
 		//
 		//	{
 		//	  "description": "Auxiliary network interface card of the instance.",
+		//	  "elementIdentifier": [
+		//	    "/SubnetId",
+		//	    "/PrimaryIpAddress"
+		//	  ],
 		//	  "insertionOrder": false,
 		//	  "items": {
 		//	    "description": "Instance network interface.",
