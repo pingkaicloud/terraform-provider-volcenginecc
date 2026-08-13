@@ -305,6 +305,10 @@
     },
     "Volumes": {
       "description": "Cloud disk",
+      "elementIdentifier": [
+        "/Size",
+        "/VolumeType"
+      ],
       "insertionOrder": false,
       "items": {
         "$ref": "#/definitions/Volume"

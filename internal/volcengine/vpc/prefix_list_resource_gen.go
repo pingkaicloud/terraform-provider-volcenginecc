@@ -205,6 +205,9 @@ func prefixListResource(ctx context.Context) (resource.Resource, error) {
 		//
 		//	{
 		//	  "description": "CIDR of the prefix list entry.",
+		//	  "elementIdentifier": [
+		//	    "/Cidr"
+		//	  ],
 		//	  "insertionOrder": false,
 		//	  "items": {
 		//	    "properties": {
@@ -456,6 +459,15 @@ func prefixListResource(ctx context.Context) (resource.Resource, error) {
 	opts = opts.WithCreateOnlyPropertyPaths([]string{
 		"/properties/IpVersion",
 		"/properties/ProjectName",
+	})
+	opts = opts.WithCollectionIdentities([]generic.CollectionIdentity{
+		{
+			PropertyPath: "/PrefixListEntries",
+			IdentifierPaths: []string{
+				"/Cidr",
+			},
+			UniqueItems: true,
+		},
 	})
 	opts = opts.WithCreateTimeoutInMinutes(0).WithDeleteTimeoutInMinutes(0)
 

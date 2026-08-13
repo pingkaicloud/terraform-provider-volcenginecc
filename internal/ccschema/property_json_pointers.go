@@ -16,3 +16,14 @@ func (ptrs PropertyJsonPointers) ContainsPath(path []string) bool {
 
 	return false
 }
+
+// ContainsPathString returns true if an element matches the JSON Pointer path.
+func (ptrs PropertyJsonPointers) ContainsPathString(path string) bool {
+	for _, ptr := range ptrs {
+		if ptr.String() == path {
+			return true
+		}
+	}
+
+	return false
+}

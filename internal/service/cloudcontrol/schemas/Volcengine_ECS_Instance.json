@@ -779,6 +779,10 @@
     },
     "SecondaryNetworkInterfaces": {
       "description": "Auxiliary network interface card of the instance.",
+      "elementIdentifier": [
+        "/SubnetId",
+        "/PrimaryIpAddress"
+      ],
       "insertionOrder": false,
       "items": {
         "$ref": "#/definitions/NetworkInterface"

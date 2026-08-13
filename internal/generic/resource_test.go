@@ -4,6 +4,7 @@
 package generic
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -81,5 +82,37 @@ func TestPropertyPathToAttributePath(t *testing.T) {
 				t.Errorf("got: %s, expected: %s", attributePath, testCase.ExpectedValue)
 			}
 		})
+	}
+}
+
+func TestResourceWithCollectionIdentitiesLastCallWins(t *testing.T) {
+	t.Parallel()
+
+	first := []CollectionIdentity{{
+		PropertyPath:    "/First",
+		IdentifierPaths: []string{"/Id"},
+		UniqueItems:     true,
+	}}
+	last := []CollectionIdentity{{
+		PropertyPath:    "/Last",
+		IdentifierPaths: []string{"/Name", "/Scope"},
+	}}
+
+	resource := &genericResource{}
+	for _, option := range (ResourceOptions{}).
+		WithCollectionIdentities(first).
+		WithCollectionIdentities(last) {
+		if err := option(resource); err != nil {
+			t.Fatalf("applying collection identity option: %v", err)
+		}
+	}
+
+	if !reflect.DeepEqual(resource.collectionIdentities, last) {
+		t.Fatalf("collectionIdentities = %#v, want %#v", resource.collectionIdentities, last)
+	}
+
+	last[0].PropertyPath = "/Mutated"
+	if resource.collectionIdentities[0].PropertyPath != "/Last" {
+		t.Fatalf("collectionIdentities aliases caller slice: %#v", resource.collectionIdentities)
 	}
 }

@@ -116,20 +116,23 @@ func resourceIsImmutableType(v bool) ResourceOptionsFunc {
 func resourceWithWriteOnlyPropertyPaths(v []string) ResourceOptionsFunc {
 	return func(o *genericResource) error {
 		writeOnlyAttributePaths := make([]*path.Path, 0)
+		writeOnlyPropertyPaths := make([]string, 0)
 
 		for _, writeOnlyPropertyPath := range v {
-			writeOnlyPropertyPath = strings.ReplaceAll(writeOnlyPropertyPath, "/*/", "/")
-			writeOnlyPropertyPath = strings.TrimSuffix(writeOnlyPropertyPath, "/*")
-			writeOnlyAttributePath, err := o.propertyPathToAttributePath(writeOnlyPropertyPath)
+			attributePropertyPath := strings.ReplaceAll(writeOnlyPropertyPath, "/*/", "/")
+			attributePropertyPath = strings.TrimSuffix(attributePropertyPath, "/*")
+			writeOnlyAttributePath, err := o.propertyPathToAttributePath(attributePropertyPath)
 
 			if err != nil {
 				// return fmt.Errorf("creating write-only attribute path (%s): %w", writeOnlyPropertyPath, err)
 				continue
 			}
 
+			writeOnlyPropertyPaths = append(writeOnlyPropertyPaths, writeOnlyPropertyPath)
 			writeOnlyAttributePaths = append(writeOnlyAttributePaths, writeOnlyAttributePath)
 		}
 
+		o.writeOnlyPropertyPaths = writeOnlyPropertyPaths
 		o.writeOnlyAttributePaths = writeOnlyAttributePaths
 
 		return nil
@@ -187,6 +190,22 @@ func resourceWithCreateOnlyPropertyPaths(v []string) ResourceOptionsFunc {
 		}
 
 		o.createOnlyAttributePaths = createOnlyAttributePaths
+
+		return nil
+	}
+}
+
+// resourceWithCollectionIdentities is a helper function to construct functional
+// options that set unordered object collection identity metadata. If called
+// multiple times, the last call replaces prior metadata so generated resource
+// options have deterministic schema-derived behavior.
+func resourceWithCollectionIdentities(v []CollectionIdentity) ResourceOptionsFunc {
+	return func(o *genericResource) error {
+		o.collectionIdentities = make([]CollectionIdentity, len(v))
+		for index, identity := range v {
+			o.collectionIdentities[index] = identity
+			o.collectionIdentities[index].IdentifierPaths = append([]string(nil), identity.IdentifierPaths...)
+		}
 
 		return nil
 	}
@@ -325,6 +344,12 @@ func (opts ResourceOptions) WithCreateOnlyPropertyPaths(v []string) ResourceOpti
 	return append(opts, resourceWithCreateOnlyPropertyPaths(v))
 }
 
+// WithCollectionIdentities appends the option that sets schema-derived unordered
+// object collection identity metadata and returns the updated option list.
+func (opts ResourceOptions) WithCollectionIdentities(v []CollectionIdentity) ResourceOptions {
+	return append(opts, resourceWithCollectionIdentities(v))
+}
+
 // WithCreateTimeoutInMinutes is a helper function to construct functional options
 // that set a resource type's create timeout, append that function to the
 // current slice of functional options and return the new slice of options.
@@ -382,15 +407,17 @@ func NewResource(_ context.Context, optFns ...ResourceOptionsFunc) (resource.Res
 
 // Implements resource.Resource.
 type genericResource struct {
-	ccTypeName               string            // Cloud Control type name for the resource type
-	tfSchema                 schema.Schema     // Terraform schema for the resource type
-	tfTypeName               string            // Terraform type name for resource type
-	tfToCcNameMap            map[string]string // Map of Terraform attribute name to Cloud Control property name
-	ccToTfNameMap            map[string]string // Map of Cloud Control property name to Terraform attribute name
-	isImmutableType          bool              // Resources cannot be updated and must be recreated
-	writeOnlyAttributePaths  []*path.Path      // Paths to any write-only attributes
-	readOnlyAttributePaths   []*path.Path      // Paths to any read-only attributes
-	createOnlyAttributePaths []*path.Path      // Paths to any create-only attributes
+	ccTypeName               string               // Cloud Control type name for the resource type
+	tfSchema                 schema.Schema        // Terraform schema for the resource type
+	tfTypeName               string               // Terraform type name for resource type
+	tfToCcNameMap            map[string]string    // Map of Terraform attribute name to Cloud Control property name
+	ccToTfNameMap            map[string]string    // Map of Cloud Control property name to Terraform attribute name
+	isImmutableType          bool                 // Resources cannot be updated and must be recreated
+	writeOnlyPropertyPaths   []string             // Cloud Control JSON Pointer paths to any write-only properties
+	writeOnlyAttributePaths  []*path.Path         // Terraform attribute paths to any write-only attributes
+	readOnlyAttributePaths   []*path.Path         // Paths to any read-only attributes
+	createOnlyAttributePaths []*path.Path         // Paths to any create-only attributes
+	collectionIdentities     []CollectionIdentity // Identity metadata for unordered object collections
 
 	createTimeout    time.Duration              // Maximum wait time for resource creation
 	updateTimeout    time.Duration              // Maximum wait time for resource update
@@ -398,6 +425,8 @@ type genericResource struct {
 	configValidators []resource.ConfigValidator // Required attributes validators
 	provider         tfcloudcontrol.Provider
 }
+
+var _ resource.ResourceWithModifyPlan = (*genericResource)(nil)
 
 var (
 	// Path to the "id" attribute which uniquely (for a specific resource type) identifies the resource.
@@ -417,6 +446,29 @@ func (r *genericResource) Configure(_ context.Context, request resource.Configur
 	if v := request.ProviderData; v != nil {
 		r.provider = v.(tfcloudcontrol.Provider)
 	}
+}
+
+// ModifyPlan reconciles unknown computed values in identity-bearing collections
+// with prior values, then applies canonical identity order where identifiers are
+// known. It never pairs unsafe identities or falls back to indexes.
+func (r *genericResource) ModifyPlan(ctx context.Context, request resource.ModifyPlanRequest, response *resource.ModifyPlanResponse) {
+	response.Plan = request.Plan
+
+	if len(r.collectionIdentities) == 0 || request.Plan.Raw.IsNull() || !request.Plan.Raw.IsKnown() {
+		return
+	}
+
+	plan := request.Plan.Raw
+	if !request.State.Raw.IsNull() && request.State.Raw.IsKnown() {
+		var err error
+		plan, err = r.mergeIdentityCollectionPlans(request.Config.Raw, request.State.Raw, plan)
+		if err != nil {
+			response.Diagnostics.AddError("Unable to merge unordered collection plan", err.Error())
+			return
+		}
+	}
+
+	response.Plan.Raw = r.canonicalizeIdentityCollectionPlan(plan)
 }
 
 func (r *genericResource) Create(ctx context.Context, request resource.CreateRequest, response *resource.CreateResponse) {
@@ -574,15 +626,41 @@ func (r *genericResource) Read(ctx context.Context, request resource.ReadRequest
 
 		return
 	}
+	if len(r.collectionIdentities) > 0 {
+		val, err = r.canonicalizeIdentityCollectionState(val)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Unable to canonicalize unordered collection state",
+				fmt.Sprintf("Unable to sort Cloud Control API readback by collection identity. Original Error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
 
 	response.State = tfsdk.State{
 		Schema: schema,
 		Raw:    val,
 	}
 
-	// Copy over concrete write-only values.
+	if len(r.collectionIdentities) > 0 && len(r.writeOnlyPropertyPaths) > 0 {
+		response.State.Raw, err = r.restoreIdentityCollectionWriteOnlyValues(request.State.Raw, response.State.Raw)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Unable to restore unordered collection write-only values",
+				fmt.Sprintf("Unable to restore write-only values by collection identity. Original Error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	// Copy over concrete write-only values outside identity-bearing collections.
 	// Null write-only children are skipped so omitted optional nested parents remain null after readback.
-	for _, path := range r.writeOnlyAttributePaths {
+	for index, path := range r.writeOnlyAttributePaths {
+		if index < len(r.writeOnlyPropertyPaths) && r.writeOnlyPathBelongsToIdentityCollection(r.writeOnlyPropertyPaths[index]) {
+			continue
+		}
 		response.Diagnostics.Append(copyKnownStateValueAtPath(ctx, &response.State, &request.State, *path)...)
 		if response.Diagnostics.HasError() {
 			return
@@ -762,6 +840,19 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 
 		return
 	}
+	if len(r.collectionIdentities) > 0 {
+		// CCAPI must sort the resource document used as the JSON Patch base by
+		// the same identity order before applying these index-based operations.
+		currentDesiredState, plannedDesiredState, err = canonicalizeIdentityCollections(currentDesiredState, plannedDesiredState, r.collectionIdentities)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Unable to canonicalize unordered collection update",
+				fmt.Sprintf("Unable to sort Cloud Control API current and planned states by collection identity before JSON Patch generation. Original Error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
 	patchDocument, err := patchDocument(currentDesiredState, plannedDesiredState)
 
 	if err != nil {
@@ -857,6 +948,16 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 	response.Diagnostics.Append(r.populateUnknownValues(ctx, id, &response.State)...)
 	if response.Diagnostics.HasError() {
 		return
+	}
+	if len(r.collectionIdentities) > 0 {
+		response.State.Raw, err = r.canonicalizeIdentityCollectionState(response.State.Raw)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Unable to canonicalize unordered collection state",
+				fmt.Sprintf("Unable to sort updated Terraform state by collection identity. Original Error: %s", err.Error()),
+			)
+			return
+		}
 	}
 
 	traceExit(ctx, "Resource.Update")
