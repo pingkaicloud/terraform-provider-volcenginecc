@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_certificateservice_organization_info.example "organization_id"

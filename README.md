@@ -92,7 +92,7 @@ data "volcenginecc_vpc_vpc" "VpcVpcDataSource" {
 
 ## Authentication
 
-The Volcenginecc provider offers a flexible means of providing credentials for authentication. The following methods are supported, in this order, and explained below:
+The Volcenginecc provider first resolves source credentials and then optionally uses those credentials to call STS AssumeRole.
 
 ### Static credentials
 
@@ -101,30 +101,36 @@ Static credentials can be provided by adding an public_key and private_key in-li
 > **Warning**:
 > Hard-coded credentials are not recommended in any Terraform configuration and risks secret leakage should this file ever be committed to a public version control system.
 
-**Authentication Priority and Requirements:**
+**Authentication Resolution and Requirements:**
 
-- **AK/SK Authentication**: The `access_key` and `secret_key` parameters have the highest priority for authentication.
-- **Profile Authentication**: The `profile` parameter can be used as an alternative authentication method.
+- **Explicit Profile Authentication**: An explicitly configured `profile` selects that Profile even if AK/SK environment variables are present.
+- **Explicit AK/SK Authentication**: `access_key`, `secret_key`, and optional `session_token` select static source credentials.
+- **Default Credential Provider**: When neither Profile nor AK/SK is explicitly configured, the SDK default credential chain is used.
+- **AssumeRole**: When `assume_role` is configured, it wraps an explicitly resolvable Profile or AK/SK source and supplies the final target-role credentials.
 - **Validation Rules**:
-    - At least one authentication method must be provided: either `access_key`/`secret_key` OR `profile`
-    - If both AK/SK and Profile are provided, AK/SK authentication takes precedence over Profile authentication
-    - The `file_path` parameter is optional. If not specified, the default path `~/.volcengine` will be used to locate the profile configuration file
+    - Do not configure Profile and AK/SK together explicitly; ambiguous explicit sources return an error
+    - The `file_path` parameter is optional. If not specified, the default file `~/.volcengine/config.json` is used
+    - A `ramrolearn` Profile cannot be combined with Provider-level `assume_role` in V1
+    - The opaque DefaultCredentialProvider chain cannot be combined with `assume_role` in V1; configure Profile or AK/SK explicitly or through their dedicated environment variables
 
 Usage:
 
-```shell
+```terraform
 provider "volcenginecc" {
-   access_key = "your ak"
-   secret_key = "your sk"
-   region = "cn-beijing"
-   profile = "your profile" 
-   file_path = "" # if empty, default path is ~/.volcengine
+  region    = "cn-beijing"
+  profile   = "platform-admin"
+  file_path = "/path/to/.volcengine/config.json"
+
+  assume_role {
+    assume_role_trn = "trn:iam::222222222222:role/terraform-execution"
+    duration_seconds = 3600
+  }
 }
 ```
 
 ### Environment variables
 
-You can provide your credentials via VOLCENGINE_ACCESS_KEY and VOLCENGINE_SECRET_KEY environment variables, representing your volcengine public key and private key respectively. VOLCENGINE_REGION, VOLCENGINE_PROFILE, and VOLCENGINE_FILE_PATH are also used, if applicable:
+Set `VOLCENGINE_REGION` and choose either AK/SK or Profile credentials. If both sources are configured, AK/SK takes precedence and the provider returns a warning:
 
 ```shell
 provider "volcenginecc" {
@@ -135,11 +141,16 @@ provider "volcenginecc" {
 Usage:
 
 ```shell
+$ export VOLCENGINE_REGION="cn-beijing"
+
+# Option 1: AK/SK credentials
 $ export VOLCENGINE_ACCESS_KEY="your_public_key"
 $ export VOLCENGINE_SECRET_KEY="your_private_key"
-$ export VOLCENGINE_REGION="cn-beijing"
-$ export VOLCENGINE_PROFILE="your_profile"
-$ export VOLCENGINE_FILE_PATH="your_file_path" # if empty, default path is ~/.volcengine
+$ export VOLCENGINE_SESSION_TOKEN="your_session_token" # optional, used for STS temporary credentials
+
+# Option 2: Profile credentials (do not set AK/SK at the same time)
+# export VOLCENGINE_PROFILE="your_profile"
+# export VOLCENGINE_FILE_PATH="your_file_path" # defaults to ~/.volcengine/config.json
 ```
 
 ## Authenticated Cloud Control proxy
@@ -203,11 +214,12 @@ The equivalent environment variables are `VOLCENGINE_NO_PROXY` (with `NO_PROXY` 
 
 ### Optional
 
-- `access_key` (String) The Access Key for Volcengine Provider. It must be provided, but it can also be sourced from the `VOLCENGINE_ACCESS_KEY` environment variable
-- `secret_key` (String) he Secret Key for Volcengine Provider. It must be provided, but it can also be sourced from the `VOLCENGINE_SECRET_KEY` environment variable
-- `profile` (String) The Profile for Volcengine Provider. It can be used as an alternative authentication method to AK/SK, and can also be sourced from the `VOLCENGINE_PROFILE` environment variable
-- `file_path` (String) The File Path for Volcengine Provider. It specifies the path to the profile configuration file. If not specified, the default path `~/.volcengine` will be used, and can also be sourced from the `VOLCENGINE_FILE_PATH` environment variable
-- `assume_role` (Attributes) An `assume_role` block (documented below). Only one `assume_role` block may be in the configuration. (see [below for nested schema](#nestedatt--assume_role))
+- `access_key` (String) The Access Key for Volcengine Provider. It can also be sourced from the `VOLCENGINE_ACCESS_KEY` environment variable
+- `secret_key` (String) The Secret Key for Volcengine Provider. It can also be sourced from the `VOLCENGINE_SECRET_KEY` environment variable
+- `session_token` (String) The Session Token for Volcengine Provider. It can also be sourced from the `VOLCENGINE_SESSION_TOKEN` environment variable
+- `profile` (String) The Profile for Volcengine Provider. It can be sourced from the `VOLCENGINE_PROFILE` environment variable. Complete AccessKey and SecretKey credentials take precedence when both sources are configured
+- `file_path` (String) The File Path for Volcengine Provider. It specifies the path to the profile configuration file. If not specified, the default file `~/.volcengine/config.json` will be used, and can also be sourced from the `VOLCENGINE_FILE_PATH` environment variable
+- `assume_role` (Attributes) An `assume_role` block that uses the selected source credentials to obtain target-role credentials. Only one `assume_role` block may be in the configuration. (see [below for nested schema](#nestedatt--assume_role))
 - `customer_headers` (String) CUSTOMER HEADERS for Volcengine Provider. The customer_headers field uses commas (,) to separate multiple headers, and colons (:) to separate each header key from its corresponding value.
 - `disable_ssl` (Boolean) Disable SSL for Volcengine Provider
 - `endpoints` (Attributes) An `endpoints` block (documented below). Only one `endpoints` block may be in the configuration. (see [below for nested schema](#nestedatt--endpoints))
@@ -224,12 +236,11 @@ The equivalent environment variables are `VOLCENGINE_NO_PROXY` (with `NO_PROXY` 
 
 Required:
 
-- `assume_role_session_name` (String) The session name to use when making the AssumeRole call.
 - `assume_role_trn` (String) he TRN of the role to assume.
-- `duration_seconds` (Number) The duration of the session when making the AssumeRole call. Its value ranges from 900 to 43200(seconds), and default is 3600 seconds.
 
 Optional:
 
+- `duration_seconds` (Number) The duration of the session when making the AssumeRole call. Its value ranges from 900 to 43200(seconds), and default is 3600 seconds.
 - `policy` (String) A more restrictive policy when making the AssumeRole call
 
 <a id="nestedatt--endpoints"></a>

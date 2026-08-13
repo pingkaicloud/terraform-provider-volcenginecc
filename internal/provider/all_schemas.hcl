@@ -1139,3 +1139,27 @@ resource_schema "volcengine_resourceshare_resource_share" {
 resource_schema "volcengine_certificateservice_child_cert_instance" {
   cloudcontrol_type_name = "Volcengine::CertificateService::ChildCertInstance"
 }
+
+resource_schema "volcengine_ecs_scheduled_instance" {
+  cloudcontrol_type_name = "Volcengine::ECS::ScheduledInstance"
+}
+
+resource_schema "volcengine_vpc_ip_pool" {
+  cloudcontrol_type_name = "Volcengine::VPC::IpPool"
+}
+
+resource_schema "volcengine_vpc_ip_pool_cidr_block" {
+  cloudcontrol_type_name = "Volcengine::VPC::IpPoolCidrBlock"
+}
+
+resource_schema "volcengine_config_rule" {
+  cloudcontrol_type_name = "Volcengine::Config::Rule"
+}
+
+resource_schema "volcengine_certificateservice_organization_info" {
+  cloudcontrol_type_name = "Volcengine::CertificateService::OrganizationInfo"
+}
+
+resource_schema "volcengine_config_group_rule" {
+  cloudcontrol_type_name = "Volcengine::Config::GroupRule"
+}

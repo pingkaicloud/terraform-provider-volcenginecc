@@ -1,0 +1,97 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/IpAddressPoolId",
+    "/properties/CidrBlock",
+    "/properties/CidrMask"
+  ],
+  "description": "IP address pool subnet.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/IpAddressPoolId",
+      "/properties/CidrBlock"
+    ],
+    "required": [
+      "/properties/IpAddressPoolId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "vpc:AddIpAddressPoolCidrBlock",
+        "vpc:DescribeIpAddressPoolCidrBlocks"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "vpc:DeleteIpAddressPoolCidrBlock",
+        "vpc:DescribeIpAddressPoolCidrBlocks"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "vpc:DescribeIpAddressPoolCidrBlocks"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "vpc:DescribeIpAddressPoolCidrBlocks"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/IpAddressPoolId",
+    "/properties/CidrBlock"
+  ],
+  "properties": {
+    "CidrBlock": {
+      "description": "IP address subnet. Only IPv4 subnets are supported and cannot start with 0; mask value range is 23 to 30. Only one of CidrBlock or CidrMask can be configured during creation.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "CidrMask": {
+      "description": "IP address subnet mask; value range is 24 to 28. After entering the mask, the IP address subnet will be automatically assigned. Only one of CidrBlock or CidrMask can be configured during creation.",
+      "maximum": 28,
+      "minimum": 24,
+      "type": "integer"
+    },
+    "CreationTime": {
+      "description": "Creation time of the IP address pool subnet.",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "IpAddressPoolId": {
+      "description": "ID of the IP address pool.",
+      "type": "string"
+    },
+    "Status": {
+      "description": "Status of the IP address pool subnet. Creating: In progress. Available: Available. Deleting: In progress. Pending: Configuring.",
+      "semantic": "status",
+      "type": "string"
+    },
+    "TotalIpCount": {
+      "description": "Total number of IP addresses in the IP address pool.",
+      "type": "integer"
+    },
+    "UsedIpCount": {
+      "description": "Number of used IP addresses in the IP address pool subnet.",
+      "type": "integer"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/Status",
+    "/properties/TotalIpCount",
+    "/properties/UsedIpCount",
+    "/properties/CreationTime"
+  ],
+  "required": [
+    "IpAddressPoolId"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::VPC::IpPoolCidrBlock",
+  "writeOnlyProperties": [
+    "/properties/CidrMask"
+  ]
+}

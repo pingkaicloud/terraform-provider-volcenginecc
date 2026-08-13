@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_vpc_ip_pool.example "ip_address_pool_id"

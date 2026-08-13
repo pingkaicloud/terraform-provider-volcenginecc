@@ -6,6 +6,7 @@ package shared
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/cli"
@@ -130,6 +131,7 @@ func GenerateTemplateData(ui cli.Ui, cfTypeSchemaFile, resType, tfResourceType, 
 	for _, path := range resource.CfResource.PrimaryIdentifier {
 		templateData.PrimaryIdentifier = append(templateData.PrimaryIdentifier, string(path))
 	}
+	templateData.CollectionIdentities = collectCollectionIdentities(resource.CfResource.Properties, nil)
 
 	if v, ok := resource.CfResource.Handlers[ccschema.HandlerTypeCreate]; ok {
 		templateData.CreateTimeoutInMinutes = v.TimeoutInMinutes
@@ -178,6 +180,55 @@ type TemplateData struct {
 	WriteOnlyPropertyPaths        []string
 	ReadOnlyPropertyPaths         []string
 	CreateOnlyPropertyPaths       []string
+	CollectionIdentities          []CollectionIdentity
+}
+
+// CollectionIdentity contains schema-derived metadata emitted into ResourceOptions.
+type CollectionIdentity struct {
+	PropertyPath    string
+	IdentifierPaths []string
+	UniqueItems     bool
+}
+
+// collectCollectionIdentities walks expanded properties in stable name order,
+// retains wildcard segments below object arrays, and emits children before
+// parents so every consumer observes the required inner-first sort order.
+func collectCollectionIdentities(properties map[string]*ccschema.Property, parentPath []string) []CollectionIdentity {
+	var result []CollectionIdentity
+	names := make([]string, 0, len(properties))
+	for name := range properties {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		property := properties[name]
+		if property == nil {
+			continue
+		}
+
+		propertyPath := append(append([]string(nil), parentPath...), name)
+		switch property.Type.String() {
+		case ccschema.PropertyTypeObject, "":
+			result = append(result, collectCollectionIdentities(property.Properties, propertyPath)...)
+		case ccschema.PropertyTypeArray:
+			if property.Items != nil && property.Items.Type.String() == ccschema.PropertyTypeObject {
+				itemPath := append(append([]string(nil), propertyPath...), "*")
+				result = append(result, collectCollectionIdentities(property.Items.Properties, itemPath)...)
+			}
+		}
+
+		if len(property.ElementIdentifier) > 0 {
+			uniqueItems := property.UniqueItems != nil && *property.UniqueItems
+			result = append(result, CollectionIdentity{
+				PropertyPath:    "/" + strings.Join(propertyPath, "/"),
+				IdentifierPaths: append([]string(nil), property.ElementIdentifier...),
+				UniqueItems:     uniqueItems,
+			})
+		}
+	}
+
+	return result
 }
 
 type Resource struct {
@@ -202,6 +253,9 @@ func NewResource(resourceType, cfTypeSchemaFile string) (*Resource, error) {
 
 	if err := resource.Expand(); err != nil {
 		return nil, fmt.Errorf("expanding JSON Pointer references: %w", err)
+	}
+	if err := resource.ValidateCollectionIdentities(); err != nil {
+		return nil, fmt.Errorf("validating collection identities: %w", err)
 	}
 
 	return &Resource{

@@ -1,0 +1,233 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/RuleTemplateId"
+  ],
+  "definitions": {
+    "Resource": {
+      "properties": {
+        "Exclude": {
+          "description": "Exclusion list",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "Include": {
+          "description": "Inclusion list",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "type": "object"
+    },
+    "Scope": {
+      "properties": {
+        "Projects": {
+          "$ref": "#/definitions/Resource",
+          "description": "Project filter scope",
+          "type": "object"
+        },
+        "Regions": {
+          "$ref": "#/definitions/Resource",
+          "description": "Resource region list",
+          "type": "object"
+        },
+        "ResourceIds": {
+          "$ref": "#/definitions/Resource",
+          "description": "Resource ID list",
+          "type": "object"
+        },
+        "ResourceTypes": {
+          "$ref": "#/definitions/Resource",
+          "description": "Resource type scope",
+          "type": "object"
+        },
+        "Tags": {
+          "$ref": "#/definitions/TagItem",
+          "description": "Resource tag list",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "Tag": {
+      "properties": {
+        "Key": {
+          "description": "Tag key",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TagItem": {
+      "properties": {
+        "Exclude": {
+          "description": "Exclusion list",
+          "insertionOrder": false,
+          "items": {
+            "$ref": "#/definitions/Tag"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "Include": {
+          "description": "Inclusion list",
+          "insertionOrder": false,
+          "items": {
+            "$ref": "#/definitions/Tag"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "type": "object"
+    },
+    "Trigger": {
+      "properties": {
+        "MaximumExecutionFrequency": {
+          "description": "Maximum execution frequency. Options: OneHour, ThreeHours, SixHours, TwelveHours, TwentyFourHours",
+          "type": "string"
+        },
+        "TriggerType": {
+          "description": "Trigger type. Options: ConfigurationItemChange, Periodic, Manual",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "Configuration audit rule",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/RuleId",
+      "/properties/RuleName",
+      "/properties/RuleTemplateId",
+      "/properties/RiskLevel",
+      "/properties/RuleStatus"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "config:CreateRule",
+        "config:DescribeRules"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "config:DeleteRule",
+        "config:DescribeRules"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "config:ListRules"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "config:DescribeRules"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "config:UpdateRule",
+        "config:EnableRule",
+        "config:DisableRule",
+        "config:DescribeRules",
+        "config:StartRuleEvaluation"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/RuleId"
+  ],
+  "properties": {
+    "CreatedTime": {
+      "description": "Creation time",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Rule description",
+      "semantic": "description",
+      "type": "string"
+    },
+    "InputParameters": {
+      "description": "Rule runtime parameters (JSON string)",
+      "type": "string"
+    },
+    "RiskLevel": {
+      "description": "Risk level. Options: Low, Medium, High",
+      "type": "string"
+    },
+    "RuleId": {
+      "description": "Rule ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "RuleName": {
+      "description": "Rule name",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "RuleStatus": {
+      "description": "Rule enable status. Options: Enabled, Disabled",
+      "semantic": "status",
+      "type": "string"
+    },
+    "RuleTemplateId": {
+      "description": "Rule template ID",
+      "type": "string"
+    },
+    "Scope": {
+      "$ref": "#/definitions/Scope",
+      "description": "Resource evaluation scope",
+      "type": "object"
+    },
+    "StartRuleEvaluation": {
+      "description": "Whether to trigger regular rule re-evaluation. If true, StartRuleEvaluation is called during update",
+      "type": "boolean"
+    },
+    "Triggers": {
+      "description": "Rule trigger configuration",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Trigger"
+      },
+      "type": "array",
+      "uniqueItems": true
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/RuleId",
+    "/properties/CreatedTime"
+  ],
+  "required": [
+    "RuleTemplateId",
+    "RuleName",
+    "Description",
+    "Triggers",
+    "InputParameters",
+    "Scope",
+    "RiskLevel"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::Config::Rule",
+  "writeOnlyProperties": [
+    "/properties/StartRuleEvaluation"
+  ]
+}

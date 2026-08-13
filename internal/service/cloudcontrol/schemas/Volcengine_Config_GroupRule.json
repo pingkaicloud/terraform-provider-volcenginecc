@@ -1,0 +1,243 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/RuleTemplateId",
+    "/properties/AccountGroupId"
+  ],
+  "definitions": {
+    "Resource": {
+      "properties": {
+        "Exclude": {
+          "description": "Exclude list",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "Include": {
+          "description": "Include list",
+          "insertionOrder": false,
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "type": "object"
+    },
+    "Scope": {
+      "properties": {
+        "Projects": {
+          "$ref": "#/definitions/Resource",
+          "description": "Project filter scope",
+          "type": "object"
+        },
+        "Regions": {
+          "$ref": "#/definitions/Resource",
+          "description": "Resource region list",
+          "type": "object"
+        },
+        "ResourceIds": {
+          "$ref": "#/definitions/Resource",
+          "description": "Resource ID list",
+          "type": "object"
+        },
+        "ResourceTypes": {
+          "$ref": "#/definitions/Resource",
+          "description": "Resource type scope",
+          "type": "object"
+        },
+        "Tags": {
+          "$ref": "#/definitions/TagItem",
+          "description": "Resource tag list",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "Tag": {
+      "properties": {
+        "Key": {
+          "description": "Tag key",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TagItem": {
+      "properties": {
+        "Exclude": {
+          "description": "Exclude list",
+          "insertionOrder": false,
+          "items": {
+            "$ref": "#/definitions/Tag"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "Include": {
+          "description": "Include list",
+          "insertionOrder": false,
+          "items": {
+            "$ref": "#/definitions/Tag"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "type": "object"
+    },
+    "Trigger": {
+      "properties": {
+        "MaximumExecutionFrequency": {
+          "description": "Maximum execution frequency. Options: OneHour, ThreeHours, SixHours, TwelveHours, TwentyFourHours",
+          "type": "string"
+        },
+        "TriggerType": {
+          "description": "Trigger type. Options: ConfigurationItemChange, Periodic, Manual",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "Configure audit account group rule",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/AccountGroupId",
+      "/properties/RuleId",
+      "/properties/RuleName",
+      "/properties/RuleTemplateId",
+      "/properties/RiskLevel",
+      "/properties/RuleStatus"
+    ],
+    "required": [
+      "/properties/AccountGroupId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "config:CreateAccountGroupRule",
+        "config:DescribeAccountGroupRules"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "config:DeleteAccountGroupRule",
+        "config:DescribeAccountGroupRules"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "config:ListAccountGroupRules"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "config:DescribeAccountGroupRules"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "config:UpdateAccountGroupRule",
+        "config:EnableAccountGroupRule",
+        "config:DisableAccountGroupRule",
+        "config:DescribeAccountGroupRules",
+        "config:StartAccountGroupRuleEvaluation"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/AccountGroupId",
+    "/properties/RuleId"
+  ],
+  "properties": {
+    "AccountGroupId": {
+      "description": "Account group ID. Not required for standard rules; required for account group rules",
+      "type": "string"
+    },
+    "CreatedTime": {
+      "description": "Creation time",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Rule description",
+      "semantic": "description",
+      "type": "string"
+    },
+    "InputParameters": {
+      "description": "Rule runtime parameters (JSON string)",
+      "type": "string"
+    },
+    "RiskLevel": {
+      "description": "Risk level. Options: Low, Medium, High",
+      "type": "string"
+    },
+    "RuleId": {
+      "description": "Rule ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "RuleName": {
+      "description": "Rule name",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "RuleStatus": {
+      "description": "Rule status. Options: Enabled, Disabled",
+      "semantic": "status",
+      "type": "string"
+    },
+    "RuleTemplateId": {
+      "description": "Rule template ID",
+      "type": "string"
+    },
+    "Scope": {
+      "$ref": "#/definitions/Scope",
+      "description": "Resource evaluation scope",
+      "type": "object"
+    },
+    "StartRuleEvaluation": {
+      "description": "Whether to trigger rule re-evaluation. When true, StartRuleEvaluation is called during update",
+      "type": "boolean"
+    },
+    "Triggers": {
+      "description": "Rule trigger configuration",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Trigger"
+      },
+      "type": "array",
+      "uniqueItems": true
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/RuleId",
+    "/properties/CreatedTime"
+  ],
+  "required": [
+    "RuleTemplateId",
+    "RuleName",
+    "Description",
+    "Triggers",
+    "InputParameters",
+    "Scope",
+    "RiskLevel"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::Config::GroupRule",
+  "writeOnlyProperties": [
+    "/properties/StartRuleEvaluation"
+  ]
+}

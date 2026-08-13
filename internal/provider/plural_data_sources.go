@@ -282,6 +282,12 @@
 //go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_efs_mount_points -cctype Volcengine::EFS::MountPoint -package efs ../volcengine/efs/mount_point_plural_data_source_gen.go ../volcengine/efs/mount_point_plural_data_source_gen_test.go
 //go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_resourceshare_resource_shares -cctype Volcengine::ResourceShare::ResourceShare -package resourceshare ../volcengine/resourceshare/resource_share_plural_data_source_gen.go ../volcengine/resourceshare/resource_share_plural_data_source_gen_test.go
 //go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_certificateservice_child_cert_instances -cctype Volcengine::CertificateService::ChildCertInstance -package certificateservice ../volcengine/certificateservice/child_cert_instance_plural_data_source_gen.go ../volcengine/certificateservice/child_cert_instance_plural_data_source_gen_test.go
+//go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_ecs_scheduled_instances -cctype Volcengine::ECS::ScheduledInstance -package ecs ../volcengine/ecs/scheduled_instance_plural_data_source_gen.go ../volcengine/ecs/scheduled_instance_plural_data_source_gen_test.go
+//go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_vpc_ip_pools -cctype Volcengine::VPC::IpPool -package vpc ../volcengine/vpc/ip_pool_plural_data_source_gen.go ../volcengine/vpc/ip_pool_plural_data_source_gen_test.go
+//go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_vpc_ip_pool_cidr_blocks -cctype Volcengine::VPC::IpPoolCidrBlock -package vpc ../volcengine/vpc/ip_pool_cidr_block_plural_data_source_gen.go ../volcengine/vpc/ip_pool_cidr_block_plural_data_source_gen_test.go
+//go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_config_rules -cctype Volcengine::Config::Rule -package config ../volcengine/config/rule_plural_data_source_gen.go ../volcengine/config/rule_plural_data_source_gen_test.go
+//go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_certificateservice_organization_infos -cctype Volcengine::CertificateService::OrganizationInfo -package certificateservice ../volcengine/certificateservice/organization_info_plural_data_source_gen.go ../volcengine/certificateservice/organization_info_plural_data_source_gen_test.go
+//go:generate go run generators/plural-data-source/main.go -data-source volcenginecc_config_group_rules -cctype Volcengine::Config::GroupRule -package config ../volcengine/config/group_rule_plural_data_source_gen.go ../volcengine/config/group_rule_plural_data_source_gen_test.go
 
 package provider
 
@@ -298,6 +304,7 @@ import (
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/clb"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/cloudidentity"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/cloudmonitor"
+	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/config"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/cr"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/directconnect"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/dns"

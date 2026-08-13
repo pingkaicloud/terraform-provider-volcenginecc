@@ -61,6 +61,10 @@
               "type": "boolean",
               "default": true
             },
+            "elementIdentifier": {
+              "description": "JSON Pointer paths relative to an unordered object array element whose combined values provide stable identity",
+              "$ref": "#/definitions/jsonPointerArray"
+            },
             "arrayType": {
               "description": "When set to AttributeList, it indicates that the array is of nested type objects, and when set to Standard it indicates that the array consists of primitive types",
               "type": "string",

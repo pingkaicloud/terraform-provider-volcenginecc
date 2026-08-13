@@ -453,6 +453,10 @@ func scalingConfigurationDataSource(ctx context.Context) (datasource.DataSource,
 		//
 		//	{
 		//	  "description": "Cloud disk",
+		//	  "elementIdentifier": [
+		//	    "/Size",
+		//	    "/VolumeType"
+		//	  ],
 		//	  "insertionOrder": false,
 		//	  "items": {
 		//	    "description": "Cloud disk",

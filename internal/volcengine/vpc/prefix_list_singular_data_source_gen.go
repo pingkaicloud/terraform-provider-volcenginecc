@@ -168,6 +168,9 @@ func prefixListDataSource(ctx context.Context) (datasource.DataSource, error) {
 		//
 		//	{
 		//	  "description": "CIDR of the prefix list entry.",
+		//	  "elementIdentifier": [
+		//	    "/Cidr"
+		//	  ],
 		//	  "insertionOrder": false,
 		//	  "items": {
 		//	    "properties": {

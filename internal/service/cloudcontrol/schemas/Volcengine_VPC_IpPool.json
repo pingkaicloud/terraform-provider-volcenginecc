@@ -1,0 +1,198 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/ISP",
+    "/properties/ProjectName",
+    "/properties/CidrBlock",
+    "/properties/CidrMask"
+  ],
+  "definitions": {
+    "Tag": {
+      "description": "Tag.",
+      "properties": {
+        "Key": {
+          "description": "Tag key.",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "IP address pool resources.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/IpAddressPoolId",
+      "/properties/ISP",
+      "/properties/Status",
+      "/properties/Name",
+      "/properties/ProjectName",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "vpc:CreateIpAddressPool",
+        "vpc:DescribeIpAddressPoolAttributes"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "vpc:DeleteIpAddressPool",
+        "vpc:DescribeIpAddressPoolAttributes"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "vpc:DescribeIpAddressPools"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "vpc:DescribeIpAddressPoolAttributes"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "vpc:ModifyIpAddressPoolAttributes",
+        "vpc:DescribeIpAddressPoolAttributes",
+        "vpc:TagResources",
+        "vpc:UntagResources"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/IpAddressPoolId"
+  ],
+  "properties": {
+    "AddressSource": {
+      "description": "Address source.",
+      "type": "string"
+    },
+    "BusinessStatus": {
+      "description": "Whether the IP address pool is locked. Normal: Normal. FinancialLocked: Financially locked.",
+      "type": "string"
+    },
+    "CidrBlock": {
+      "description": "Example: 101.0.XX.XX/24, IP address range. Only IPv4 address ranges are supported and cannot start with 0. Mask range: 23–30. Note: Only one of CidrBlock or CidrMask can be configured.",
+      "type": "string"
+    },
+    "CidrBlocks": {
+      "description": "IP range information in the IP address pool.",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "CidrMask": {
+      "description": "IP address range mask. Range: 24–28. After entering the mask, the IP address range will be automatically assigned. Note: Only one of CidrBlock or CidrMask can be configured.",
+      "type": "integer"
+    },
+    "CreationTime": {
+      "description": "Creation time of the IP address pool.",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "DeletedTime": {
+      "description": "Resource reclaim time. This parameter is returned only when the resource is shut down due to overdue payment.",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Description of the IP address pool.",
+      "maxLength": 255,
+      "semantic": "description",
+      "type": "string"
+    },
+    "ISP": {
+      "description": "Line type. Valid values: BGP (multi-line), ChinaMobile (China Mobile static single line), ChinaTelecom (China Telecom static single line), ChinaUnicom (China Unicom static single line), SingleLine_BGP (BGP single line), Premium_BGP (Premium BGP), Fusion_BGP (Fusion BGP), ChinaMobile_Value (China Mobile Value static single line), ChinaUnicom_Value (China Unicom Value static single line), ChinaTelecom_Value (China Telecom Value static single line).",
+      "type": "string"
+    },
+    "IpAddressPoolId": {
+      "description": "ID of the IP address pool.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "Name": {
+      "description": "Name of the IP address pool.",
+      "maxLength": 128,
+      "minLength": 1,
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "OverdueTime": {
+      "description": "Resource freeze time. This parameter is returned only when the resource is frozen due to overdue payment.",
+      "type": "string"
+    },
+    "ProjectName": {
+      "description": "Name of the project to which the IP address pool belongs.",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "SpecificEgress": {
+      "description": "Specific egress.",
+      "type": "string"
+    },
+    "Status": {
+      "description": "Status of the IP address pool. Creating: Creating. Available: Available. Deleting: Deleting. Pending: In configuration.",
+      "semantic": "status",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "Tag information of the IP address pool.",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "TotalIpCount": {
+      "description": "Total number of IP addresses contained in the IP address pool.",
+      "type": "integer"
+    },
+    "UpdateTime": {
+      "description": "Update time of the IP address pool.",
+      "semantic": "updatedTime",
+      "type": "string"
+    },
+    "UsedIpCount": {
+      "description": "Number of IP addresses allocated as EIP in the IP address pool.",
+      "type": "integer"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/IpAddressPoolId",
+    "/properties/Status",
+    "/properties/UsedIpCount",
+    "/properties/TotalIpCount",
+    "/properties/CreationTime",
+    "/properties/UpdateTime",
+    "/properties/OverdueTime",
+    "/properties/DeletedTime",
+    "/properties/BusinessStatus",
+    "/properties/SpecificEgress",
+    "/properties/AddressSource",
+    "/properties/CidrBlocks"
+  ],
+  "required": [
+    "ISP"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::VPC::IpPool",
+  "writeOnlyProperties": [
+    "/properties/CidrBlock",
+    "/properties/CidrMask"
+  ]
+}

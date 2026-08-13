@@ -283,6 +283,12 @@
 //go:generate go run generators/resource/main.go -resource volcenginecc_efs_mount_point -ccschema ../service/cloudcontrol/schemas/Volcengine_EFS_MountPoint.json -package efs -- ../volcengine/efs/mount_point_resource_gen.go ../volcengine/efs/mount_point_resource_gen_test.go
 //go:generate go run generators/resource/main.go -resource volcenginecc_resourceshare_resource_share -ccschema ../service/cloudcontrol/schemas/Volcengine_ResourceShare_ResourceShare.json -package resourceshare -- ../volcengine/resourceshare/resource_share_resource_gen.go ../volcengine/resourceshare/resource_share_resource_gen_test.go
 //go:generate go run generators/resource/main.go -resource volcenginecc_certificateservice_child_cert_instance -ccschema ../service/cloudcontrol/schemas/Volcengine_CertificateService_ChildCertInstance.json -package certificateservice -- ../volcengine/certificateservice/child_cert_instance_resource_gen.go ../volcengine/certificateservice/child_cert_instance_resource_gen_test.go
+//go:generate go run generators/resource/main.go -resource volcenginecc_ecs_scheduled_instance -ccschema ../service/cloudcontrol/schemas/Volcengine_ECS_ScheduledInstance.json -package ecs -- ../volcengine/ecs/scheduled_instance_resource_gen.go ../volcengine/ecs/scheduled_instance_resource_gen_test.go
+//go:generate go run generators/resource/main.go -resource volcenginecc_vpc_ip_pool -ccschema ../service/cloudcontrol/schemas/Volcengine_VPC_IpPool.json -package vpc -- ../volcengine/vpc/ip_pool_resource_gen.go ../volcengine/vpc/ip_pool_resource_gen_test.go
+//go:generate go run generators/resource/main.go -resource volcenginecc_vpc_ip_pool_cidr_block -ccschema ../service/cloudcontrol/schemas/Volcengine_VPC_IpPoolCidrBlock.json -package vpc -- ../volcengine/vpc/ip_pool_cidr_block_resource_gen.go ../volcengine/vpc/ip_pool_cidr_block_resource_gen_test.go
+//go:generate go run generators/resource/main.go -resource volcenginecc_config_rule -ccschema ../service/cloudcontrol/schemas/Volcengine_Config_Rule.json -package config -- ../volcengine/config/rule_resource_gen.go ../volcengine/config/rule_resource_gen_test.go
+//go:generate go run generators/resource/main.go -resource volcenginecc_certificateservice_organization_info -ccschema ../service/cloudcontrol/schemas/Volcengine_CertificateService_OrganizationInfo.json -package certificateservice -- ../volcengine/certificateservice/organization_info_resource_gen.go ../volcengine/certificateservice/organization_info_resource_gen_test.go
+//go:generate go run generators/resource/main.go -resource volcenginecc_config_group_rule -ccschema ../service/cloudcontrol/schemas/Volcengine_Config_GroupRule.json -package config -- ../volcengine/config/group_rule_resource_gen.go ../volcengine/config/group_rule_resource_gen_test.go
 
 package provider
 
@@ -299,6 +305,7 @@ import (
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/clb"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/cloudidentity"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/cloudmonitor"
+	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/config"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/cr"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/directconnect"
 	_ "github.com/volcengine/terraform-provider-volcenginecc/internal/volcengine/dns"

@@ -231,6 +231,9 @@ func eNIDataSource(ctx context.Context) (datasource.DataSource, error) {
 		//
 		//	{
 		//	  "description": "List of private IPv4 addresses for the network interface.",
+		//	  "elementIdentifier": [
+		//	    "/PrivateIpAddress"
+		//	  ],
 		//	  "insertionOrder": false,
 		//	  "items": {
 		//	    "properties": {

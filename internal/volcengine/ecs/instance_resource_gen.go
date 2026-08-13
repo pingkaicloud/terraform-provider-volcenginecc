@@ -1701,6 +1701,10 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		//
 		//	{
 		//	  "description": "Auxiliary network interface card of the instance.",
+		//	  "elementIdentifier": [
+		//	    "/SubnetId",
+		//	    "/PrimaryIpAddress"
+		//	  ],
 		//	  "insertionOrder": false,
 		//	  "items": {
 		//	    "description": "Instance network interface.",
@@ -2507,6 +2511,16 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/EipAddress/SecurityProtectionTypes",
 		"/properties/HpcClusterId",
 		"/properties/Image/SecurityEnhancementStrategy",
+	})
+	opts = opts.WithCollectionIdentities([]generic.CollectionIdentity{
+		{
+			PropertyPath: "/SecondaryNetworkInterfaces",
+			IdentifierPaths: []string{
+				"/SubnetId",
+				"/PrimaryIpAddress",
+			},
+			UniqueItems: false,
+		},
 	})
 	opts = opts.WithCreateTimeoutInMinutes(0).WithDeleteTimeoutInMinutes(0)
 
