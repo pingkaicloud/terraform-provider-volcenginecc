@@ -27,6 +27,10 @@
           "description": "Backup point name",
           "type": "string"
         },
+        "BackupProgress": {
+          "description": "Current backup progress. Measured as a percentage.",
+          "type": "integer"
+        },
         "BackupStrategy": {
           "description": "Backup policy",
           "type": "string"

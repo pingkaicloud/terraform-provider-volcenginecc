@@ -88,12 +88,13 @@ resource "volcenginecc_rdsmysql_instance" "RDSMySQLInstanceDemo" {
 
 - `allow_list_ids` (Set of String) Allowlist ID. To bind multiple allowlists, separate allowlist IDs with commas (,). Each instance can bind up to 100 allowlists
 - `auto_storage_scaling_config` (Attributes) Auto scaling configuration (see [below for nested schema](#nestedatt--auto_storage_scaling_config))
-- `auto_upgrade_minor_version` (String) Instance kernel minor version upgrade policy. Values: Auto: Automatic upgrade. Manual: Manual upgrade.
+- `auto_upgrade_minor_version` (String) Minor kernel version upgrade policy. Values: Auto: Automatic upgrade. When a new minor kernel version is released, the instance automatically upgrades to the latest minor kernel version during the specified maintenance window. Manual: Manual upgrade. When a new minor kernel version is released, you need to manually upgrade to the latest minor kernel version in the console. For details, see "Manually upgrade the instance's minor kernel version." Note: If the instance's minor kernel version is beyond the maintenance period, the system temporarily ignores the upgrade policy setting and automatically upgrades the instance's minor kernel version.
 - `backup_policy` (Attributes) Instance backup policy configuration. (see [below for nested schema](#nestedatt--backup_policy))
 - `cpu_num` (Number) Number of CPU cores for the database proxy service of the instance
 - `db_param_group_id` (String) Parameter template ID. Default value is the default parameter template for the database engine version
 - `db_time_zone` (String) Time zone. Supports UTC -12:00 ~ +13:00. Default is the time zone of the region.
 - `deletion_protection` (String) Whether to enable instance deletion protection. Values: Enabled: Yes. Disabled: No. Default value.
+- `enable_external_replication` (Boolean) Enable native replication. Values: true: Yes. false: No (default). Note: This configuration only takes effect when InstanceType is set to SingleNode.
 - `engine_type` (String) Database engine type. Values: InnoDB: InnoDB engine. RocksDB: RocksDB engine.
 - `global_read_only` (Boolean) Enable global read-only mode. Values: true: enabled. false: disabled (default is false)
 - `instance_name` (String) Instance name.
@@ -101,7 +102,6 @@ resource "volcenginecc_rdsmysql_instance" "RDSMySQLInstanceDemo" {
 - `lower_case_table_names` (String) Whether table names are case-sensitive. Default value is true. Values: false: Table names are stored as fixed and are case-sensitive. true: Table names are stored in lowercase and are case-insensitive.
 - `maintenance_window` (Attributes) Specify the maintenance window for the instance when creating it. This field is optional. If not set, the default is UTC18:00Z-21:59Z every day of the week (Beijing time 02:00-05:59). (see [below for nested schema](#nestedatt--maintenance_window))
 - `node_spec` (String) Node specifications.
-- `parameter_template_id` (String) Parameter template ID.
 - `port` (Number) Default endpoint private network port. Port range: 1000~65534, default is 3306. When creating a new connection endpoint or enabling a new address, the default endpoint private network port is used for real-time configuration as the default port.
 - `private_ip_address` (String) Specify the default terminal IP address of the instance within the designated private network and subnet. Note: If not set, the default terminal IP address will be automatically assigned within the specified private network and subnet.
 - `project_name` (String) Project.

@@ -1163,3 +1163,23 @@ resource_schema "volcengine_certificateservice_organization_info" {
 resource_schema "volcengine_config_group_rule" {
   cloudcontrol_type_name = "Volcengine::Config::GroupRule"
 }
+
+resource_schema "volcengine_autoscaling_notification_configuration" {
+  cloudcontrol_type_name = "Volcengine::AutoScaling::NotificationConfiguration"
+}
+
+resource_schema "volcengine_transitrouter_transit_router_traffic_qos_marking_policy" {
+  cloudcontrol_type_name = "Volcengine::TransitRouter::TransitRouterTrafficQosMarkingPolicy"
+}
+
+resource_schema "volcengine_transitrouter_transit_router_traffic_qos_marking_entry" {
+  cloudcontrol_type_name = "Volcengine::TransitRouter::TransitRouterTrafficQosMarkingEntry"
+}
+
+resource_schema "volcengine_transitrouter_transit_router_traffic_qos_queue_entry" {
+  cloudcontrol_type_name = "Volcengine::TransitRouter::TransitRouterTrafficQosQueueEntry"
+}
+
+resource_schema "volcengine_config_configuration_recorder" {
+  cloudcontrol_type_name = "Volcengine::Config::ConfigurationRecorder"
+}

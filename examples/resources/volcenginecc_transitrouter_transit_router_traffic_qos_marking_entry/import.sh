@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_transitrouter_transit_router_traffic_qos_marking_entry.example "transit_router_traffic_qos_marking_policy_id|transit_router_traffic_qos_marking_entry_id"

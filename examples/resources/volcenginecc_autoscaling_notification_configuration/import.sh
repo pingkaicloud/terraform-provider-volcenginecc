@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_autoscaling_notification_configuration.example "scaling_group_id"

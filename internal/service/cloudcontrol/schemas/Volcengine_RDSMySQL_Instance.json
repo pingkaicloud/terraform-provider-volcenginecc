@@ -22,8 +22,8 @@
     "/properties/SuperAccountName",
     "/properties/SuperAccountPassword",
     "/properties/PrivateIpAddress",
-    "/properties/ParameterTemplateId",
-    "/properties/EngineType"
+    "/properties/EngineType",
+    "/properties/EnableExternalReplication"
   ],
   "definitions": {
     "AddressObject": {
@@ -814,8 +814,7 @@
       "type": "object"
     },
     "AutoUpgradeMinorVersion": {
-      "default": "Auto",
-      "description": "Instance kernel minor version upgrade policy. Values: Auto: Automatic upgrade. Manual: Manual upgrade.",
+      "description": "Minor kernel version upgrade policy. Values: Auto: Automatic upgrade. When a new minor kernel version is released, the instance automatically upgrades to the latest minor kernel version during the specified maintenance window. Manual: Manual upgrade. When a new minor kernel version is released, you need to manually upgrade to the latest minor kernel version in the console. For details, see \"Manually upgrade the instance's minor kernel version.\" Note: If the instance's minor kernel version is beyond the maintenance period, the system temporarily ignores the upgrade policy setting and automatically upgrades the instance's minor kernel version.",
       "type": "string"
     },
     "BackupAuditLogSize": {
@@ -931,6 +930,10 @@
       "description": "Latency between the disaster recovery instance and the primary instance.",
       "type": "integer"
     },
+    "EnableExternalReplication": {
+      "description": "Enable native replication. Values: true: Yes. false: No (default). Note: This configuration only takes effect when InstanceType is set to SingleNode.",
+      "type": "boolean"
+    },
     "Endpoints": {
       "description": "Instance connection information.",
       "insertionOrder": false,
@@ -1024,10 +1027,6 @@
       },
       "type": "array",
       "uniqueItems": true
-    },
-    "ParameterTemplateId": {
-      "description": "Parameter template ID.",
-      "type": "string"
     },
     "Port": {
       "description": "Default endpoint private network port. Port range: 1000~65534, default is 3306. When creating a new connection endpoint or enabling a new address, the default endpoint private network port is used for real-time configuration as the default port.",
@@ -1234,6 +1233,6 @@
     "/properties/SuperAccountName",
     "/properties/SuperAccountPassword",
     "/properties/PrivateIpAddress",
-    "/properties/ParameterTemplateId"
+    "/properties/EnableExternalReplication"
   ]
 }

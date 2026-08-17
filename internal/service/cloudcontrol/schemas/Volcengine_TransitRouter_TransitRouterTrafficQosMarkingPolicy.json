@@ -1,0 +1,109 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/TransitRouterId"
+  ],
+  "description": "Transit router flow marking policy. The flow marking policy is used to match traffic forwarded by the transit router to specified scheduling queues, enabling differentiated scheduling based on business importance.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/TransitRouterId",
+      "/properties/TransitRouterTrafficQosMarkingPolicyId",
+      "/properties/TransitRouterTrafficQosMarkingPolicyName"
+    ],
+    "required": [
+      "/properties/TransitRouterId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "transitrouter:CreateTransitRouterTrafficQosMarkingPolicy",
+        "transitrouter:DescribeTransitRouterTrafficQosMarkingPolicies"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "transitrouter:DeleteTransitRouterTrafficQosMarkingPolicy",
+        "transitrouter:DescribeTransitRouterTrafficQosMarkingPolicies"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterTrafficQosMarkingPolicies"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterTrafficQosMarkingPolicies"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "transitrouter:ModifyTransitRouterTrafficQosMarkingPolicyAttributes",
+        "transitrouter:DescribeTransitRouterTrafficQosMarkingPolicies"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/TransitRouterId",
+    "/properties/TransitRouterTrafficQosMarkingPolicyId"
+  ],
+  "properties": {
+    "CreationTime": {
+      "description": "Creation time of the flow marking policy.",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Description of the flow marking policy. Must start with a letter, number, or Chinese character. Can contain letters, numbers, Chinese characters, and the following special characters: comma (,), period (.), underscore (_), space ( ), equals sign (=), hyphen (-), Chinese comma (，), and Chinese period (。). Length limit: 0–255 characters.",
+      "maxLength": 255,
+      "semantic": "description",
+      "type": "string"
+    },
+    "Status": {
+      "description": "Status of the flow marking policy. Creating: being created. Deleting: being deleted. Pending: being configured. Available: available.",
+      "enum": [
+        "Creating",
+        "Deleting",
+        "Pending",
+        "Available"
+      ],
+      "semantic": "status",
+      "type": "string"
+    },
+    "TransitRouterId": {
+      "description": "Transit router instance ID.",
+      "type": "string"
+    },
+    "TransitRouterTrafficQosMarkingPolicyId": {
+      "description": "Flow marking policy ID.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "TransitRouterTrafficQosMarkingPolicyName": {
+      "description": "Name of the flow marking policy. Must start with a letter, number, or Chinese character. Can contain letters, numbers, Chinese characters, and the following special characters: period (.), underscore (_), and hyphen (-). Length limit: 1–128 characters. If this parameter is not provided or no value is passed, the default is the flow marking policy ID.",
+      "maxLength": 128,
+      "minLength": 1,
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "UpdateTime": {
+      "description": "Last update time of the flow marking policy.",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/TransitRouterTrafficQosMarkingPolicyId",
+    "/properties/Status",
+    "/properties/CreationTime",
+    "/properties/UpdateTime"
+  ],
+  "required": [
+    "TransitRouterId"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::TransitRouter::TransitRouterTrafficQosMarkingPolicy"
+}
