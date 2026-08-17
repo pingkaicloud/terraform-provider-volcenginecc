@@ -716,7 +716,7 @@
   "handlers": {
     "create": {
       "permissions": [
-        "ESCloud:CreateInstance",
+        "ESCloud:CreateInstanceInOneStep",
         "ESCloud:DescribeInstance",
         "ESCloud:ListTagsForResources"
       ]

@@ -1,0 +1,141 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/TransitRouterTrafficQosQueuePolicyId",
+    "/properties/Dscps",
+    "/properties/Priority"
+  ],
+  "description": "Transit router flow queue entry. The flow queue entry defines the mapping between specific DSCP sets and priorities, used to assign matched traffic to the corresponding scheduling queue for differentiated scheduling based on business importance.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/TransitRouterTrafficQosQueuePolicyId",
+      "/properties/TransitRouterTrafficQosQueueEntryId",
+      "/properties/TransitRouterTrafficQosQueueEntryName"
+    ],
+    "required": [
+      "/properties/TransitRouterTrafficQosQueuePolicyId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "transitrouter:CreateTransitRouterTrafficQosQueueEntry",
+        "transitrouter:DescribeTransitRouterTrafficQosQueueEntries"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "transitrouter:DeleteTransitRouterTrafficQosQueueEntry",
+        "transitrouter:DescribeTransitRouterTrafficQosQueueEntries"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterTrafficQosQueueEntries"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterTrafficQosQueueEntries"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "transitrouter:ModifyTransitRouterTrafficQosQueueEntryAttributes",
+        "transitrouter:DescribeTransitRouterTrafficQosQueueEntries"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/TransitRouterTrafficQosQueuePolicyId",
+    "/properties/TransitRouterTrafficQosQueueEntryId"
+  ],
+  "properties": {
+    "BandwidthPercent": {
+      "description": "Bandwidth percentage allocated to the flow queue entry. Value range: 0 to 100.",
+      "maximum": 100,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "CreationTime": {
+      "description": "Creation time of the flow queue entry.",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Description of the flow queue entry. Must start with a letter, number, or Chinese character. Can contain letters, numbers, Chinese characters, and the following special characters: English comma (,), period (.), underscore (_), space ( ), equals sign (=), hyphen (-), Chinese comma (，), and Chinese period (。). Length: 0 to 255 characters.",
+      "maxLength": 255,
+      "semantic": "description",
+      "type": "string"
+    },
+    "Dscps": {
+      "description": "List of DSCP values matched by the flow queue entry. Each DSCP value ranges from 0 to 63.",
+      "insertionOrder": false,
+      "items": {
+        "type": "integer"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "IsDefault": {
+      "description": "Indicates whether this is the default flow queue entry. true: Yes. false: No.",
+      "type": "boolean"
+    },
+    "Priority": {
+      "description": "Priority of the flow queue entry. Normal: Normal. High: High.",
+      "enum": [
+        "Normal",
+        "High"
+      ],
+      "type": "string"
+    },
+    "Status": {
+      "description": "Status of the flow queue entry. Creating: Creating. Deleting: Deleting. Pending: Pending. Available: Available.",
+      "enum": [
+        "Creating",
+        "Deleting",
+        "Pending",
+        "Available"
+      ],
+      "semantic": "status",
+      "type": "string"
+    },
+    "TransitRouterTrafficQosQueueEntryId": {
+      "description": "ID of the flow queue entry.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "TransitRouterTrafficQosQueueEntryName": {
+      "description": "Name of the flow queue entry. Must start with a letter, number, or Chinese character. Can contain letters, numbers, Chinese characters, and the following special characters: period (.), underscore (_), and hyphen (-). Length: 1 to 128 characters.",
+      "maxLength": 128,
+      "minLength": 1,
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "TransitRouterTrafficQosQueuePolicyId": {
+      "description": "ID of the flow queue policy, identifying the flow queue policy to which this entry belongs.",
+      "type": "string"
+    },
+    "UpdateTime": {
+      "description": "Most recent update time of the flow queue entry.",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/TransitRouterTrafficQosQueueEntryId",
+    "/properties/Status",
+    "/properties/IsDefault",
+    "/properties/CreationTime",
+    "/properties/UpdateTime"
+  ],
+  "required": [
+    "TransitRouterTrafficQosQueuePolicyId",
+    "TransitRouterTrafficQosQueueEntryName",
+    "Dscps"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::TransitRouter::TransitRouterTrafficQosQueueEntry"
+}

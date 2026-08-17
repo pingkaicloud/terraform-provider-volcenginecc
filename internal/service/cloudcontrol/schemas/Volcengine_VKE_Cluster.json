@@ -7,11 +7,7 @@
     "/properties/PodsConfig/FlannelConfig/MaxPodsPerNode",
     "/properties/PodsConfig/FlannelConfig/PodCidrs",
     "/properties/PodsConfig/VpcCniConfig/TrunkEniEnabled",
-    "/properties/ServicesConfig",
-    "/properties/LoggingConfig/LogProjectId",
-    "/properties/LoggingConfig/LogSetups/*/LogTtl",
-    "/properties/LoggingConfig/LogSetups/*/Enabled",
-    "/properties/LoggingConfig/LogSetups/*/LogType"
+    "/properties/ServicesConfig"
   ],
   "definitions": {
     "ApiServerEndpoints": {

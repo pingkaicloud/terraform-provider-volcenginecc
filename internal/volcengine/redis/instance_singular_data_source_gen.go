@@ -122,6 +122,10 @@ func instanceDataSource(ctx context.Context) (datasource.DataSource, error) {
 		//	        "description": "Backup point name",
 		//	        "type": "string"
 		//	      },
+		//	      "BackupProgress": {
+		//	        "description": "Current backup progress. Measured as a percentage.",
+		//	        "type": "integer"
+		//	      },
 		//	      "BackupStrategy": {
 		//	        "description": "Backup policy",
 		//	        "type": "string"
@@ -168,6 +172,11 @@ func instanceDataSource(ctx context.Context) (datasource.DataSource, error) {
 					// Property: BackupPointName
 					"backup_point_name": schema.StringAttribute{ /*START ATTRIBUTE*/
 						Description: "Backup point name",
+						Computed:    true,
+					}, /*END ATTRIBUTE*/
+					// Property: BackupProgress
+					"backup_progress": schema.Int64Attribute{ /*START ATTRIBUTE*/
+						Description: "Current backup progress. Measured as a percentage.",
 						Computed:    true,
 					}, /*END ATTRIBUTE*/
 					// Property: BackupStrategy
@@ -1011,6 +1020,7 @@ func instanceDataSource(ctx context.Context) (datasource.DataSource, error) {
 		"az":                           "AZ",
 		"backup_point_id":              "BackupPointId",
 		"backup_point_name":            "BackupPointName",
+		"backup_progress":              "BackupProgress",
 		"backup_restore":               "BackupRestore",
 		"backup_strategy":              "BackupStrategy",
 		"backup_type":                  "BackupType",

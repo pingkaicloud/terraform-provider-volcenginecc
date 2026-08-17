@@ -1,0 +1,97 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/RecorderType"
+  ],
+  "description": "Configuration Recorder is used to record and track configuration changes for specified resource types under the Volcano Engine account",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/RecorderName"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "config:DescribeConfigurationRecorders",
+        "config:PutConfigurationRecorder",
+        "config:StartConfigurationRecorder"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "config:DescribeConfigurationRecorders",
+        "config:StopConfigurationRecorder"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "config:DescribeConfigurationRecorders"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "config:DescribeConfigurationRecorders"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "config:DescribeConfigurationRecorders",
+        "config:PutConfigurationRecorder"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/RecorderType"
+  ],
+  "properties": {
+    "ConfigurationRecorderStatus": {
+      "description": "Configuration recorder status. Options: Disabled, PendingEnable, Building, Rebuilding, Enabled, PendingDisable",
+      "semantic": "status",
+      "type": "string"
+    },
+    "CreateBy": {
+      "description": "Configuration recorder creation source",
+      "type": "string"
+    },
+    "IncludeAllResourceTypes": {
+      "description": "Whether to record all supported resource types",
+      "type": "boolean"
+    },
+    "IncludeResourceTypes": {
+      "description": "List of specified resource types to record",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "RecorderId": {
+      "description": "Configuration recorder ID",
+      "type": "string"
+    },
+    "RecorderName": {
+      "description": "Configuration recorder name",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "RecorderType": {
+      "description": "Configuration recorder type. Options: SingleAccount, Organization",
+      "semantic": "resourceId",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/ConfigurationRecorderStatus",
+    "/properties/CreateBy",
+    "/properties/RecorderId",
+    "/properties/RecorderName"
+  ],
+  "required": [
+    "RecorderType"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::Config::ConfigurationRecorder"
+}

@@ -207,12 +207,11 @@ func instanceDataSource(ctx context.Context) (datasource.DataSource, error) {
 		// Cloud Control resource type schema:
 		//
 		//	{
-		//	  "default": "Auto",
-		//	  "description": "Instance kernel minor version upgrade policy. Values: Auto: Automatic upgrade. Manual: Manual upgrade.",
+		//	  "description": "Minor kernel version upgrade policy. Values: Auto: Automatic upgrade. When a new minor kernel version is released, the instance automatically upgrades to the latest minor kernel version during the specified maintenance window. Manual: Manual upgrade. When a new minor kernel version is released, you need to manually upgrade to the latest minor kernel version in the console. For details, see \"Manually upgrade the instance's minor kernel version.\" Note: If the instance's minor kernel version is beyond the maintenance period, the system temporarily ignores the upgrade policy setting and automatically upgrades the instance's minor kernel version.",
 		//	  "type": "string"
 		//	}
 		"auto_upgrade_minor_version": schema.StringAttribute{ /*START ATTRIBUTE*/
-			Description: "Instance kernel minor version upgrade policy. Values: Auto: Automatic upgrade. Manual: Manual upgrade.",
+			Description: "Minor kernel version upgrade policy. Values: Auto: Automatic upgrade. When a new minor kernel version is released, the instance automatically upgrades to the latest minor kernel version during the specified maintenance window. Manual: Manual upgrade. When a new minor kernel version is released, you need to manually upgrade to the latest minor kernel version in the console. For details, see \"Manually upgrade the instance's minor kernel version.\" Note: If the instance's minor kernel version is beyond the maintenance period, the system temporarily ignores the upgrade policy setting and automatically upgrades the instance's minor kernel version.",
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
 		// Property: BackupAuditLogSize
@@ -1016,6 +1015,17 @@ func instanceDataSource(ctx context.Context) (datasource.DataSource, error) {
 			Description: "Latency between the disaster recovery instance and the primary instance.",
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
+		// Property: EnableExternalReplication
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Enable native replication. Values: true: Yes. false: No (default). Note: This configuration only takes effect when InstanceType is set to SingleNode.",
+		//	  "type": "boolean"
+		//	}
+		"enable_external_replication": schema.BoolAttribute{ /*START ATTRIBUTE*/
+			Description: "Enable native replication. Values: true: Yes. false: No (default). Note: This configuration only takes effect when InstanceType is set to SingleNode.",
+			Computed:    true,
+		}, /*END ATTRIBUTE*/
 		// Property: Endpoints
 		// Cloud Control resource type schema:
 		//
@@ -1779,17 +1789,6 @@ func instanceDataSource(ctx context.Context) (datasource.DataSource, error) {
 			Description: "Instance node information.",
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
-		// Property: ParameterTemplateId
-		// Cloud Control resource type schema:
-		//
-		//	{
-		//	  "description": "Parameter template ID.",
-		//	  "type": "string"
-		//	}
-		"parameter_template_id": schema.StringAttribute{ /*START ATTRIBUTE*/
-			Description: "Parameter template ID.",
-			Computed:    true,
-		}, /*END ATTRIBUTE*/
 		// Property: Port
 		// Cloud Control resource type schema:
 		//
@@ -2247,6 +2246,7 @@ func instanceDataSource(ctx context.Context) (datasource.DataSource, error) {
 		"eip_id":                                       "EipId",
 		"eip_locked":                                   "EipLocked",
 		"enable_connection_persistent":                 "EnableConnectionPersistent",
+		"enable_external_replication":                  "EnableExternalReplication",
 		"enable_read_only":                             "EnableReadOnly",
 		"enable_read_write_splitting":                  "EnableReadWriteSplitting",
 		"enable_storage_auto_scale":                    "EnableStorageAutoScale",
@@ -2301,7 +2301,6 @@ func instanceDataSource(ctx context.Context) (datasource.DataSource, error) {
 		"overdue_reclaim_time":             "OverdueReclaimTime",
 		"overdue_time":                     "OverdueTime",
 		"overload_protection":              "OverloadProtection",
-		"parameter_template_id":            "ParameterTemplateId",
 		"period":                           "Period",
 		"period_unit":                      "PeriodUnit",
 		"port":                             "Port",

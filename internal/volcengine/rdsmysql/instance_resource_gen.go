@@ -260,15 +260,13 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		// Cloud Control resource type schema:
 		//
 		//	{
-		//	  "default": "Auto",
-		//	  "description": "Instance kernel minor version upgrade policy. Values: Auto: Automatic upgrade. Manual: Manual upgrade.",
+		//	  "description": "Minor kernel version upgrade policy. Values: Auto: Automatic upgrade. When a new minor kernel version is released, the instance automatically upgrades to the latest minor kernel version during the specified maintenance window. Manual: Manual upgrade. When a new minor kernel version is released, you need to manually upgrade to the latest minor kernel version in the console. For details, see \"Manually upgrade the instance's minor kernel version.\" Note: If the instance's minor kernel version is beyond the maintenance period, the system temporarily ignores the upgrade policy setting and automatically upgrades the instance's minor kernel version.",
 		//	  "type": "string"
 		//	}
 		"auto_upgrade_minor_version": schema.StringAttribute{ /*START ATTRIBUTE*/
-			Description: "Instance kernel minor version upgrade policy. Values: Auto: Automatic upgrade. Manual: Manual upgrade.",
+			Description: "Minor kernel version upgrade policy. Values: Auto: Automatic upgrade. When a new minor kernel version is released, the instance automatically upgrades to the latest minor kernel version during the specified maintenance window. Manual: Manual upgrade. When a new minor kernel version is released, you need to manually upgrade to the latest minor kernel version in the console. For details, see \"Manually upgrade the instance's minor kernel version.\" Note: If the instance's minor kernel version is beyond the maintenance period, the system temporarily ignores the upgrade policy setting and automatically upgrades the instance's minor kernel version.",
 			Optional:    true,
 			Computed:    true,
-			Default:     stringdefault.StaticString("Auto"),
 			PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
 				stringplanmodifier.UseStateForUnknown(),
 			}, /*END PLAN MODIFIERS*/
@@ -1332,6 +1330,23 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 				int64planmodifier.UseStateForUnknown(),
 			}, /*END PLAN MODIFIERS*/
 		}, /*END ATTRIBUTE*/
+		// Property: EnableExternalReplication
+		// Cloud Control resource type schema:
+		//
+		//	{
+		//	  "description": "Enable native replication. Values: true: Yes. false: No (default). Note: This configuration only takes effect when InstanceType is set to SingleNode.",
+		//	  "type": "boolean"
+		//	}
+		"enable_external_replication": schema.BoolAttribute{ /*START ATTRIBUTE*/
+			Description: "Enable native replication. Values: true: Yes. false: No (default). Note: This configuration only takes effect when InstanceType is set to SingleNode.",
+			Optional:    true,
+			Computed:    true,
+			PlanModifiers: []planmodifier.Bool{ /*START PLAN MODIFIERS*/
+				boolplanmodifier.UseStateForUnknown(),
+				boolplanmodifier.RequiresReplaceIfConfigured(),
+			}, /*END PLAN MODIFIERS*/
+			// EnableExternalReplication is a write-only property.
+		}, /*END ATTRIBUTE*/
 		// Property: Endpoints
 		// Cloud Control resource type schema:
 		//
@@ -2151,23 +2166,6 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 			Description: "Instance node information.\n Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability.",
 			Required:    true,
 		}, /*END ATTRIBUTE*/
-		// Property: ParameterTemplateId
-		// Cloud Control resource type schema:
-		//
-		//	{
-		//	  "description": "Parameter template ID.",
-		//	  "type": "string"
-		//	}
-		"parameter_template_id": schema.StringAttribute{ /*START ATTRIBUTE*/
-			Description: "Parameter template ID.",
-			Optional:    true,
-			Computed:    true,
-			PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
-				stringplanmodifier.UseStateForUnknown(),
-				stringplanmodifier.RequiresReplaceIfConfigured(),
-			}, /*END PLAN MODIFIERS*/
-			// ParameterTemplateId is a write-only property.
-		}, /*END ATTRIBUTE*/
 		// Property: Port
 		// Cloud Control resource type schema:
 		//
@@ -2729,6 +2727,7 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		"eip_id":                                       "EipId",
 		"eip_locked":                                   "EipLocked",
 		"enable_connection_persistent":                 "EnableConnectionPersistent",
+		"enable_external_replication":                  "EnableExternalReplication",
 		"enable_read_only":                             "EnableReadOnly",
 		"enable_read_write_splitting":                  "EnableReadWriteSplitting",
 		"enable_storage_auto_scale":                    "EnableStorageAutoScale",
@@ -2783,7 +2782,6 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		"overdue_reclaim_time":             "OverdueReclaimTime",
 		"overdue_time":                     "OverdueTime",
 		"overload_protection":              "OverloadProtection",
-		"parameter_template_id":            "ParameterTemplateId",
 		"period":                           "Period",
 		"period_unit":                      "PeriodUnit",
 		"port":                             "Port",
@@ -2841,7 +2839,7 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/SuperAccountName",
 		"/properties/SuperAccountPassword",
 		"/properties/PrivateIpAddress",
-		"/properties/ParameterTemplateId",
+		"/properties/EnableExternalReplication",
 	})
 
 	opts = opts.WithReadOnlyPropertyPaths([]string{
@@ -2931,8 +2929,8 @@ func instanceResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/SuperAccountName",
 		"/properties/SuperAccountPassword",
 		"/properties/PrivateIpAddress",
-		"/properties/ParameterTemplateId",
 		"/properties/EngineType",
+		"/properties/EnableExternalReplication",
 	})
 	opts = opts.WithCreateTimeoutInMinutes(0).WithDeleteTimeoutInMinutes(0)
 

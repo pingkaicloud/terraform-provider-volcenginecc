@@ -520,7 +520,6 @@ func clusterResource(ctx context.Context) (resource.Resource, error) {
 					Computed:    true,
 					PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
 						stringplanmodifier.UseNonNullStateForUnknown(),
-						stringplanmodifier.RequiresReplaceIfConfigured(),
 					}, /*END PLAN MODIFIERS*/
 				}, /*END ATTRIBUTE*/
 				// Property: LogSetups
@@ -534,7 +533,6 @@ func clusterResource(ctx context.Context) (resource.Resource, error) {
 								Computed:    true,
 								PlanModifiers: []planmodifier.Bool{ /*START PLAN MODIFIERS*/
 									boolplanmodifier.UseNonNullStateForUnknown(),
-									boolplanmodifier.RequiresReplaceIfConfigured(),
 								}, /*END PLAN MODIFIERS*/
 							}, /*END ATTRIBUTE*/
 							// Property: LogTopicId
@@ -549,7 +547,6 @@ func clusterResource(ctx context.Context) (resource.Resource, error) {
 								}, /*END VALIDATORS*/
 								PlanModifiers: []planmodifier.Int64{ /*START PLAN MODIFIERS*/
 									int64planmodifier.UseNonNullStateForUnknown(),
-									int64planmodifier.RequiresReplaceIfConfigured(),
 								}, /*END PLAN MODIFIERS*/
 							}, /*END ATTRIBUTE*/
 							// Property: LogType
@@ -559,7 +556,6 @@ func clusterResource(ctx context.Context) (resource.Resource, error) {
 								Computed:    true,
 								PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
 									stringplanmodifier.UseNonNullStateForUnknown(),
-									stringplanmodifier.RequiresReplaceIfConfigured(),
 								}, /*END PLAN MODIFIERS*/
 							}, /*END ATTRIBUTE*/
 						}, /*END SCHEMA*/
@@ -1306,10 +1302,6 @@ func clusterResource(ctx context.Context) (resource.Resource, error) {
 		"/properties/PodsConfig/FlannelConfig/PodCidrs",
 		"/properties/PodsConfig/VpcCniConfig/TrunkEniEnabled",
 		"/properties/ServicesConfig",
-		"/properties/LoggingConfig/LogProjectId",
-		"/properties/LoggingConfig/LogSetups/*/LogTtl",
-		"/properties/LoggingConfig/LogSetups/*/Enabled",
-		"/properties/LoggingConfig/LogSetups/*/LogType",
 	})
 	opts = opts.WithCreateTimeoutInMinutes(0).WithDeleteTimeoutInMinutes(0)
 

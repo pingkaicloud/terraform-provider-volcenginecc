@@ -87,6 +87,7 @@ Read-Only:
 
 - `backup_point_id` (String) Backup point ID
 - `backup_point_name` (String) Backup point name
+- `backup_progress` (Number) Current backup progress. Measured as a percentage.
 - `backup_strategy` (String) Backup policy
 - `backup_type` (String) Backup type
 - `end_time` (String) Backup end time

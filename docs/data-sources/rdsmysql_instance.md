@@ -25,7 +25,7 @@ Data Source schema for Volcengine::RDSMySQL::Instance
 - `allow_list_ids` (Set of String) Allowlist ID. To bind multiple allowlists, separate allowlist IDs with commas (,). Each instance can bind up to 100 allowlists
 - `allow_list_version` (String) Allowlist version
 - `auto_storage_scaling_config` (Attributes) Auto scaling configuration (see [below for nested schema](#nestedatt--auto_storage_scaling_config))
-- `auto_upgrade_minor_version` (String) Instance kernel minor version upgrade policy. Values: Auto: Automatic upgrade. Manual: Manual upgrade.
+- `auto_upgrade_minor_version` (String) Minor kernel version upgrade policy. Values: Auto: Automatic upgrade. When a new minor kernel version is released, the instance automatically upgrades to the latest minor kernel version during the specified maintenance window. Manual: Manual upgrade. When a new minor kernel version is released, you need to manually upgrade to the latest minor kernel version in the console. For details, see "Manually upgrade the instance's minor kernel version." Note: If the instance's minor kernel version is beyond the maintenance period, the system temporarily ignores the upgrade policy setting and automatically upgrades the instance's minor kernel version.
 - `backup_audit_log_size` (Number) Space used by audit logs in backup.
 - `backup_bin_log_size` (Number) Space used by binlog logs in backup.
 - `backup_data_size` (Number) Space used by data in backup.
@@ -50,6 +50,7 @@ Data Source schema for Volcengine::RDSMySQL::Instance
 - `dr_dts_task_name` (String) Name of synchronization tasks between primary and disaster recovery instances.
 - `dr_dts_task_status` (String) Status of synchronization tasks between primary and disaster recovery instances.
 - `dr_seconds_behind_master` (Number) Latency between the disaster recovery instance and the primary instance.
+- `enable_external_replication` (Boolean) Enable native replication. Values: true: Yes. false: No (default). Note: This configuration only takes effect when InstanceType is set to SingleNode.
 - `endpoints` (Attributes Set) Instance connection information. (see [below for nested schema](#nestedatt--endpoints))
 - `engine_type` (String) Database engine type. Values: InnoDB: InnoDB engine. RocksDB: RocksDB engine.
 - `global_read_only` (Boolean) Enable global read-only mode. Values: true: enabled. false: disabled (default is false)
@@ -70,7 +71,6 @@ Data Source schema for Volcengine::RDSMySQL::Instance
 - `node_space_used_percentage` (Number) Average disk usage of the primary node over the past minute
 - `node_spec` (String) Node specifications.
 - `nodes` (Attributes Set) Instance node information. (see [below for nested schema](#nestedatt--nodes))
-- `parameter_template_id` (String) Parameter template ID.
 - `port` (Number) Default endpoint private network port. Port range: 1000~65534, default is 3306. When creating a new connection endpoint or enabling a new address, the default endpoint private network port is used for real-time configuration as the default port.
 - `private_ip_address` (String) Specify the default terminal IP address of the instance within the designated private network and subnet. Note: If not set, the default terminal IP address will be automatically assigned within the specified private network and subnet.
 - `project_name` (String) Project.
