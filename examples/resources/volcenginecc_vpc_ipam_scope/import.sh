@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_vpc_ipam_scope.example "ipam_scope_id"

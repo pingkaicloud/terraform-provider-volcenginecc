@@ -1,0 +1,122 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/TransitRouterId"
+  ],
+  "description": "Forwarding policy for the transit router. The forwarding policy controls the forwarding behavior of the transit router.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/TransitRouterForwardPolicyTableId",
+      "/properties/TransitRouterForwardPolicyTableName",
+      "/properties/TransitRouterId"
+    ],
+    "required": [
+      "/properties/TransitRouterId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "transitrouter:CreateTransitRouterForwardPolicyTable",
+        "transitrouter:DescribeTransitRouterForwardPolicyTables",
+        "transitrouter:AssociateTransitRouterForwardPolicyTableToAttachment",
+        "transitrouter:DescribeTransitRouterAttachments"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "transitrouter:DissociateTransitRouterForwardPolicyTableFromAttachment",
+        "transitrouter:DeleteTransitRouterForwardPolicyTable",
+        "transitrouter:DescribeTransitRouterForwardPolicyTables",
+        "transitrouter:DescribeTransitRouterAttachments",
+        "transitrouter:DescribeTransitRouters"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterForwardPolicyTables"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterForwardPolicyTables",
+        "transitrouter:DescribeTransitRouterAttachments"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "transitrouter:ModifyTransitRouterForwardPolicyTableAttributes",
+        "transitrouter:DescribeTransitRouterForwardPolicyTables",
+        "transitrouter:AssociateTransitRouterForwardPolicyTableToAttachment",
+        "transitrouter:DissociateTransitRouterForwardPolicyTableFromAttachment",
+        "transitrouter:DescribeTransitRouters",
+        "transitrouter:DescribeTransitRouterAttachments"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/TransitRouterId",
+    "/properties/TransitRouterForwardPolicyTableId"
+  ],
+  "properties": {
+    "CreationTime": {
+      "description": "Creation time of the forwarding policy.",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Description of the forwarding policy. Must start with a letter, number, or Chinese character. Can include letters, numbers, Chinese characters, and the following special characters: comma (,), period (.), underscore (_), space ( ), equals sign (=), hyphen (-), Chinese comma (，), and Chinese period (。). Length limit: 0–255 characters.",
+      "maxLength": 255,
+      "semantic": "description",
+      "type": "string"
+    },
+    "Status": {
+      "description": "Status of the forwarding policy. Creating: Being created. Deleting: Being deleted. Pending: Being configured. Available: Available.",
+      "semantic": "status",
+      "type": "string"
+    },
+    "TransitRouterAttachmentIds": {
+      "description": "List of associated IDs for the transit router instance.",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "TransitRouterForwardPolicyTableId": {
+      "description": "Forwarding policy ID.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "TransitRouterForwardPolicyTableName": {
+      "description": "Name of the forwarding policy. Must start with a letter, number, or Chinese character. Can include letters, numbers, Chinese characters, and the following special characters: period (.), underscore (_), and hyphen (-). Length limit: 1–128 characters. If this parameter is not provided or no value is specified, the forwarding policy ID is used by default.",
+      "maxLength": 128,
+      "minLength": 1,
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "TransitRouterId": {
+      "description": "Transit router instance ID.",
+      "type": "string"
+    },
+    "UpdateTime": {
+      "description": "Last operation time of the forwarding policy.",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/TransitRouterForwardPolicyTableId",
+    "/properties/CreationTime",
+    "/properties/UpdateTime",
+    "/properties/Status"
+  ],
+  "required": [
+    "TransitRouterId"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::TransitRouter::TransitRouterForwardPolicyTable"
+}

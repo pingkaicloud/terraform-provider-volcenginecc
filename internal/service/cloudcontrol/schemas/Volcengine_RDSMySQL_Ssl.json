@@ -1,0 +1,86 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/InstanceId"
+  ],
+  "description": "SSL encryption configuration for Volcano Engine RDS MySQL instances. Use ModifyDBInstanceSSL to enable, disable, or adjust the instance's SSL settings, and use DescribeDBInstanceSSL to query the current SSL status.",
+  "handlers": {
+    "create": {
+      "permissions": [
+        "rds_mysql:ModifyDBInstanceSSL",
+        "rds_mysql:DescribeDBInstanceSSL",
+        "rds_mysql:DescribeDBInstanceDetail"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "rds_mysql:ModifyDBInstanceSSL",
+        "rds_mysql:DescribeDBInstanceSSL",
+        "rds_mysql:DescribeDBInstanceDetail"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "rds_mysql:DescribeDBInstanceSSL"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "rds_mysql:ModifyDBInstanceSSL",
+        "rds_mysql:DescribeDBInstanceSSL",
+        "rds_mysql:DescribeDBInstanceDetail"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/InstanceId"
+  ],
+  "properties": {
+    "Address": {
+      "description": "Protected address.",
+      "type": "string"
+    },
+    "InstanceId": {
+      "description": "Instance ID.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "IsValid": {
+      "description": "Certificate validity. Values:\n\n- `true`: Valid\n- `false`: Invalid",
+      "type": "boolean"
+    },
+    "ReloadSSLCertificate": {
+      "description": "Update SSL certificate validity period. Set to `true` to update the SSL certificate validity period. Takes effect only when SSL encryption is enabled for the instance, and cannot be modified together with the SSLEnable field.",
+      "type": "boolean"
+    },
+    "SSLEnable": {
+      "description": "SSL switch. Values:\n\n- `true`: Enabled\n- `false`: Disabled",
+      "type": "boolean"
+    },
+    "SSLExpireTime": {
+      "description": "Certificate expiration time. Format: `yyyy-MM-dd HH:mm:ss` (UTC time).",
+      "type": "string"
+    },
+    "TLSVersion": {
+      "description": "Supported TLS versions. Separate multiple versions with commas (,).",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/IsValid",
+    "/properties/SSLExpireTime",
+    "/properties/SSLEnable",
+    "/properties/TLSVersion",
+    "/properties/Address"
+  ],
+  "required": [
+    "InstanceId"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::RDSMySQL::Ssl",
+  "writeOnlyProperties": [
+    "/properties/ReloadSSLCertificate"
+  ]
+}

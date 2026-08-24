@@ -1,0 +1,211 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/IpamScopeId",
+    "/properties/PoolRegionId",
+    "/properties/IpVersion",
+    "/properties/SourceIpamPoolId",
+    "/properties/ProjectName"
+  ],
+  "definitions": {
+    "Tag": {
+      "description": "Tag",
+      "properties": {
+        "Key": {
+          "description": "Tag key",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "IPAM address pool",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/IpamPoolId",
+      "/properties/IpamPoolName",
+      "/properties/IpamScopeId",
+      "/properties/PoolRegionId",
+      "/properties/IpVersion",
+      "/properties/SourceIpamPoolId",
+      "/properties/ProjectName",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "vpc:CreateIpamPool",
+        "vpc:TagIpamResources",
+        "vpc:DescribeIpamPools"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "vpc:DeleteIpamPool",
+        "vpc:DescribeIpamPools"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "vpc:DescribeIpamPools"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "vpc:DescribeIpamPools"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "vpc:ModifyIpamPool",
+        "vpc:UntagIpamResources",
+        "vpc:TagIpamResources",
+        "vpc:DescribeIpamPools"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/IpamPoolId"
+  ],
+  "properties": {
+    "AccountId": {
+      "description": "Account ID",
+      "type": "string"
+    },
+    "AllocationDefaultCidrMask": {
+      "description": "Default mask length when allocating CIDR",
+      "type": "integer"
+    },
+    "AllocationMaxCidrMask": {
+      "description": "Maximum allocation mask bits",
+      "type": "integer"
+    },
+    "AllocationMinCidrMask": {
+      "description": "Minimum allocation mask bits",
+      "type": "integer"
+    },
+    "AutoImport": {
+      "description": "Whether to automatically import resources",
+      "type": "boolean"
+    },
+    "ClearAllocationDefaultCidrMask": {
+      "description": "Whether to clear the default network mask of the IPAM address pool. ClearAllocationDefaultCidrMask and AllocationDefaultCidrMask cannot be used together",
+      "type": "boolean"
+    },
+    "CreateTime": {
+      "description": "IPAM address pool creation time",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "IPAM address pool description",
+      "semantic": "description",
+      "type": "string"
+    },
+    "HasSubPool": {
+      "description": "Whether there are child address pools",
+      "type": "boolean"
+    },
+    "IpVersion": {
+      "description": "Address pool IP version",
+      "type": "string"
+    },
+    "IpamId": {
+      "description": "IPAM ID。",
+      "type": "string"
+    },
+    "IpamPoolId": {
+      "description": "IPAM address pool ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "IpamPoolName": {
+      "description": "IPAM address pool name",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "IpamRegionId": {
+      "description": "IPAM region ID",
+      "type": "string"
+    },
+    "IpamScopeId": {
+      "description": "IPAM scope ID",
+      "type": "string"
+    },
+    "IpamScopeType": {
+      "description": "IPAM scope type",
+      "type": "string"
+    },
+    "PoolDepth": {
+      "description": "Address pool depth",
+      "type": "integer"
+    },
+    "PoolRegionId": {
+      "description": "Address pool region ID",
+      "type": "string"
+    },
+    "ProjectName": {
+      "description": "IPAM address pool project name",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "SourceIpamPoolId": {
+      "description": "Parent address pool ID",
+      "type": "string"
+    },
+    "Status": {
+      "description": "IPAM address pool status",
+      "semantic": "status",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "IPAM address pool tags",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "UpdateTime": {
+      "description": "IPAM address pool update time",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/IpamPoolId",
+    "/properties/AccountId",
+    "/properties/HasSubPool",
+    "/properties/IpamId",
+    "/properties/IpamRegionId",
+    "/properties/IpamScopeType",
+    "/properties/PoolDepth",
+    "/properties/Status",
+    "/properties/CreateTime",
+    "/properties/UpdateTime"
+  ],
+  "required": [
+    "IpamScopeId",
+    "IpVersion"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::VPC::IpamPool",
+  "writeOnlyProperties": [
+    "/properties/ClearAllocationDefaultCidrMask"
+  ]
+}

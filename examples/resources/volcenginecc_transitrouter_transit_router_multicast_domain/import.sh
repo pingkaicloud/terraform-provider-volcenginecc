@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_transitrouter_transit_router_multicast_domain.example "transit_router_id|transit_router_multicast_domain_id"

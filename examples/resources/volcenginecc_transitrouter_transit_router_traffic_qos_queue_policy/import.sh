@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_transitrouter_transit_router_traffic_qos_queue_policy.example "transit_router_id|transit_router_traffic_qos_queue_policy_id"

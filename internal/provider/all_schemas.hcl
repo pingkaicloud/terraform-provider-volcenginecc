@@ -1183,3 +1183,47 @@ resource_schema "volcengine_transitrouter_transit_router_traffic_qos_queue_entry
 resource_schema "volcengine_config_configuration_recorder" {
   cloudcontrol_type_name = "Volcengine::Config::ConfigurationRecorder"
 }
+
+resource_schema "volcengine_vpc_ipam" {
+  cloudcontrol_type_name = "Volcengine::VPC::IPAM"
+}
+
+resource_schema "volcengine_vpc_ipam_pool" {
+  cloudcontrol_type_name = "Volcengine::VPC::IpamPool"
+}
+
+resource_schema "volcengine_vpc_ipam_scope" {
+  cloudcontrol_type_name = "Volcengine::VPC::IpamScope"
+}
+
+resource_schema "volcengine_transitrouter_transit_router_attachment_to_route_table" {
+  cloudcontrol_type_name = "Volcengine::TransitRouter::TransitRouterAttachmentToRouteTable"
+}
+
+resource_schema "volcengine_transitrouter_transit_router_forward_policy_table" {
+  cloudcontrol_type_name = "Volcengine::TransitRouter::TransitRouterForwardPolicyTable"
+}
+
+resource_schema "volcengine_transitrouter_transit_router_traffic_qos_queue_policy" {
+  cloudcontrol_type_name = "Volcengine::TransitRouter::TransitRouterTrafficQosQueuePolicy"
+}
+
+resource_schema "volcengine_transitrouter_transit_router_multicast_domain" {
+  cloudcontrol_type_name = "Volcengine::TransitRouter::TransitRouterMulticastDomain"
+}
+
+resource_schema "volcengine_rdsmysql_ssl" {
+  cloudcontrol_type_name = "Volcengine::RDSMySQL::Ssl"
+}
+
+resource_schema "volcengine_vepfs_data_flow_task" {
+  cloudcontrol_type_name = "Volcengine::VEPFS::DataFlowTask"
+}
+
+resource_schema "volcengine_kafka_acl" {
+  cloudcontrol_type_name = "Volcengine::Kafka::ACL"
+}
+
+resource_schema "volcengine_fwcenter_nat_fire_wall" {
+  cloudcontrol_type_name = "Volcengine::FWCenter::NATFireWall"
+}

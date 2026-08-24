@@ -1,0 +1,170 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/IpamId",
+    "/properties/ProjectName",
+    "/properties/IpamScopeType"
+  ],
+  "definitions": {
+    "Tag": {
+      "description": "Tag",
+      "properties": {
+        "Key": {
+          "description": "Tag Key",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Key"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "IPAM Scope",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/IpamId",
+      "/properties/IpamScopeId",
+      "/properties/IpamScopeName",
+      "/properties/IpamScopeType",
+      "/properties/ProjectName",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "vpc:CreateIpamScope",
+        "vpc:TagIpamResources",
+        "vpc:DescribeIpamScopes"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "vpc:DeleteIpamScope",
+        "vpc:DescribeIpamScopes"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "vpc:DescribeIpamScopes"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "vpc:DescribeIpamScopes"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "vpc:ModifyIpamScope",
+        "vpc:UntagIpamResources",
+        "vpc:TagIpamResources",
+        "vpc:DescribeIpamScopes"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/IpamScopeId"
+  ],
+  "properties": {
+    "AccountId": {
+      "description": "Account ID",
+      "type": "string"
+    },
+    "CreateTime": {
+      "description": "IPAM Scope Creation Time",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "IPAM Scope Description",
+      "maxLength": 255,
+      "semantic": "description",
+      "type": "string"
+    },
+    "IpamId": {
+      "description": "IPAM ID。",
+      "maxLength": 128,
+      "minLength": 1,
+      "type": "string"
+    },
+    "IpamRegionId": {
+      "description": "IPAM Region ID",
+      "type": "string"
+    },
+    "IpamScopeId": {
+      "description": "IPAM Scope ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "IpamScopeName": {
+      "description": "IPAM Scope Name",
+      "maxLength": 255,
+      "minLength": 1,
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "IpamScopeType": {
+      "description": "IPAM Scope Type",
+      "type": "string"
+    },
+    "IsDefault": {
+      "description": "Default Scope",
+      "type": "boolean"
+    },
+    "PoolCount": {
+      "description": "Number of Address Pools",
+      "type": "integer"
+    },
+    "ProjectName": {
+      "description": "Project Name",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "Status": {
+      "description": "IPAM Scope Status",
+      "semantic": "status",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "IPAM Scope Tags",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "UpdateTime": {
+      "description": "IPAM Scope Update Time",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/IpamScopeId",
+    "/properties/AccountId",
+    "/properties/IpamRegionId",
+    "/properties/IsDefault",
+    "/properties/PoolCount",
+    "/properties/Status",
+    "/properties/CreateTime",
+    "/properties/UpdateTime"
+  ],
+  "required": [
+    "IpamId"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::VPC::IpamScope"
+}

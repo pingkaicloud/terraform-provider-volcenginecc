@@ -1,0 +1,109 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/TransitRouterId"
+  ],
+  "description": "Transit router flow queue policy. The flow queue policy allocates matched traffic to specified scheduling queues, enabling differentiated scheduling of different traffic based on business importance.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/TransitRouterId",
+      "/properties/TransitRouterTrafficQosQueuePolicyId",
+      "/properties/TransitRouterTrafficQosQueuePolicyName"
+    ],
+    "required": [
+      "/properties/TransitRouterId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "transitrouter:CreateTransitRouterTrafficQosQueuePolicy",
+        "transitrouter:DescribeTransitRouterTrafficQosQueuePolicies"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "transitrouter:DeleteTransitRouterTrafficQosQueuePolicy",
+        "transitrouter:DescribeTransitRouterTrafficQosQueuePolicies"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterTrafficQosQueuePolicies"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterTrafficQosQueuePolicies"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "transitrouter:ModifyTransitRouterTrafficQosQueuePolicyAttributes",
+        "transitrouter:DescribeTransitRouterTrafficQosQueuePolicies"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/TransitRouterId",
+    "/properties/TransitRouterTrafficQosQueuePolicyId"
+  ],
+  "properties": {
+    "CreationTime": {
+      "description": "Creation time of the flow queue policy.",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Description of the flow queue policy. Must start with a letter, number, or Chinese character. Can contain letters, numbers, Chinese characters, and the following special characters: English comma (,), period (.), underscore (_), space ( ), equals sign (=), hyphen (-), Chinese comma (，), and Chinese period (。). Length must be from 0 to 255 characters.",
+      "maxLength": 255,
+      "semantic": "description",
+      "type": "string"
+    },
+    "Status": {
+      "description": "Status of the flow queue policy. Creating: being created. Deleting: being deleted. Pending: being configured. Available: available.",
+      "enum": [
+        "Creating",
+        "Deleting",
+        "Pending",
+        "Available"
+      ],
+      "semantic": "status",
+      "type": "string"
+    },
+    "TransitRouterId": {
+      "description": "Transit router instance ID.",
+      "type": "string"
+    },
+    "TransitRouterTrafficQosQueuePolicyId": {
+      "description": "Flow queue policy ID.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "TransitRouterTrafficQosQueuePolicyName": {
+      "description": "Name of the flow queue policy. Must start with a letter, number, or Chinese character. Can contain letters, numbers, Chinese characters, and the following special characters: period (.), underscore (_), and hyphen (-). Length must be from 1 to 128 characters. If this parameter is not provided or no value is specified, the default is the flow queue policy ID.",
+      "maxLength": 128,
+      "minLength": 1,
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "UpdateTime": {
+      "description": "Last update time of the flow queue policy.",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/TransitRouterTrafficQosQueuePolicyId",
+    "/properties/Status",
+    "/properties/CreationTime",
+    "/properties/UpdateTime"
+  ],
+  "required": [
+    "TransitRouterId"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::TransitRouter::TransitRouterTrafficQosQueuePolicy"
+}

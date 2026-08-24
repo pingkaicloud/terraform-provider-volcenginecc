@@ -1,0 +1,1 @@
+$ terraform import volcenginecc_vpc_ipam_pool.example "ipam_pool_id"
