@@ -1,0 +1,171 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/NatGatewayId",
+    "/properties/FirewallCidr",
+    "/properties/CloudFirewallId",
+    "/properties/ProjectName"
+  ],
+  "description": "NAT boundary firewall instance. Provides security protection and access control for north-south traffic passing through the NAT gateway.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/NatFirewallId",
+      "/properties/NatFirewallName",
+      "/properties/NatGatewayId",
+      "/properties/NatGatewayName",
+      "/properties/VpcId",
+      "/properties/VpcName",
+      "/properties/CloudFirewallId",
+      "/properties/ProjectName",
+      "/properties/FirewallStatus"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "fw_center:CreateNatFirewall",
+        "fw_center:DescribeNatFirewallList"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "fw_center:DeleteNatFirewall",
+        "fw_center:DescribeNatFirewallList"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "fw_center:DescribeNatFirewallList"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "fw_center:DescribeNatFirewallList"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/NatFirewallId"
+  ],
+  "properties": {
+    "AccountId": {
+      "description": "Account ID for creating the NAT firewall, used to identify the account to which the NAT boundary firewall instance belongs.",
+      "type": "string"
+    },
+    "Bandwidth": {
+      "description": "Authorized traffic bandwidth of the NAT boundary firewall instance, measured in Mbps, indicating the maximum network bandwidth allowed for the firewall instance. The minimum value is 10.",
+      "format": "int64",
+      "minimum": 10,
+      "type": "integer"
+    },
+    "CanCreate": {
+      "description": "Indicates whether creating a NAT boundary firewall is currently supported. true means supported, false means not supported.",
+      "type": "boolean"
+    },
+    "CloudFirewallId": {
+      "description": "Cloud firewall instance ID, used to identify and manage the cloud firewall instance.",
+      "type": "string"
+    },
+    "ErrMessage": {
+      "description": "Error message returned when an error occurs during the creation or query of a NAT boundary firewall instance, used to describe the specific cause of the error.",
+      "type": "string"
+    },
+    "FirewallCidr": {
+      "description": "Subnet CIDR of the NAT boundary firewall, used to specify the network range protected by the firewall, expressed in CIDR format.",
+      "type": "string"
+    },
+    "FirewallStatus": {
+      "description": "Status of the NAT boundary firewall instance. creating: being created; deleting: being deleted; opened: created; closed: not created; error: error; updating: being upgraded.",
+      "enum": [
+        "creating",
+        "deleting",
+        "opened",
+        "closed",
+        "error",
+        "updating"
+      ],
+      "semantic": "status",
+      "type": "string"
+    },
+    "NatFirewallId": {
+      "description": "Unique identifier of the NAT boundary firewall instance.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "NatFirewallName": {
+      "description": "Name of the NAT boundary firewall instance, used to identify and manage the firewall instance.",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "NatFirewallSubnetCidr": {
+      "description": "Subnet CIDR of the NAT boundary firewall instance, used to identify the subnet IP address range protected by the firewall instance.",
+      "type": "string"
+    },
+    "NatGatewayId": {
+      "description": "NAT gateway instance ID, used to identify and manage the NAT gateway instance. You must specify the associated NAT gateway when creating a NAT firewall.",
+      "type": "string"
+    },
+    "NatGatewayName": {
+      "description": "Name of the NAT gateway, used to identify the associated NAT gateway.",
+      "type": "string"
+    },
+    "PeakTrafficWithin7Day": {
+      "description": "Peak traffic of the NAT boundary firewall instance in the past 7 days, measured in bps, used to monitor the highest network traffic usage.",
+      "format": "int64",
+      "type": "integer"
+    },
+    "ProjectName": {
+      "description": "Project name, used to identify and manage the project to which the resource belongs. The default value is default.",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "ProjectNameForNatGate": {
+      "description": "Project name to which the associated NAT gateway belongs.",
+      "type": "string"
+    },
+    "VpcCidr": {
+      "description": "Subnet CIDR of the associated VPC, used to identify the IP address range of the VPC.",
+      "type": "string"
+    },
+    "VpcId": {
+      "description": "Unique identifier of the associated VPC.",
+      "type": "string"
+    },
+    "VpcName": {
+      "description": "Name of the associated VPC.",
+      "type": "string"
+    },
+    "ZoneId": {
+      "description": "Availability zone where the NAT boundary firewall instance is located, used to identify the specific physical area where the instance is deployed.",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/NatFirewallId",
+    "/properties/AccountId",
+    "/properties/FirewallStatus",
+    "/properties/CanCreate",
+    "/properties/ErrMessage",
+    "/properties/NatFirewallSubnetCidr",
+    "/properties/NatGatewayName",
+    "/properties/PeakTrafficWithin7Day",
+    "/properties/ProjectNameForNatGate",
+    "/properties/VpcCidr",
+    "/properties/VpcId",
+    "/properties/VpcName",
+    "/properties/ZoneId"
+  ],
+  "required": [
+    "Bandwidth",
+    "FirewallCidr",
+    "NatGatewayId",
+    "NatFirewallName"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::FWCenter::NATFireWall",
+  "writeOnlyProperties": [
+    "/properties/CloudFirewallId"
+  ]
+}

@@ -1,0 +1,182 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/ProjectName",
+    "/properties/OperatingRegions"
+  ],
+  "definitions": {
+    "Tag": {
+      "description": "Tag",
+      "properties": {
+        "Key": {
+          "description": "Tag Key",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag Value",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "IPAM。",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/ProjectName",
+      "/properties/IpamId",
+      "/properties/IpamName",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "vpc:CreateIpam",
+        "vpc:TagIpamResources",
+        "vpc:DescribeIpams"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "vpc:DeleteIpam",
+        "vpc:DescribeIpams"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "vpc:DescribeIpams"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "vpc:DescribeIpams"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "vpc:ModifyIpam",
+        "vpc:TagIpamResources",
+        "vpc:UntagIpamResources",
+        "vpc:DescribeIpams"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/IpamId"
+  ],
+  "properties": {
+    "AccountId": {
+      "description": "Account ID",
+      "type": "string"
+    },
+    "CreateTime": {
+      "description": "Creation Time",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "DefaultResourceDiscoveryAssociationId": {
+      "description": "Default Resource Discovery Association ID",
+      "type": "string"
+    },
+    "DefaultResourceDiscoveryId": {
+      "description": "Default Resource Discovery Instance ID",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Description",
+      "semantic": "description",
+      "type": "string"
+    },
+    "IpamId": {
+      "description": "IPAM ID",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "IpamName": {
+      "description": "IPAM Name",
+      "maxLength": 255,
+      "minLength": 1,
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "IpamRegionId": {
+      "description": "Region ID",
+      "type": "string"
+    },
+    "OperatingRegions": {
+      "description": "IPAM Effective Region",
+      "insertionOrder": false,
+      "items": {
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "PrivateDefaultScopeId": {
+      "description": "System Default Created Private IPAM Scope",
+      "type": "string"
+    },
+    "ProjectName": {
+      "description": "Project Name",
+      "semantic": "projectName",
+      "type": "string"
+    },
+    "PublicDefaultScopeId": {
+      "description": "System Default Created Public IPAM Scope",
+      "type": "string"
+    },
+    "ResourceDiscoveryAssociationCount": {
+      "description": "Resource Discovery Association Count",
+      "type": "integer"
+    },
+    "ScopeCount": {
+      "description": "IPAM Scope Count",
+      "type": "integer"
+    },
+    "Status": {
+      "description": "IPAM Status",
+      "semantic": "status",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "IPAM Tag Information",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "UpdateTime": {
+      "description": "Update Time",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/IpamId",
+    "/properties/PublicDefaultScopeId",
+    "/properties/PrivateDefaultScopeId",
+    "/properties/DefaultResourceDiscoveryId",
+    "/properties/DefaultResourceDiscoveryAssociationId",
+    "/properties/AccountId",
+    "/properties/CreateTime",
+    "/properties/UpdateTime",
+    "/properties/Status",
+    "/properties/IpamRegionId",
+    "/properties/ScopeCount",
+    "/properties/ResourceDiscoveryAssociationCount"
+  ],
+  "required": [
+    "OperatingRegions"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::VPC::IPAM"
+}

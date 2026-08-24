@@ -424,6 +424,7 @@ func accountResource(ctx context.Context) (resource.Resource, error) {
 					PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
 						stringplanmodifier.UseNonNullStateForUnknown(),
 					}, /*END PLAN MODIFIERS*/
+					// NewEmail is a write-only property.
 				}, /*END ATTRIBUTE*/
 				// Property: NewPhone
 				"new_phone": schema.StringAttribute{ /*START ATTRIBUTE*/
@@ -433,6 +434,7 @@ func accountResource(ctx context.Context) (resource.Resource, error) {
 					PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
 						stringplanmodifier.UseNonNullStateForUnknown(),
 					}, /*END PLAN MODIFIERS*/
+					// NewPhone is a write-only property.
 				}, /*END ATTRIBUTE*/
 				// Property: Phone
 				"phone": schema.StringAttribute{ /*START ATTRIBUTE*/
@@ -623,6 +625,8 @@ func accountResource(ctx context.Context) (resource.Resource, error) {
 	})
 
 	opts = opts.WithWriteOnlyPropertyPaths([]string{
+		"/properties/SecureContactInfo/NewPhone",
+		"/properties/SecureContactInfo/NewEmail",
 		"/properties/Password",
 	})
 

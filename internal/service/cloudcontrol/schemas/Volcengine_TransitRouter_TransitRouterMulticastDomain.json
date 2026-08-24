@@ -1,0 +1,132 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/TransitRouterId"
+  ],
+  "definitions": {
+    "Tag": {
+      "description": "Tag information for the multicast domain.",
+      "properties": {
+        "Key": {
+          "description": "Tag key.",
+          "type": "string"
+        },
+        "Value": {
+          "description": "Tag value.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "Transit router multicast domain. A domain for carrying multicast traffic, bound to a transit router instance.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/TransitRouterId",
+      "/properties/TransitRouterMulticastDomainId",
+      "/properties/TransitRouterMulticastDomainName",
+      "/properties/Tags/*/Key",
+      "/properties/Tags/*/Value"
+    ],
+    "required": [
+      "/properties/TransitRouterId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "transitrouter:CreateTransitRouterMulticastDomain",
+        "transitrouter:DescribeTransitRouterMulticastDomains"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "transitrouter:DeleteTransitRouterMulticastDomain",
+        "transitrouter:DescribeTransitRouterMulticastDomains"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterMulticastDomains"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterMulticastDomains"
+      ]
+    },
+    "update": {
+      "permissions": [
+        "transitrouter:ModifyTransitRouterMulticastDomainAttributes",
+        "transitrouter:DescribeTransitRouterMulticastDomains",
+        "transitrouter:TagResources",
+        "transitrouter:UntagResources"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/TransitRouterId",
+    "/properties/TransitRouterMulticastDomainId"
+  ],
+  "properties": {
+    "CreationTime": {
+      "description": "Creation time of the multicast domain.",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "Description": {
+      "description": "Description of the multicast domain. Length limit: 0–255 characters.",
+      "semantic": "description",
+      "type": "string"
+    },
+    "Status": {
+      "description": "Status of the multicast domain. Creating: being created. Available: available. Deleting: being deleted.",
+      "semantic": "status",
+      "type": "string"
+    },
+    "Tags": {
+      "description": "Tag set for the multicast domain.",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Tag"
+      },
+      "semantic": "tags",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "TransitRouterId": {
+      "description": "Transit router instance ID.",
+      "type": "string"
+    },
+    "TransitRouterMulticastDomainId": {
+      "description": "Multicast domain ID.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "TransitRouterMulticastDomainName": {
+      "description": "Name of the multicast domain. Length limit: 1–128 characters.",
+      "semantic": "resourceName",
+      "type": "string"
+    },
+    "UpdateTime": {
+      "description": "Last updated time of the multicast domain.",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/TransitRouterMulticastDomainId",
+    "/properties/Status",
+    "/properties/CreationTime",
+    "/properties/UpdateTime"
+  ],
+  "required": [
+    "TransitRouterId"
+  ],
+  "tagging": {
+    "tagOnCreate": true,
+    "tagUpdatable": true,
+    "taggable": true
+  },
+  "typeName": "Volcengine::TransitRouter::TransitRouterMulticastDomain"
+}

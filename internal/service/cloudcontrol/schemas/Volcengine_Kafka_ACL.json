@@ -1,0 +1,104 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/InstanceId",
+    "/properties/UserName",
+    "/properties/Ip",
+    "/properties/ResourceType",
+    "/properties/PatternType",
+    "/properties/Resource",
+    "/properties/AccessPolicy"
+  ],
+  "description": "Kafka ACL rule used to control permissions for specified SASL users to access Topic or Group resources from specified IPs.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/InstanceId",
+      "/properties/UserName",
+      "/properties/Ip",
+      "/properties/ResourceType",
+      "/properties/PatternType",
+      "/properties/Resource",
+      "/properties/AccessPolicy"
+    ],
+    "required": [
+      "/properties/InstanceId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "Kafka:CreateAcl",
+        "Kafka:DescribeAcls"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "Kafka:DeleteAcl",
+        "Kafka:DescribeAcls"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "Kafka:DescribeAcls"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "Kafka:DescribeAcls"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/InstanceId",
+    "/properties/UserName",
+    "/properties/Ip",
+    "/properties/ResourceType",
+    "/properties/PatternType",
+    "/properties/Resource",
+    "/properties/AccessPolicy"
+  ],
+  "properties": {
+    "AccessPolicy": {
+      "description": "Access policy for the rule. Read grants read permission; Write grants write permission. Only one value is allowed—if multiple are provided, only the first takes effect.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "InstanceId": {
+      "description": "Instance ID for the ACL to be created.",
+      "type": "string"
+    },
+    "Ip": {
+      "description": "IP address or subnet allowed by the rule. Supports specifying '*', which allows access from any IP. Separate multiple IPs with ','.",
+      "type": "string"
+    },
+    "PatternType": {
+      "description": "Rule matching method. Literal: exact match; Prefixed: prefix match.",
+      "type": "string"
+    },
+    "Resource": {
+      "description": "Name or prefix of the Topic or Group resource bound to the rule.",
+      "type": "string"
+    },
+    "ResourceType": {
+      "description": "Resource type bound to the rule. Supports configuring 'Topic' or 'Group'.",
+      "type": "string"
+    },
+    "UserName": {
+      "description": "SASL users allowed by the rule. Supports specifying '*', which allows access for any user.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "InstanceId",
+    "UserName",
+    "Ip",
+    "ResourceType",
+    "PatternType",
+    "Resource",
+    "AccessPolicy"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::Kafka::ACL"
+}

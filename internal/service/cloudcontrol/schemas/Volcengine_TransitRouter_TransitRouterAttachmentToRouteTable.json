@@ -1,0 +1,72 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/TransitRouterAttachmentId",
+    "/properties/TransitRouterRouteTableId"
+  ],
+  "description": "The associated forwarding resource of the Transit Router is used to associate a network instance connection (Transit Router Attachment) with a specified Transit Router route table (Route Table). Once associated, traffic from the network instance connection will be forwarded according to the route table.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/TransitRouterRouteTableId",
+      "/properties/TransitRouterAttachmentId"
+    ],
+    "required": [
+      "/properties/TransitRouterRouteTableId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "transitrouter:AssociateTransitRouterAttachmentToRouteTable",
+        "transitrouter:DescribeTransitRouterRouteTableAssociations"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "transitrouter:DissociateTransitRouterAttachmentFromRouteTable",
+        "transitrouter:DescribeTransitRouterRouteTableAssociations"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterRouteTableAssociations"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "transitrouter:DescribeTransitRouterRouteTableAssociations"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/TransitRouterRouteTableId",
+    "/properties/TransitRouterAttachmentId"
+  ],
+  "properties": {
+    "Status": {
+      "description": "Status of the associated forwarding. Possible values: Available (可用), Creating (创建中), Pending (配置中), Deleting (删除中).",
+      "semantic": "status",
+      "type": "string"
+    },
+    "TransitRouterAttachmentId": {
+      "description": "ID of the network instance connection. You can call APIs such as DescribeTransitRouterVpcAttachments, DescribeTransitRouterVpnAttachments, DescribeTransitRouterDirectConnectGatewayAttachments, and DescribeTransitRouterPeerAttachments to obtain the ID of the corresponding type of network instance connection.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "TransitRouterRouteTableId": {
+      "description": "ID of the route table associated with the Transit Router instance. You can call the DescribeTransitRouterRouteTables API to obtain the TR route table ID.",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/Status"
+  ],
+  "required": [
+    "TransitRouterAttachmentId",
+    "TransitRouterRouteTableId"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::TransitRouter::TransitRouterAttachmentToRouteTable"
+}

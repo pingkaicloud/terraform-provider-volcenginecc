@@ -1,0 +1,339 @@
+{
+  "additionalProperties": false,
+  "createOnlyProperties": [
+    "/properties/FileSystemId",
+    "/properties/TaskAction",
+    "/properties/DataType",
+    "/properties/DataStorage",
+    "/properties/DataStoragePath",
+    "/properties/DeletePolicy",
+    "/properties/EnableTlsLog",
+    "/properties/EntryListFileInfo",
+    "/properties/ExportSymlinkPolicy",
+    "/properties/FilesetId",
+    "/properties/SameNameFilePolicy",
+    "/properties/SubPath"
+  ],
+  "definitions": {
+    "DeletePolicy": {
+      "description": "Deletion policy. Required when the task type is Delete (TaskAction = Delete).",
+      "properties": {
+        "DeleteTimeBefore": {
+          "description": "Specify the deletion time (data before this time will be deleted), in milliseconds.",
+          "type": "string"
+        },
+        "Rule": {
+          "description": "Deletion rule. DELETE_TYPE_ONLY_FS: Delete only objects in the file system; DELETE_TYPE_FS_WITH_LATEST_OBJECT: Delete objects in the file system and their latest TOS object versions; DELETE_TYPE_FS_WITH_ALLVERSION_OBJECT: Delete objects in the file system and all their TOS object versions.",
+          "enum": [
+            "DELETE_TYPE_ONLY_FS",
+            "DELETE_TYPE_FS_WITH_LATEST_OBJECT",
+            "DELETE_TYPE_FS_WITH_ALLVERSION_OBJECT"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "Rule"
+      ],
+      "type": "object"
+    },
+    "EntryListFileInfo": {
+      "description": "List file information for task execution.",
+      "properties": {
+        "FileBucket": {
+          "description": "TOS bucket containing the list file for task execution. Required when using a list file from the user's TOS bucket for preheating or settling.",
+          "type": "string"
+        },
+        "FileKey": {
+          "description": "Identifier for the list file used in task execution. For local list files, this is the identifier returned by CreatePreSignedUrl; for list files in the user's TOS bucket, this is the object path of the list file.",
+          "type": "string"
+        },
+        "FileName": {
+          "description": "Name of the list file for task execution. Required when using either a local list file or a list file from the user's TOS bucket for preheating or settling.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Report": {
+      "description": "Task report.",
+      "properties": {
+        "Path": {
+          "description": "Download link for the report.",
+          "type": "string"
+        },
+        "Type": {
+          "description": "Report type. TotalFiles: all files; FailedFiles: failure report; SuccessFiles: success report; InventoryFiles: reconciliation report.",
+          "enum": [
+            "TotalFiles",
+            "FailedFiles",
+            "SuccessFiles",
+            "InventoryFiles"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "Path",
+        "Type"
+      ],
+      "type": "object"
+    },
+    "TlsInfo": {
+      "description": "TLS log information.",
+      "properties": {
+        "Enable": {
+          "description": "Whether to enable TLS log.",
+          "type": "boolean"
+        },
+        "ProjectId": {
+          "description": "TLS log project ID.",
+          "type": "string"
+        },
+        "ProjectName": {
+          "description": "TLS log project name.",
+          "type": "string"
+        },
+        "ProjectUrl": {
+          "description": "Redirect URL for the TLS log project.",
+          "type": "string"
+        },
+        "TopicEmbeddedUrl": {
+          "description": "Embedded address of the TLS log topic.",
+          "type": "string"
+        },
+        "TopicId": {
+          "description": "TLS log topic ID.",
+          "type": "string"
+        },
+        "TopicName": {
+          "description": "TLS log topic name.",
+          "type": "string"
+        },
+        "TopicUrl": {
+          "description": "Redirect URL for TLS log topic.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "description": "vePFS data flow task. Used to perform preheating (Import), settling (Export), reconciliation (Inventory), and deletion (Delete) operations between the vePFS file system and TOS bucket.",
+  "filterProperties": {
+    "filterableProperties": [
+      "/properties/DataFlowTaskId",
+      "/properties/FileSystemId",
+      "/properties/Status",
+      "/properties/TaskAction"
+    ],
+    "required": [
+      "/properties/FileSystemId"
+    ]
+  },
+  "handlers": {
+    "create": {
+      "permissions": [
+        "vepfs:CreateDataFlowTask",
+        "vepfs:DescribeDataFlowTasks"
+      ]
+    },
+    "delete": {
+      "permissions": [
+        "vepfs:DescribeDataFlowTasks",
+        "vepfs:CancelDataFlowTask",
+        "vepfs:DeleteDataFlowTask"
+      ]
+    },
+    "list": {
+      "permissions": [
+        "vepfs:DescribeDataFlowTasks"
+      ]
+    },
+    "read": {
+      "permissions": [
+        "vepfs:DescribeDataFlowTasks"
+      ]
+    }
+  },
+  "primaryIdentifier": [
+    "/properties/FileSystemId",
+    "/properties/DataFlowTaskId"
+  ],
+  "properties": {
+    "CreateTime": {
+      "description": "Task creation time.",
+      "semantic": "createdTime",
+      "type": "string"
+    },
+    "DataFlowTaskId": {
+      "description": "Data flow task ID.",
+      "semantic": "resourceId",
+      "type": "string"
+    },
+    "DataStorage": {
+      "description": "Source storage (TOS bucket) name.",
+      "type": "string"
+    },
+    "DataStoragePath": {
+      "description": "Bucket path prefix.",
+      "type": "string"
+    },
+    "DataType": {
+      "description": "Data type operated on by the task. Metadata: Metadata; MetaAndData: Metadata and data.",
+      "enum": [
+        "Metadata",
+        "MetaAndData"
+      ],
+      "type": "string"
+    },
+    "DeletePolicy": {
+      "$ref": "#/definitions/DeletePolicy",
+      "description": "Deletion policy. Required when the task type is Delete (TaskAction = Delete)."
+    },
+    "EnableTlsLog": {
+      "description": "Whether to enable TLS log analysis. Only provided in the create request; the server responds with detailed information via TlsInfo.",
+      "type": "boolean"
+    },
+    "EndTime": {
+      "description": "Task end time.",
+      "type": "string"
+    },
+    "EntryListFileInfo": {
+      "$ref": "#/definitions/EntryListFileInfo",
+      "description": "List file information for task execution."
+    },
+    "EntryListFileUrl": {
+      "description": "Download link for the list file used in task execution.",
+      "type": "string"
+    },
+    "ExecCount": {
+      "description": "Completed operations (applies to preheating and settling tasks).",
+      "type": "string"
+    },
+    "ExecSize": {
+      "description": "Executed task capacity.",
+      "type": "string"
+    },
+    "ExportSymlinkPolicy": {
+      "description": "Export task symlink handling policy. Skip: skip symlink files; NormalFile: export as independent files.",
+      "enum": [
+        "Skip",
+        "NormalFile"
+      ],
+      "type": "string"
+    },
+    "FailedCount": {
+      "description": "Total number of failures after being added to the queue.",
+      "type": "string"
+    },
+    "FileSystemId": {
+      "description": "File system ID.",
+      "type": "string"
+    },
+    "FilesetId": {
+      "description": "Fileset ID。",
+      "type": "string"
+    },
+    "FilesetPath": {
+      "description": "Fileset path.",
+      "type": "string"
+    },
+    "QueueCount": {
+      "description": "Total number of operations added to the queue (valid for preheating and settling tasks).",
+      "type": "string"
+    },
+    "Reports": {
+      "description": "Task report list.",
+      "insertionOrder": false,
+      "items": {
+        "$ref": "#/definitions/Report"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "SameNameFilePolicy": {
+      "description": "Same-name file policy. Skip: Skip files with the same name; KeepLatest: Keep the latest file; OverWrite: Overwrite files with the same name.",
+      "enum": [
+        "Skip",
+        "KeepLatest",
+        "OverWrite"
+      ],
+      "type": "string"
+    },
+    "StartTime": {
+      "description": "Task start time.",
+      "type": "string"
+    },
+    "Status": {
+      "description": "Task status. Creating: Creating; Running: Running; Finished: Finished; Canceling: Canceling; Canceled: Canceled; Deleting: Deleting; Error: Error; Deleted: Deleted.",
+      "enum": [
+        "Creating",
+        "Running",
+        "Finished",
+        "Canceling",
+        "Canceled",
+        "Deleting",
+        "Error",
+        "Deleted"
+      ],
+      "semantic": "status",
+      "type": "string"
+    },
+    "SubPath": {
+      "description": "Subpath under Fileset (represents the full file system path if Fileset ID is not specified).",
+      "type": "string"
+    },
+    "TaskAction": {
+      "description": "Task type. Import: Preheating task; Export: Settling task; Inventory: Reconciliation task; Delete: Deletion task.",
+      "enum": [
+        "Import",
+        "Export",
+        "Inventory",
+        "Delete"
+      ],
+      "type": "string"
+    },
+    "TlsInfo": {
+      "$ref": "#/definitions/TlsInfo",
+      "description": "TLS log information. Displayed by the server only if TLS log analysis (EnableTlsLog=true) is enabled during creation."
+    },
+    "TotalSize": {
+      "description": "Total task capacity.",
+      "type": "string"
+    },
+    "UpdateTime": {
+      "description": "Task modification time.",
+      "semantic": "updatedTime",
+      "type": "string"
+    }
+  },
+  "readOnlyProperties": [
+    "/properties/DataFlowTaskId",
+    "/properties/Status",
+    "/properties/CreateTime",
+    "/properties/UpdateTime",
+    "/properties/StartTime",
+    "/properties/EndTime",
+    "/properties/FilesetPath",
+    "/properties/TotalSize",
+    "/properties/ExecSize",
+    "/properties/QueueCount",
+    "/properties/ExecCount",
+    "/properties/FailedCount",
+    "/properties/EntryListFileUrl",
+    "/properties/Reports",
+    "/properties/TlsInfo"
+  ],
+  "required": [
+    "FileSystemId",
+    "TaskAction",
+    "DataType"
+  ],
+  "tagging": {
+    "taggable": false
+  },
+  "typeName": "Volcengine::VEPFS::DataFlowTask",
+  "writeOnlyProperties": [
+    "/properties/EnableTlsLog"
+  ]
+}
