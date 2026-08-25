@@ -873,6 +873,20 @@ func TestBuildSourceCredentialsUsesProfileWithoutWarningForIncompleteAKSK(t *tes
 	}
 }
 
+func TestBuildSourceCredentialsUsesOIDCEnvironment(t *testing.T) {
+	t.Setenv("VOLCENGINE_OIDC_TOKEN_FILE", "/var/run/secrets/volcengine.com/serviceaccount/token")
+	t.Setenv("VOLCENGINE_OIDC_ROLE_TRN", "trn:iam::123456789012:role/provider")
+
+	source, diags := buildSourceCredentials(testConfigModel())
+	if diags.HasError() || diags.WarningsCount() != 0 {
+		t.Fatalf("expected OIDC credentials without diagnostics, got %v", diags)
+	}
+	_, err := source.Get()
+	if err == nil || !strings.Contains(err.Error(), "failed to read OIDC token file") {
+		t.Fatalf("expected OIDC provider retrieval error, got %v", err)
+	}
+}
+
 // TestBuildCredentialsWrapsProfileAsAssumeRoleSource verifies Profile credentials and
 // AssumeRole options are passed through their separate source and target layers.
 func TestBuildCredentialsWrapsProfileAsAssumeRoleSource(t *testing.T) {

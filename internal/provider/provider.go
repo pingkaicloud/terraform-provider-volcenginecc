@@ -392,6 +392,10 @@ func buildSourceCredentials(c *configModel) (*credentials.Credentials, diag.Diag
 		return credentials.NewStaticCredentials(c.AccessKey.ValueString(), c.SecretKey.ValueString(), c.SessionToken.ValueString()), diags
 	case c.Profile.ValueString() != "" || c.FilePath.ValueString() != "":
 		return clicreds.NewCliCredentials(c.FilePath.ValueString(), c.Profile.ValueString()), diags
+	case os.Getenv("VOLCENGINE_OIDC_TOKEN_FILE") != "" && os.Getenv("VOLCENGINE_OIDC_ROLE_TRN") != "":
+		// VKE workload identity is the provider's non-secret default source when
+		// the runtime injects the projected token and target role TRN.
+		return credentials.NewCredentials(credentials.NewOIDCCredentialsProviderFromEnv()), diags
 	default:
 		return defaults.NewDefaultCredentialProvider(), diags
 	}
