@@ -1,6 +1,7 @@
 package cloudcontrol
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -9,6 +10,28 @@ import (
 	"github.com/volcengine/terraform-provider-volcenginecc/internal/tfresource"
 	"github.com/volcengine/volcengine-go-sdk/volcengine"
 )
+
+func TestFindResourceByTypeNameAndIDEmptyIdentifierIsNotFound(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]func(context.Context, *ccsdk.CloudControl, string, string, string) (*ccsdk.GetResourceOutput, error){
+		"default":      FindResourceByTypeNameAndID,
+		"with sys tag": FindResourceByTypeNameAndIDWithSysTag,
+	}
+	for name, find := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			output, err := find(context.Background(), nil, "cn-beijing", "Volcengine::VPC::VPC", "")
+			if output != nil {
+				t.Fatalf("find() output = %#v, want nil", output)
+			}
+			if !tfresource.NotFound(err) {
+				t.Fatalf("find() error = %v, want NotFound", err)
+			}
+		})
+	}
+}
 
 func TestNormalizeResourceDescriptionPreservesTagFields(t *testing.T) {
 	desc := &ccsdk.ResourceDescriptionForGetResourceOutput{

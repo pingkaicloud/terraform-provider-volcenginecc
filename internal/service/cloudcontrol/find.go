@@ -16,6 +16,9 @@ import (
 )
 
 func FindResourceByTypeNameAndIDWithSysTag(ctx context.Context, client *cloudcontrol.CloudControl, regionId, typeName, id string) (*cloudcontrol.GetResourceOutput, error) {
+	if id == "" {
+		return nil, &tfresource.NotFoundError{Message: "Empty resource identifier"}
+	}
 	tflog.Debug(ctx, "FindResourceByTypeNameAndID", map[string]interface{}{
 		"cfTypeName": typeName,
 		"id":         id,
@@ -34,6 +37,9 @@ func FindResourceByTypeNameAndIDWithSysTag(ctx context.Context, client *cloudcon
 	return output, nil
 }
 func FindResourceByTypeNameAndID(ctx context.Context, client *cloudcontrol.CloudControl, regionId, typeName, id string) (*cloudcontrol.GetResourceOutput, error) {
+	if id == "" {
+		return nil, &tfresource.NotFoundError{Message: "Empty resource identifier"}
+	}
 	tflog.Debug(ctx, "FindResourceByTypeNameAndID", map[string]interface{}{
 		"cfTypeName": typeName,
 		"id":         id,
