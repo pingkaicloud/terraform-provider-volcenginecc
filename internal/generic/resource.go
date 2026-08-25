@@ -497,6 +497,9 @@ func (r *genericResource) Create(ctx context.Context, request resource.CreateReq
 		response.Diagnostics.Append(DesiredStateErrorDiag("Plan", err))
 		return
 	}
+	// The framework-only primary identifier is populated for Read/Delete but is
+	// not a Cloud Control create property.
+	delete(targetState, "ID")
 	output, err := cloudControlClient.CreateResourceWithContext(ctx, &cloudcontrol.CreateResourceInput{
 		TypeName:    util.StringPtr(r.ccTypeName),
 		RegionID:    r.provider.Region(ctx),
