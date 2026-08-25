@@ -29,7 +29,7 @@ func ListResourcesByTypeName(ctx context.Context, client *cloudcontrol.CloudCont
 	for {
 		resp, err := client.ListResourceWithContext(ctx, input)
 		if err != nil {
-			return nil, fmt.Errorf("call GetResource failed,resp:%s,err:%v ", util.JsonString(resp), err)
+			return nil, fmt.Errorf("call ListResource failed for type %q: %w", typeName, err)
 		}
 		result.ResourceDescriptions = append(result.ResourceDescriptions, resp.ResourceDescriptions...)
 		if resp.NextToken == nil || *resp.NextToken == "" {

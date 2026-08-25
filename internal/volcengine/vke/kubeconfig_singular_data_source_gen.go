@@ -60,10 +60,12 @@ func kubeconfigDataSource(ctx context.Context) (datasource.DataSource, error) {
 		//
 		//	{
 		//	  "description": "Kubeconfig Text",
+		//	  "sensitive": true,
 		//	  "type": "string"
 		//	}
 		"kubeconfig": schema.StringAttribute{ /*START ATTRIBUTE*/
 			Description: "Kubeconfig Text",
+			Sensitive:   true,
 			Computed:    true,
 		}, /*END ATTRIBUTE*/
 		// Property: KubeconfigId

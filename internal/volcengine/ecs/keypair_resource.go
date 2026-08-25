@@ -155,7 +155,7 @@ func (r *keypairResourceWithPrivateKey) Create(ctx context.Context, request reso
 	output, err := cloudControlClient.CreateResourceWithContext(ctx, &cloudcontrol.CreateResourceInput{
 		TypeName:    util.StringPtr(keypairCloudControlTypeName),
 		RegionID:    r.provider.Region(ctx),
-		ClientToken: util.StringPtr(util.GenerateToken(32)),
+		ClientToken: util.StringPtr(tfcloudcontrol.CreateOperationToken(keypairCloudControlTypeName, r.provider.CreateIdentity(ctx))),
 		TargetState: &targetState,
 	})
 	if err != nil {
@@ -174,10 +174,11 @@ func (r *keypairResourceWithPrivateKey) Create(ctx context.Context, request reso
 		e := output.ProgressEvent
 		event = &e
 	case base.IN_PROGRESS, base.PENDING:
-		taskId := ""
-		if output.TaskID != nil {
-			taskId = *output.TaskID
+		if output.TaskID == nil || *output.TaskID == "" {
+			response.Diagnostics.AddError("Cloud Control API CreateResource", "response did not include a task ID")
+			return
 		}
+		taskId := *output.TaskID
 		tflog.Info(ctx, "Cloud Control API CreateResource waiting task ......  ", map[string]interface{}{
 			"TaskID":    hclog.Fmt("%v", taskId),
 			"RequestID": hclog.Fmt("%v", output.GetRequestId()),

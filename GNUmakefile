@@ -4,10 +4,12 @@ PKG_NAME            ?= internal/volcengine/...
 ACCTEST_TIMEOUT     ?= 180m
 ACCTEST_PARALLELISM ?= 20
 GO_VER              ?= go
-VERSION  			?=0.0.1
+VERSION             ?= 0.0.1
+PROVIDER_VERSION    ?= $(shell cat version/VERSION)
+TERRAFORM           ?= terraform
 
 
-.PHONY: set-version all build default docs docs-all docs-import golangci-lint help lint plural-data-sources resources schemas singular-data-sources test testacc tools
+.PHONY: set-version all build default docs docs-all docs-import golangci-lint help lint plural-data-sources resources schemas schema singular-data-sources test testacc tools
 
 all: set-version schemas resources singular-data-sources plural-data-sources build docs-all ## Generate all schemas, resources, data sources, documentation, and build the provider
 
@@ -45,6 +47,40 @@ resources: prereq-go ## Generate resources
 
 schemas: prereq-go ## Generate schemas
 	$(GO_VER) generate internal/provider/schemas.go
+
+schema: prereq-go ## Export the provider schema for Upjet
+	@if ! command -v $(TERRAFORM) >/dev/null 2>&1; then \
+		echo "make: $(TERRAFORM) is required to export schema" >&2; \
+		exit 1; \
+	fi
+	@set -eu; \
+	work="$$(mktemp -d)"; \
+	trap 'rm -rf "$$work"' EXIT; \
+	platform="$$($(GO_VER) env GOOS)_$$($(GO_VER) env GOARCH)"; \
+	mirror="$$work/mirror/registry.terraform.io/volcengine/volcenginecc/$(PROVIDER_VERSION)/$$platform"; \
+	mkdir -p "$$mirror" "$$work/config"; \
+	$(GO_VER) build -o "$$mirror/terraform-provider-volcenginecc_v$(PROVIDER_VERSION)" .; \
+	printf '%s\n' \
+		'terraform {' \
+		'  required_providers {' \
+		'    volcenginecc = {' \
+		'      source  = "volcengine/volcenginecc"' \
+		'      version = "$(PROVIDER_VERSION)"' \
+		'    }' \
+		'  }' \
+		'}' > "$$work/config/main.tf"; \
+	printf '%s\n' \
+		'provider_installation {' \
+			'  filesystem_mirror {' \
+				'    path    = "'"$$work"'/mirror"' \
+				'    include = ["registry.terraform.io/volcengine/volcenginecc"]' \
+			'  }' \
+			'  direct {' \
+				'    exclude = ["registry.terraform.io/volcengine/volcenginecc"]' \
+			'  }' \
+		'}' > "$$work/terraform.rc"; \
+	TF_CLI_CONFIG_FILE="$$work/terraform.rc" $(TERRAFORM) -chdir="$$work/config" init -input=false -no-color >/dev/null; \
+	TF_CLI_CONFIG_FILE="$$work/terraform.rc" $(TERRAFORM) -chdir="$$work/config" providers schema -json > schema.json
 
 test: prereq-go ## Run unit tests
 	$(GO_VER) test $(TEST) $(TESTARGS) -timeout=5m

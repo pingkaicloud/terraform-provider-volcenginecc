@@ -26,19 +26,19 @@ func DeleteResource(ctx context.Context, cloudControlClient *cloudcontrol.CloudC
 		TypeName:    util.StringPtr(typeName),
 		RegionID:    util.StringPtr(region),
 		Identifier:  util.StringPtr(id),
-		ClientToken: util.StringPtr(util.GenerateToken(32)),
+		ClientToken: util.StringPtr(OperationToken("delete", typeName, id, "")),
 	})
 	if err != nil {
 		return wrapCloudControlNotFound(err)
 	}
 	if resp == nil || resp.OperationStatus == nil {
-		return fmt.Errorf("call DeleteResource failed,resp:%s,err:%v ", util.JsonString(resp), err)
-
+		return fmt.Errorf("DeleteResource returned an empty operation status")
 	}
 	taskId := ""
 	status := *resp.OperationStatus
 	if status == base.FAILED {
-		err := fmt.Errorf("invoke DeleteResource handler failed,resp:%s ", util.JsonString(resp))
+		err := fmt.Errorf("DeleteResource failed: status=%q request_id=%q task_id=%q error_code=%q",
+			status, resp.GetRequestId(), util.ToString(resp.TaskID), util.ToString(resp.ErrorCode))
 		if isCloudControlNotFoundProgressEvent(&resp.ProgressEvent) {
 			return &tfresource.NotFoundError{LastError: err}
 		}
@@ -46,9 +46,13 @@ func DeleteResource(ctx context.Context, cloudControlClient *cloudcontrol.CloudC
 	} else if status == base.SUCCESS {
 		return nil
 	} else if status == base.IN_PROGRESS || status == base.PENDING {
+		if resp.TaskID == nil || *resp.TaskID == "" {
+			return fmt.Errorf("call DeleteResource returned %s without a task ID", status)
+		}
 		taskId = *resp.TaskID
 	} else {
-		return fmt.Errorf("invoke DeleteResource handler unknown failed,resp:%s ", util.JsonString(resp))
+		return fmt.Errorf("DeleteResource returned an unexpected status: status=%q request_id=%q task_id=%q",
+			status, resp.GetRequestId(), util.ToString(resp.TaskID))
 	}
 	tflog.Info(ctx, "Cloud Control API DeleteResource waiting task ...... ", map[string]interface{}{
 		"TaskID":    hclog.Fmt("%v", taskId),
@@ -70,30 +74,59 @@ func InvokeGetTask(ctx context.Context, client *cloudcontrol.CloudControl, taskI
 	if err != nil {
 		return nil, err
 	}
+	if output == nil {
+		return nil, fmt.Errorf("GetTask returned an empty response")
+	}
 
 	return &output.ProgressEvent, nil
 }
 
 func AwaitTask(ctx context.Context, client *cloudcontrol.CloudControl, taskId string) (*cloudcontrol.ProgressEvent, bool, error) {
-	// 轮询
-	times := 0
-	AwaitTimeout := 24 * time.Hour
-	SleepTime := 10 * time.Second
-	for times < int(AwaitTimeout.Seconds()/SleepTime.Seconds()) {
-		times++
-		if times > 10 {
-			time.Sleep(SleepTime)
-		} else {
-			time.Sleep(time.Duration(times) * time.Second)
+	deadline := time.NewTimer(24 * time.Hour)
+	defer deadline.Stop()
+	initialPoll := time.NewTimer(time.Second)
+	select {
+	case <-ctx.Done():
+		if !initialPoll.Stop() {
+			select {
+			case <-initialPoll.C:
+			default:
+			}
+		}
+		return nil, false, ctx.Err()
+	case <-deadline.C:
+		if !initialPoll.Stop() {
+			select {
+			case <-initialPoll.C:
+			default:
+			}
+		}
+		return nil, false, fmt.Errorf("await task timeout")
+	case <-initialPoll.C:
+	}
+
+	poll := time.NewTicker(10 * time.Second)
+	defer poll.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, false, ctx.Err()
+		case <-deadline.C:
+			return nil, false, fmt.Errorf("await task timeout")
+		case <-poll.C:
 		}
 		output, err := InvokeGetTask(ctx, client, taskId)
 		if err != nil {
-			return nil, false, fmt.Errorf("invoke get task failed,resp:%s,err:%v ", util.JsonString(output), err)
+			return nil, false, fmt.Errorf("invoke get task: %w", err)
+		}
+		if output == nil || output.OperationStatus == nil {
+			return nil, false, fmt.Errorf("invoke get task returned an empty operation status")
 		}
 
 		status := *output.OperationStatus
 		if status == base.FAILED {
-			err := fmt.Errorf("invoke get task failed,resp:%s ", util.JsonString(output))
+			err := fmt.Errorf("get task failed: status=%q task_id=%q type=%q identifier=%q error_code=%q",
+				status, util.ToString(output.TaskID), util.ToString(output.TypeName), util.ToString(output.Identifier), util.ToString(output.ErrorCode))
 			if isCloudControlNotFoundProgressEvent(output) {
 				return nil, false, &tfresource.NotFoundError{LastError: err}
 			}
@@ -103,9 +136,9 @@ func AwaitTask(ctx context.Context, client *cloudcontrol.CloudControl, taskId st
 		} else if status == base.IN_PROGRESS || status == base.PENDING {
 			continue
 		} else {
-			return nil, false, fmt.Errorf("invoke get task unknown failed,resp:%s,err:%v ", util.JsonString(output), err)
+			return nil, false, fmt.Errorf("get task returned an unexpected status: status=%q task_id=%q type=%q identifier=%q",
+				status, util.ToString(output.TaskID), util.ToString(output.TypeName), util.ToString(output.Identifier))
 		}
 
 	}
-	return nil, false, fmt.Errorf("await Task Timeout")
 }

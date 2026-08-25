@@ -726,6 +726,10 @@ func (e Emitter) emitAttribute(tfType string, attributeNameMap map[string]string
 		}
 	}
 
+	if property.Sensitive != nil && *property.Sensitive {
+		e.printf("Sensitive:true,\n")
+	}
+
 	// Return early as attribute validations are not required and additional configurations are not supported for data source.
 	if e.IsDataSource {
 		e.printf("Computed:true,\n")

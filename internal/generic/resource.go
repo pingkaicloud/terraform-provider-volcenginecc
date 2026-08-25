@@ -478,8 +478,8 @@ func (r *genericResource) Create(ctx context.Context, request resource.CreateReq
 
 	cloudControlClient := r.provider.CloudControlAPIClient(ctx)
 
-	tflog.Debug(ctx, "Request.Plan.Raw", map[string]interface{}{
-		"value": hclog.Fmt("%v", request.Plan.Raw),
+	tflog.Debug(ctx, "Resource.Create plan received", map[string]interface{}{
+		"attribute_count": len(r.tfSchema.Attributes),
 	})
 
 	translator := toCloudControl{tfToCfNameMap: r.tfToCcNameMap}
@@ -491,10 +491,6 @@ func (r *genericResource) Create(ctx context.Context, request resource.CreateReq
 		return
 	}
 
-	tflog.Debug(ctx, "Cloud Control DesiredState", map[string]interface{}{
-		"value": desiredState,
-	})
-
 	targetState := make(map[string]any)
 	err = json.Unmarshal([]byte(desiredState), &targetState)
 	if err != nil {
@@ -504,7 +500,7 @@ func (r *genericResource) Create(ctx context.Context, request resource.CreateReq
 	output, err := cloudControlClient.CreateResourceWithContext(ctx, &cloudcontrol.CreateResourceInput{
 		TypeName:    util.StringPtr(r.ccTypeName),
 		RegionID:    r.provider.Region(ctx),
-		ClientToken: util.StringPtr(util.GenerateToken(32)),
+		ClientToken: util.StringPtr(tfcloudcontrol.CreateOperationToken(r.ccTypeName, r.provider.CreateIdentity(ctx))),
 		TargetState: &targetState,
 	})
 
@@ -521,15 +517,21 @@ func (r *genericResource) Create(ctx context.Context, request resource.CreateReq
 	taskId := ""
 	Success := false
 	if *output.OperationStatus == base.FAILED {
-		apiErr := fmt.Errorf("invoke create handler failed status,resp:%s,err:%v ", util.JsonString(output), nil)
+		apiErr := fmt.Errorf("create failed: status=%q request_id=%q task_id=%q error_code=%q",
+			*output.OperationStatus, output.GetRequestId(), util.ToString(output.TaskID), util.ToString(output.ErrorCode))
 		response.Diagnostics.Append(ServiceOperationErrorDiag("Cloud Control API Failed", "CreateResource", apiErr))
 		return
 	} else if *output.OperationStatus == base.SUCCESS {
 		Success = true
 	} else if *output.OperationStatus == base.IN_PROGRESS || *output.OperationStatus == base.PENDING {
+		if output.TaskID == nil || *output.TaskID == "" {
+			response.Diagnostics.AddError("Cloud Control API CreateResource", "response did not include a task ID")
+			return
+		}
 		taskId = *output.TaskID
 	} else {
-		apiErr := fmt.Errorf("invoke create handler other status,resp:%s,err:%v ", util.JsonString(output), nil)
+		apiErr := fmt.Errorf("create returned an unexpected status: status=%q request_id=%q task_id=%q",
+			*output.OperationStatus, output.GetRequestId(), util.ToString(output.TaskID))
 		response.Diagnostics.Append(ServiceOperationErrorDiag("Cloud Control API Failed", "CreateResource", apiErr))
 		return
 	}
@@ -537,13 +539,17 @@ func (r *genericResource) Create(ctx context.Context, request resource.CreateReq
 		"TaskID":    hclog.Fmt("%v", taskId),
 		"RequestID": hclog.Fmt("%v", output.GetRequestId()),
 	})
-	var event *cloudcontrol.ProgressEvent
+	var event = &output.ProgressEvent
 	if !Success {
 		event, _, err = tfcloudcontrol.AwaitTask(ctx, cloudControlClient, taskId)
 		if err != nil {
 			response.Diagnostics.Append(ServiceOperationErrorDiag("Cloud Control API Failed", "GetTask", err))
 			return
 		}
+	}
+	if event == nil || event.Identifier == nil || *event.Identifier == "" {
+		response.Diagnostics.AddError("Cloud Control API CreateResource", "successful response did not include a resource identifier")
+		return
 	}
 	id := *event.Identifier
 
@@ -568,10 +574,6 @@ func (r *genericResource) Create(ctx context.Context, request resource.CreateReq
 		return
 	}
 
-	tflog.Debug(ctx, "Response.State.Raw", map[string]interface{}{
-		"value": hclog.Fmt("%v", response.State.Raw),
-	})
-
 	traceExit(ctx, "Resource.Create")
 }
 
@@ -580,10 +582,6 @@ func (r *genericResource) Read(ctx context.Context, request resource.ReadRequest
 	ctx = r.bootstrapContext(ctx)
 
 	traceEntry(ctx, "Resource.Read")
-
-	tflog.Debug(ctx, "Request.State.Raw", map[string]interface{}{
-		"value": hclog.Fmt("%v", request.State.Raw),
-	})
 
 	client := r.provider.CloudControlAPIClient(ctx)
 
@@ -612,7 +610,6 @@ func (r *genericResource) Read(ctx context.Context, request resource.ReadRequest
 	}
 	tflog.Debug(ctx, "Cloud Control API GetResource", map[string]interface{}{
 		"identifier": util.ToString(description.ResourceDescription.Identifier),
-		"value":      util.ToString(description.ResourceDescription.Properties),
 	})
 	translator := toTerraform{cfToTfNameMap: r.ccToTfNameMap}
 	schema := currentState.Schema
@@ -673,10 +670,6 @@ func (r *genericResource) Read(ctx context.Context, request resource.ReadRequest
 
 		return
 	}
-
-	tflog.Debug(ctx, "Response.State.Raw", map[string]interface{}{
-		"value": hclog.Fmt("%v", response.State.Raw),
-	})
 
 	traceExit(ctx, "Resource.Read")
 }
@@ -819,7 +812,6 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 	}
 	tflog.Debug(ctx, "Cloud Control API GetResource", map[string]interface{}{
 		"identifier": util.ToString(description.ResourceDescription.Identifier),
-		"value":      util.ToString(description.ResourceDescription.Properties),
 	})
 	remoteDesiredState := util.ToString(description.ResourceDescription.Properties)
 	currentDesiredState, err = mergeLocalWithRemoteForSets(currentDesiredState, remoteDesiredState, r.tfSchema.Attributes, r.ccToTfNameMap)
@@ -864,45 +856,49 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 		return
 	}
 
-	tflog.Debug(ctx, "Cloud Control API PatchDocument", map[string]interface{}{
-		"value": patchDocument,
-	})
 	PatchDocumentArray := make([]any, 0)
 	err = json.Unmarshal([]byte(patchDocument), &PatchDocumentArray)
 	if err != nil {
 		response.Diagnostics.Append(DesiredStateErrorDiag("Plan", err))
 		return
 	}
+	tflog.Debug(ctx, "Cloud Control API PatchDocument prepared", map[string]interface{}{
+		"operation_count": len(PatchDocumentArray),
+	})
 	output, err := cloudControlClient.UpdateResourceWithContext(ctx, &cloudcontrol.UpdateResourceInput{
 		TypeName:      util.StringPtr(r.ccTypeName),
 		RegionID:      util.StringPtr(r.provider.Region(ctx)),
 		Identifier:    util.StringPtr(id),
-		ClientToken:   util.StringPtr(util.GenerateToken(32)),
+		ClientToken:   util.StringPtr(tfcloudcontrol.OperationToken("update", r.ccTypeName, id, patchDocument)),
 		PatchDocument: PatchDocumentArray,
 	})
 	if err != nil {
-		apiErr := fmt.Errorf("invoke create handler failed status,resp:%s,err:%v ", util.JsonString(output), nil)
-		response.Diagnostics.Append(ServiceOperationErrorDiag("Cloud Control API", "UpdateResource", apiErr))
+		response.Diagnostics.Append(ServiceOperationErrorDiag("Cloud Control API", "UpdateResource", err))
 		return
 	}
 	if output == nil || output.OperationStatus == nil {
-		apiErr := fmt.Errorf("invoke create handler failed,resp:%s,err:%v ", util.JsonString(output), err)
-		response.Diagnostics.Append(ServiceOperationErrorDiag("Cloud Control API", "UpdateResource", apiErr))
+		response.Diagnostics.Append(ServiceOperationEmptyResultDiag("Cloud Control API", "UpdateResource"))
 		return
 	}
 	taskId := ""
 	Success := false
 	status := *output.OperationStatus
 	if status == base.FAILED {
-		apiErr := fmt.Errorf("invoke update handler failed,resp:%s,err:%v ", util.JsonString(output), err)
+		apiErr := fmt.Errorf("update failed: status=%q request_id=%q task_id=%q",
+			status, output.GetRequestId(), util.ToString(output.TaskID))
 		response.Diagnostics.Append(ServiceOperationErrorDiag("Cloud Control API", "UpdateResource", apiErr))
 		return
 	} else if status == base.SUCCESS {
 		Success = true
 	} else if status == base.IN_PROGRESS || status == base.PENDING {
+		if output.TaskID == nil || *output.TaskID == "" {
+			response.Diagnostics.AddError("Cloud Control API UpdateResource", "response did not include a task ID")
+			return
+		}
 		taskId = *output.TaskID
 	} else {
-		apiErr := fmt.Errorf("invoke update handler others status,resp:%s,err:%v ", util.JsonString(output), err)
+		apiErr := fmt.Errorf("update returned an unexpected status: status=%q request_id=%q task_id=%q",
+			status, output.GetRequestId(), util.ToString(output.TaskID))
 		response.Diagnostics.Append(ServiceOperationErrorDiag("Cloud Control API", "UpdateResource", apiErr))
 		return
 	}

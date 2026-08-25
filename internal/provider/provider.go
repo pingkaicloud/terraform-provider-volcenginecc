@@ -47,9 +47,10 @@ const (
 // providerData is returned from the provider's Configure method and
 // is passed to each resource and data source in their Configure methods.
 type providerData struct {
-	ccAPIClient *cloudcontrol.CloudControl
-	logger      baselogging.Logger
-	region      string
+	ccAPIClient   *cloudcontrol.CloudControl
+	logger        baselogging.Logger
+	region        string
+	crossplaneUID string
 }
 
 func (p *providerData) CloudControlAPIClient(_ context.Context) *cloudcontrol.CloudControl {
@@ -58,6 +59,10 @@ func (p *providerData) CloudControlAPIClient(_ context.Context) *cloudcontrol.Cl
 
 func (p *providerData) Region(_ context.Context) string {
 	return p.region
+}
+
+func (p *providerData) CreateIdentity(_ context.Context) string {
+	return p.crossplaneUID
 }
 
 func (p *providerData) RegisterLogger(ctx context.Context) context.Context {
@@ -88,17 +93,24 @@ func (p *VolcengineCCProvider) Schema(ctx context.Context, request provider.Sche
 			"access_key": schema.StringAttribute{
 				Description: "The Access Key for Volcengine Provider. It can also be sourced from the `VOLCENGINE_ACCESS_KEY` environment variable",
 				Optional:    true,
+				Sensitive:   true,
 			},
 			"secret_key": schema.StringAttribute{
 				Description: "The Secret Key for Volcengine Provider. It can also be sourced from the `VOLCENGINE_SECRET_KEY` environment variable",
 				Optional:    true,
+				Sensitive:   true,
 			},
 			"session_token": schema.StringAttribute{
 				Description: "The Session Token for Volcengine Provider. It can also be sourced from the `VOLCENGINE_SESSION_TOKEN` environment variable",
 				Optional:    true,
+				Sensitive:   true,
 			},
 			"region": schema.StringAttribute{
 				Description: "The Region for Volcengine Provider. It must be provided, but it can also be sourced from the `VOLCENGINE_REGION` environment variable",
+				Optional:    true,
+			},
+			"crossplane_uid": schema.StringAttribute{
+				Description: "Internal Crossplane managed resource identity used for create request idempotency.",
 				Optional:    true,
 			},
 			"disable_ssl": schema.BoolAttribute{
@@ -179,6 +191,7 @@ type configModel struct {
 	SecretKey           types.String    `tfsdk:"secret_key"`
 	SessionToken        types.String    `tfsdk:"session_token"`
 	Region              types.String    `tfsdk:"region"`
+	CrossplaneUID       types.String    `tfsdk:"crossplane_uid"`
 	DisableSSL          types.Bool      `tfsdk:"disable_ssl"`
 	CustomerHeaders     types.String    `tfsdk:"customer_headers"`
 	ProxyURL            types.String    `tfsdk:"proxy_url"`
@@ -769,9 +782,10 @@ func newProviderData(ctx context.Context, c *configModel) (*providerData, diag.D
 	}
 
 	providerData := &providerData{
-		ccAPIClient: cloudcontrolClient,
-		logger:      logger,
-		region:      c.Region.String(),
+		ccAPIClient:   cloudcontrolClient,
+		logger:        logger,
+		region:        c.Region.String(),
+		crossplaneUID: c.CrossplaneUID.ValueString(),
 	}
 
 	return providerData, diags

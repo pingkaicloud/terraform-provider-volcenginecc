@@ -14,5 +14,9 @@ type Provider interface {
 
 	Region(ctx context.Context) string
 
+	// CreateIdentity returns the stable identity of the logical resource being
+	// created, when the provider is embedded by a controller such as Upjet.
+	CreateIdentity(ctx context.Context) string
+
 	RegisterLogger(ctx context.Context) context.Context
 }

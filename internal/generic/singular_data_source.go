@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -119,8 +118,8 @@ func (sd *genericSingularDataSource) Read(ctx context.Context, request datasourc
 		return
 	}
 
-	tflog.Debug(ctx, "Response.State.Raw", map[string]interface{}{
-		"value": hclog.Fmt("%v", response.State.Raw),
+	tflog.Debug(ctx, "Cloud Control API GetResource", map[string]interface{}{
+		"identifier": util.ToString(description.ResourceDescription.Identifier),
 	})
 
 	traceExit(ctx, "SingularDataSource.Read")

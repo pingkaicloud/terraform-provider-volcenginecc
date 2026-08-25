@@ -72,10 +72,12 @@ func kubeconfigResource(ctx context.Context) (resource.Resource, error) {
 		//
 		//	{
 		//	  "description": "Kubeconfig Text",
+		//	  "sensitive": true,
 		//	  "type": "string"
 		//	}
 		"kubeconfig": schema.StringAttribute{ /*START ATTRIBUTE*/
 			Description: "Kubeconfig Text",
+			Sensitive:   true,
 			Computed:    true,
 			PlanModifiers: []planmodifier.String{ /*START PLAN MODIFIERS*/
 				stringplanmodifier.UseStateForUnknown(),

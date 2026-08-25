@@ -72,6 +72,7 @@ type Property struct {
 	Ref               *Reference               `json:"$ref,omitempty"`
 	RelationshipRef   *PropertyRelationshipRef `json:"relationshipRef,omitempty"`
 	Required          []string                 `json:"required,omitempty"`
+	Sensitive         *bool                    `json:"sensitive,omitempty"`
 	Type              *Type                    `json:"type,omitempty"`
 	UniqueItems       *bool                    `json:"uniqueItems,omitempty"`
 }

@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
@@ -85,8 +84,8 @@ func (pd *genericPluralDataSource) Read(ctx context.Context, _ datasource.ReadRe
 		Raw:    val,
 	}
 
-	tflog.Debug(ctx, "Response.State.Raw", map[string]interface{}{
-		"value": hclog.Fmt("%v", response.State.Raw),
+	tflog.Debug(ctx, "Cloud Control API ListResources", map[string]interface{}{
+		"resource_count": len(descriptions.ResourceDescriptions),
 	})
 
 	traceExit(ctx, "PluralDataSource.Read")

@@ -66,6 +66,22 @@ func TestProviderProxyAuthorizationSchema(t *testing.T) {
 	}
 }
 
+func TestProviderCrossplaneUIDSchema(t *testing.T) {
+	var response frameworkprovider.SchemaResponse
+	(&VolcengineCCProvider{}).Schema(context.Background(), frameworkprovider.SchemaRequest{}, &response)
+
+	attribute, ok := response.Schema.Attributes["crossplane_uid"].(providerschema.StringAttribute)
+	if !ok {
+		t.Fatal("crossplane_uid is not a string attribute")
+	}
+	if !attribute.Optional {
+		t.Error("crossplane_uid must be optional")
+	}
+	if attribute.Sensitive {
+		t.Error("crossplane_uid must not be sensitive")
+	}
+}
+
 func TestSetProxyDefaultsFromEnvironment(t *testing.T) {
 	t.Run("environment values are used when configuration is absent", func(t *testing.T) {
 		clearProxyEnvironment(t)
