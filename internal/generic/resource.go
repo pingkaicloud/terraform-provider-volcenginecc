@@ -465,6 +465,11 @@ func (r *genericResource) ModifyPlan(ctx context.Context, request resource.Modif
 			response.Diagnostics.AddError("Unable to normalize VKE NodePool plan", err.Error())
 			return
 		}
+		normalized, err = normalizeVKENodePoolSecurityGroupIDsPlan(request.State.Raw, normalized)
+		if err != nil {
+			response.Diagnostics.AddError("Unable to normalize VKE NodePool plan", err.Error())
+			return
+		}
 		plan = normalized
 		response.Plan.Raw = plan
 	}
@@ -855,6 +860,14 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 			response.Diagnostics.AddError(
 				"Creation Of JSON Patch Unsuccessful",
 				fmt.Sprintf("Unable to normalize the NodePool update before creating a JSON Patch. Original Error: %s", err.Error()),
+			)
+			return
+		}
+		currentDesiredState, plannedDesiredState, _, err = suppressVKENodePoolInjectedSecurityGroups(currentDesiredState, plannedDesiredState)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Creation Of JSON Patch Unsuccessful",
+				fmt.Sprintf("Unable to normalize the NodePool security groups before creating a JSON Patch. Original Error: %s", err.Error()),
 			)
 			return
 		}

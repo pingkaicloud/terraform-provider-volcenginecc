@@ -69,6 +69,80 @@ func TestNormalizeVKENodePoolDesiredReplicasPlan(t *testing.T) {
 	}
 }
 
+func TestNormalizeVKENodePoolSecurityGroupIDsPlan(t *testing.T) {
+	t.Parallel()
+
+	resourceType := vkeNodePoolTestType()
+	nodeSG := "sg-node"
+	clusterSG := "sg-cluster"
+	tests := map[string]struct {
+		state         tftypes.Value
+		plan          tftypes.Value
+		wantIDs       []string
+		wantUnchanged bool
+	}{
+		"keeps injected cluster sg when config is subset": {
+			state:   vkeNodePoolTestValue(resourceType, "pool-id", true, int64Ptr(1), int64Ptr(0), nodeSG, clusterSG),
+			plan:    vkeNodePoolTestValue(resourceType, "pool-id", true, int64Ptr(1), int64Ptr(0), nodeSG),
+			wantIDs: []string{nodeSG, clusterSG},
+		},
+		"keeps planned set when adding a new sg": {
+			state:         vkeNodePoolTestValue(resourceType, "pool-id", true, int64Ptr(1), int64Ptr(0), nodeSG, clusterSG),
+			plan:          vkeNodePoolTestValue(resourceType, "pool-id", true, int64Ptr(1), int64Ptr(0), nodeSG, "sg-new"),
+			wantUnchanged: true,
+		},
+		"create without prior keeps planned set": {
+			state:         tftypes.NewValue(resourceType, nil),
+			plan:          vkeNodePoolTestValue(resourceType, nil, true, int64Ptr(0), int64Ptr(0), nodeSG),
+			wantUnchanged: true,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := normalizeVKENodePoolSecurityGroupIDsPlan(tt.state, tt.plan)
+			if err != nil {
+				t.Fatalf("normalizeVKENodePoolSecurityGroupIDsPlan() error = %v", err)
+			}
+			if tt.wantUnchanged {
+				if !got.Equal(tt.plan) {
+					t.Fatalf("planned state = %s, want unchanged %s", got, tt.plan)
+				}
+				return
+			}
+			ids, _, ok := vkeNodePoolSecurityGroupIDSet(got)
+			if !ok {
+				t.Fatal("planned state missing security_group_ids")
+			}
+			if !stringSetEqual(ids, tt.wantIDs) {
+				t.Fatalf("security_group_ids = %v, want %v", ids, tt.wantIDs)
+			}
+		})
+	}
+}
+
+func TestNormalizeVKENodePoolSecurityGroupIDsPlanDiffPath(t *testing.T) {
+	t.Parallel()
+
+	resourceType := vkeNodePoolTestType()
+	prior := vkeNodePoolTestValue(resourceType, "pool-id", true, int64Ptr(1), int64Ptr(0), "sg-node", "sg-cluster")
+	planned := vkeNodePoolTestValue(resourceType, "pool-id", true, int64Ptr(1), int64Ptr(0), "sg-node")
+
+	before := filteredPlanDiffPaths(t, planned, prior)
+	if len(before) != 1 || !strings.Contains(before[0], vkeNodePoolSecurityGroupIDsAttr) {
+		t.Fatalf("pre-normalize filtered diff paths = %v, want only %s", before, vkeNodePoolSecurityGroupIDsAttr)
+	}
+
+	normalized, err := normalizeVKENodePoolSecurityGroupIDsPlan(prior, planned)
+	if err != nil {
+		t.Fatalf("normalizeVKENodePoolSecurityGroupIDsPlan() error = %v", err)
+	}
+	after := filteredPlanDiffPaths(t, normalized, prior)
+	if len(after) != 0 {
+		t.Fatalf("post-normalize filtered diff paths = %v, want none", after)
+	}
+}
+
 func TestNormalizeVKENodePoolDesiredReplicasPlanDiffPath(t *testing.T) {
 	t.Parallel()
 
@@ -99,18 +173,42 @@ func vkeNodePoolTestType() tftypes.Object {
 			"desired_replicas": tftypes.Number,
 			"min_replicas":     tftypes.Number,
 		}},
+		"node_config": tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+			"security": tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+				"security_group_ids": tftypes.Set{ElementType: tftypes.String},
+			}},
+		}},
 	}}
 }
 
-func vkeNodePoolTestValue(resourceType tftypes.Type, id any, enabled bool, desired *int64, min *int64) tftypes.Value {
+func vkeNodePoolTestValue(resourceType tftypes.Type, id any, enabled bool, desired *int64, min *int64, securityGroupIDs ...string) tftypes.Value {
+	objectType := resourceType.(tftypes.Object)
+	nodeConfigType := objectType.AttributeTypes["node_config"].(tftypes.Object)
+	securityType := nodeConfigType.AttributeTypes["security"].(tftypes.Object)
 	return tftypes.NewValue(resourceType, map[string]tftypes.Value{
 		"id": tftypes.NewValue(tftypes.String, id),
-		"auto_scaling": tftypes.NewValue(resourceType.(tftypes.Object).AttributeTypes["auto_scaling"], map[string]tftypes.Value{
+		"auto_scaling": tftypes.NewValue(objectType.AttributeTypes["auto_scaling"], map[string]tftypes.Value{
 			"enabled":          tftypes.NewValue(tftypes.Bool, enabled),
 			"desired_replicas": vkeNodePoolNumberValue(desired),
 			"min_replicas":     vkeNodePoolNumberValue(min),
 		}),
+		"node_config": tftypes.NewValue(nodeConfigType, map[string]tftypes.Value{
+			"security": tftypes.NewValue(securityType, map[string]tftypes.Value{
+				"security_group_ids": vkeNodePoolSecurityGroupIDValue(securityType.AttributeTypes["security_group_ids"], securityGroupIDs),
+			}),
+		}),
 	})
+}
+
+func vkeNodePoolSecurityGroupIDValue(setType tftypes.Type, ids []string) tftypes.Value {
+	if ids == nil {
+		return tftypes.NewValue(setType, nil)
+	}
+	values := make([]tftypes.Value, 0, len(ids))
+	for _, id := range ids {
+		values = append(values, tftypes.NewValue(tftypes.String, id))
+	}
+	return tftypes.NewValue(setType, values)
 }
 
 func vkeNodePoolNumberValue(value *int64) tftypes.Value {

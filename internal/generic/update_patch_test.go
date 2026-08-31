@@ -94,3 +94,53 @@ func TestSuppressVKENodePoolDesiredReplicasDoesNotCallUpdateWhenOnlyDesiredDiffe
 		t.Fatalf("Cloud Control patch = %s, want [] so UpdateResource is not called", patch)
 	}
 }
+
+func TestSuppressVKENodePoolInjectedSecurityGroups(t *testing.T) {
+	current, planned, changed, err := suppressVKENodePoolInjectedSecurityGroups(
+		`{"NodeConfig":{"Security":{"SecurityGroupIds":["sg-node","sg-cluster"]}}}`,
+		`{"NodeConfig":{"Security":{"SecurityGroupIds":["sg-node"]}}}`,
+	)
+	if err != nil {
+		t.Fatalf("suppressVKENodePoolInjectedSecurityGroups() error = %v", err)
+	}
+	if !changed {
+		t.Fatal("changed = false, want true")
+	}
+	ids, ok := vkeNodePoolSecurityGroupIDsJSON(mustJSONMap(t, planned))
+	if !ok || !stringSetEqual(ids, []string{"sg-node", "sg-cluster"}) {
+		t.Fatalf("planned SecurityGroupIds = %v, want injected cluster sg kept", ids)
+	}
+	patch, err := patchDocument(current, planned)
+	if err != nil {
+		t.Fatalf("patchDocument() error = %v", err)
+	}
+	if patch != "[]" {
+		t.Fatalf("Cloud Control patch = %s, want [] so UpdateResource is not called", patch)
+	}
+}
+
+func TestSuppressVKENodePoolInjectedSecurityGroupsKeepsAdd(t *testing.T) {
+	_, planned, changed, err := suppressVKENodePoolInjectedSecurityGroups(
+		`{"NodeConfig":{"Security":{"SecurityGroupIds":["sg-node","sg-cluster"]}}}`,
+		`{"NodeConfig":{"Security":{"SecurityGroupIds":["sg-node","sg-new"]}}}`,
+	)
+	if err != nil {
+		t.Fatalf("suppressVKENodePoolInjectedSecurityGroups() error = %v", err)
+	}
+	if changed {
+		t.Fatal("changed = true, want false for a real security group add")
+	}
+	ids, ok := vkeNodePoolSecurityGroupIDsJSON(mustJSONMap(t, planned))
+	if !ok || !stringSetEqual(ids, []string{"sg-node", "sg-new"}) {
+		t.Fatalf("planned SecurityGroupIds = %v, want configured add kept", ids)
+	}
+}
+
+func mustJSONMap(t *testing.T, raw string) map[string]any {
+	t.Helper()
+	var document map[string]any
+	if err := json.Unmarshal([]byte(raw), &document); err != nil {
+		t.Fatal(err)
+	}
+	return document
+}

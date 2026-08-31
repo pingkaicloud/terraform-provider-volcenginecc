@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
@@ -100,6 +101,50 @@ func TestPlanResourceChangeReportsDesiredReplicasDiffPath(t *testing.T) {
 	}
 }
 
+func TestPlanResourceChangeKeepsInjectedSecurityGroups(t *testing.T) {
+	t.Parallel()
+
+	resourceType := vkeNodePoolTestType()
+	prior := vkeNodePoolTestValue(resourceType, "pool-id", true, int64Ptr(0), int64Ptr(0), "sg-node", "sg-cluster")
+	proposed := vkeNodePoolTestValue(resourceType, "pool-id", true, int64Ptr(0), int64Ptr(0), "sg-node")
+	before := filteredPlanDiffPaths(t, proposed, prior)
+	if len(before) != 1 || !strings.Contains(before[0], vkeNodePoolSecurityGroupIDsAttr) {
+		t.Fatalf("proposed filtered diff paths = %v, want only %s", before, vkeNodePoolSecurityGroupIDsAttr)
+	}
+
+	planned := planVKENodePoolChange(t, providerserver.NewProtocol6(vkeNodePoolPlanTestProvider{})(), resourceType,
+		vkeNodePoolTestValue(resourceType, "pool-id", true, int64Ptr(0), int64Ptr(0), "sg-node"),
+		prior,
+		proposed,
+	)
+	ids, _, ok := vkeNodePoolSecurityGroupIDSet(planned)
+	if !ok || !stringSetEqual(ids, []string{"sg-node", "sg-cluster"}) {
+		t.Fatalf("planned security_group_ids = %v, want injected cluster sg kept", ids)
+	}
+	after := filteredPlanDiffPaths(t, planned, prior)
+	if len(after) != 0 {
+		t.Fatalf("planned filtered diff paths = %v, want none", after)
+	}
+}
+
+func TestPlanResourceChangeNormalizesLiveDesiredAndSecurityGroups(t *testing.T) {
+	t.Parallel()
+
+	resourceType := vkeNodePoolTestType()
+	prior := vkeNodePoolTestValue(resourceType, "pool-id", true, int64Ptr(1), int64Ptr(0), "sg-node", "sg-cluster")
+	proposed := vkeNodePoolTestValue(resourceType, "pool-id", true, int64Ptr(0), int64Ptr(0), "sg-node")
+
+	planned := planVKENodePoolChange(t, providerserver.NewProtocol6(vkeNodePoolPlanTestProvider{})(), resourceType,
+		vkeNodePoolTestValue(resourceType, "pool-id", true, nil, int64Ptr(0), "sg-node"),
+		prior,
+		proposed,
+	)
+	after := filteredPlanDiffPaths(t, planned, prior)
+	if len(after) != 0 {
+		t.Fatalf("planned filtered diff paths = %v, want none", after)
+	}
+}
+
 func planVKENodePoolChange(t *testing.T, server tfprotov6.ProviderServer, resourceType tftypes.Type, config, prior, proposed tftypes.Value) tftypes.Value {
 	t.Helper()
 	response, err := server.PlanResourceChange(context.Background(), &tfprotov6.PlanResourceChangeRequest{
@@ -165,17 +210,37 @@ func vkeNodePoolPlanTestResource() resource.Resource {
 				"min_replicas":     schema.Int64Attribute{Optional: true, Computed: true},
 			},
 		},
+		"node_config": schema.SingleNestedAttribute{
+			Optional: true,
+			Computed: true,
+			Attributes: map[string]schema.Attribute{
+				"security": schema.SingleNestedAttribute{
+					Optional: true,
+					Computed: true,
+					Attributes: map[string]schema.Attribute{
+						"security_group_ids": schema.SetAttribute{
+							ElementType: types.StringType,
+							Optional:    true,
+							Computed:    true,
+						},
+					},
+				},
+			},
+		},
 	}}
 	value, err := NewResource(context.Background(),
 		resourceWithCloudControlTypeName(volcengineVKENodePoolType),
 		resourceWithTerraformTypeName("test_vke_node_pool"),
 		resourceWithTerraformSchema(resourceSchema),
 		resourceWithAttributeNameMap(map[string]string{
-			"id":               "ID",
-			"auto_scaling":     "AutoScaling",
-			"enabled":          "Enabled",
-			"desired_replicas": "DesiredReplicas",
-			"min_replicas":     "MinReplicas",
+			"id":                 "ID",
+			"auto_scaling":       "AutoScaling",
+			"enabled":            "Enabled",
+			"desired_replicas":   "DesiredReplicas",
+			"min_replicas":       "MinReplicas",
+			"node_config":        "NodeConfig",
+			"security":           "Security",
+			"security_group_ids": "SecurityGroupIds",
 		}),
 	)
 	if err != nil {
