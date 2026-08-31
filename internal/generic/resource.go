@@ -454,11 +454,25 @@ func (r *genericResource) Configure(_ context.Context, request resource.Configur
 func (r *genericResource) ModifyPlan(ctx context.Context, request resource.ModifyPlanRequest, response *resource.ModifyPlanResponse) {
 	response.Plan = request.Plan
 
-	if len(r.collectionIdentities) == 0 || request.Plan.Raw.IsNull() || !request.Plan.Raw.IsKnown() {
+	if request.Plan.Raw.IsNull() || !request.Plan.Raw.IsKnown() {
 		return
 	}
 
 	plan := request.Plan.Raw
+	if r.ccTypeName == volcengineVKENodePoolType {
+		normalized, err := normalizeVKENodePoolDesiredReplicasPlan(request.State.Raw, plan)
+		if err != nil {
+			response.Diagnostics.AddError("Unable to normalize VKE NodePool plan", err.Error())
+			return
+		}
+		plan = normalized
+		response.Plan.Raw = plan
+	}
+
+	if len(r.collectionIdentities) == 0 {
+		return
+	}
+
 	if !request.State.Raw.IsNull() && request.State.Raw.IsKnown() {
 		var err error
 		plan, err = r.mergeIdentityCollectionPlans(request.Config.Raw, request.State.Raw, plan)

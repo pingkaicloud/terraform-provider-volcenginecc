@@ -74,3 +74,23 @@ func TestSuppressVKENodePoolDesiredReplicasEmptyPatch(t *testing.T) {
 		t.Fatalf("patchDocument() = %s, want []", patch)
 	}
 }
+
+func TestSuppressVKENodePoolDesiredReplicasDoesNotCallUpdateWhenOnlyDesiredDiffers(t *testing.T) {
+	current, planned, changed, err := suppressVKENodePoolDesiredReplicas(
+		`{"AutoScaling":{"Enabled":true,"DesiredReplicas":1,"MinReplicas":0}}`,
+		`{"AutoScaling":{"Enabled":true,"DesiredReplicas":0,"MinReplicas":0}}`,
+	)
+	if err != nil {
+		t.Fatalf("suppressVKENodePoolDesiredReplicas() error = %v", err)
+	}
+	if !changed {
+		t.Fatal("changed = false, want true")
+	}
+	patch, err := patchDocument(current, planned)
+	if err != nil {
+		t.Fatalf("patchDocument() error = %v", err)
+	}
+	if patch != "[]" {
+		t.Fatalf("Cloud Control patch = %s, want [] so UpdateResource is not called", patch)
+	}
+}
