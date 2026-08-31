@@ -835,6 +835,16 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 
 		return
 	}
+	if r.ccTypeName == volcengineVKENodePoolType {
+		currentDesiredState, plannedDesiredState, _, err = suppressVKENodePoolDesiredReplicas(currentDesiredState, plannedDesiredState)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Creation Of JSON Patch Unsuccessful",
+				fmt.Sprintf("Unable to normalize the NodePool update before creating a JSON Patch. Original Error: %s", err.Error()),
+			)
+			return
+		}
+	}
 	if len(r.collectionIdentities) > 0 {
 		// CCAPI must sort the resource document used as the JSON Patch base by
 		// the same identity order before applying these index-based operations.
@@ -868,6 +878,10 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 	tflog.Debug(ctx, "Cloud Control API PatchDocument prepared", map[string]interface{}{
 		"operation_count": len(PatchDocumentArray),
 	})
+	if len(PatchDocumentArray) == 0 {
+		r.finalizeUpdateState(ctx, id, copyPlan, response)
+		return
+	}
 	output, err := cloudControlClient.UpdateResourceWithContext(ctx, &cloudcontrol.UpdateResourceInput{
 		TypeName:      util.StringPtr(r.ccTypeName),
 		RegionID:      util.StringPtr(r.provider.Region(ctx)),
@@ -941,15 +955,18 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 	//	}
 	//}
 
+	r.finalizeUpdateState(ctx, id, copyPlan, response)
+}
+
+func (r *genericResource) finalizeUpdateState(ctx context.Context, id string, copyPlan tftypes.Value, response *resource.UpdateResponse) {
 	// Produce a wholly-known new State by determining the final values for any attributes left unknown in the planned state.
 	response.State.Raw = copyPlan
-
 	response.Diagnostics.Append(r.populateUnknownValues(ctx, id, &response.State)...)
 	if response.Diagnostics.HasError() {
 		return
 	}
 	if len(r.collectionIdentities) > 0 {
-		response.State.Raw, err = r.canonicalizeIdentityCollectionState(response.State.Raw)
+		state, err := r.canonicalizeIdentityCollectionState(response.State.Raw)
 		if err != nil {
 			response.Diagnostics.AddError(
 				"Unable to canonicalize unordered collection state",
@@ -957,6 +974,7 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 			)
 			return
 		}
+		response.State.Raw = state
 	}
 
 	traceExit(ctx, "Resource.Update")
