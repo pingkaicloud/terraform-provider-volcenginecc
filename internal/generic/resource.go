@@ -473,6 +473,15 @@ func (r *genericResource) ModifyPlan(ctx context.Context, request resource.Modif
 		plan = normalized
 		response.Plan.Raw = plan
 	}
+	if r.ccTypeName == volcenginePrivateLinkEndpointServiceType {
+		normalized, err := normalizePrivateLinkEndpointServiceZoneIDsPlan(request.State.Raw, plan)
+		if err != nil {
+			response.Diagnostics.AddError("Unable to normalize PrivateLink EndpointService zone IDs plan", err.Error())
+			return
+		}
+		plan = normalized
+		response.Plan.Raw = plan
+	}
 
 	if len(r.collectionIdentities) == 0 {
 		return
@@ -635,7 +644,16 @@ func (r *genericResource) Read(ctx context.Context, request resource.ReadRequest
 	})
 	translator := toTerraform{cfToTfNameMap: r.ccToTfNameMap}
 	schema := currentState.Schema
-	val, err := translator.FromString(ctx, schema, util.ToString(description.ResourceDescription.Properties))
+	properties, err := r.normalizeCloudControlProperties(util.ToString(description.ResourceDescription.Properties))
+	if err != nil {
+		response.Diagnostics.AddError(
+			"Creation Of Terraform State Unsuccessful",
+			fmt.Sprintf("Unable to normalize Cloud Control API Properties. This is typically an error with the Terraform provider implementation. Original Error: %s", err.Error()),
+		)
+
+		return
+	}
+	val, err := translator.FromString(ctx, schema, properties)
 
 	if err != nil {
 		response.Diagnostics.AddError(
@@ -835,7 +853,11 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 	tflog.Debug(ctx, "Cloud Control API GetResource", map[string]interface{}{
 		"identifier": util.ToString(description.ResourceDescription.Identifier),
 	})
-	remoteDesiredState := util.ToString(description.ResourceDescription.Properties)
+	remoteDesiredState, err := r.normalizeCloudControlProperties(util.ToString(description.ResourceDescription.Properties))
+	if err != nil {
+		response.Diagnostics.Append(DesiredStateErrorDiag("Merge State", err))
+		return
+	}
 	currentDesiredState, err = mergeLocalWithRemoteForSets(currentDesiredState, remoteDesiredState, r.tfSchema.Attributes, r.ccToTfNameMap)
 	if err != nil {
 		response.Diagnostics.Append(DesiredStateErrorDiag("Merge State", err))
@@ -868,6 +890,16 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 			response.Diagnostics.AddError(
 				"Creation Of JSON Patch Unsuccessful",
 				fmt.Sprintf("Unable to normalize the NodePool security groups before creating a JSON Patch. Original Error: %s", err.Error()),
+			)
+			return
+		}
+	}
+	if r.ccTypeName == volcenginePrivateLinkEndpointServiceType {
+		currentDesiredState, plannedDesiredState, _, err = suppressPrivateLinkEndpointServiceZoneIDs(currentDesiredState, plannedDesiredState)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Creation Of JSON Patch Unsuccessful",
+				fmt.Sprintf("Unable to normalize the EndpointService zone IDs before creating a JSON Patch. Original Error: %s", err.Error()),
 			)
 			return
 		}
@@ -1136,7 +1168,17 @@ func (r *genericResource) populateUnknownValues(ctx context.Context, id string, 
 		return diags
 	}
 
-	err = SetUnknownValuesFromResourceModel(ctx, state, unknowns, util.ToString(description.ResourceDescription.Properties), r.ccToTfNameMap)
+	properties, err := r.normalizeCloudControlProperties(util.ToString(description.ResourceDescription.Properties))
+	if err != nil {
+		diags.AddError(
+			"Creation Of Terraform State Unsuccessful",
+			fmt.Sprintf("Unable to set Terraform State Unknown values from Cloud Control API Properties. This is typically an error with the Terraform provider implementation. Original Error: %s", err.Error()),
+		)
+
+		return diags
+	}
+
+	err = SetUnknownValuesFromResourceModel(ctx, state, unknowns, properties, r.ccToTfNameMap)
 
 	if err != nil {
 		diags.AddError(
@@ -1152,6 +1194,17 @@ func (r *genericResource) populateUnknownValues(ctx context.Context, id string, 
 }
 
 // bootstrapContext injects the Cloud Control type name into logger contexts.
+func (r *genericResource) normalizeCloudControlProperties(properties string) (string, error) {
+	if r.ccTypeName != volcenginePrivateLinkEndpointServiceType {
+		return properties, nil
+	}
+	expanded, _, err := expandPrivateLinkEndpointServiceZoneIDsJSON(properties)
+	if err != nil {
+		return "", err
+	}
+	return expanded, nil
+}
+
 func (r *genericResource) bootstrapContext(ctx context.Context) context.Context {
 	ctx = tflog.SetField(ctx, LoggingKeyCCType, r.ccTypeName)
 	//ctx = r.provider.RegisterLogger(ctx)

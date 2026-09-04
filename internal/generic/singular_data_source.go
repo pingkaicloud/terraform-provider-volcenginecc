@@ -94,7 +94,20 @@ func (sd *genericSingularDataSource) Read(ctx context.Context, request datasourc
 
 	translator := toTerraform{cfToTfNameMap: sd.ccToTfNameMap}
 	schema := currentConfig.Schema
-	val, err := translator.FromString(ctx, schema, util.ToString(description.ResourceDescription.Properties))
+	properties := util.ToString(description.ResourceDescription.Properties)
+	if sd.ccTypeName == volcenginePrivateLinkEndpointServiceType {
+		expanded, _, expandErr := expandPrivateLinkEndpointServiceZoneIDsJSON(properties)
+		if expandErr != nil {
+			response.Diagnostics.AddError(
+				"Creation Of Terraform State Unsuccessful",
+				fmt.Sprintf("Unable to normalize Cloud Control API Properties. This is typically an error with the Terraform provider implementation. Original Error: %s", expandErr.Error()),
+			)
+
+			return
+		}
+		properties = expanded
+	}
+	val, err := translator.FromString(ctx, schema, properties)
 
 	if err != nil {
 		response.Diagnostics.AddError(
