@@ -40,22 +40,34 @@
   - 集合、Set、嵌套对象和敏感字段的语义是否与 Cloud Control schema 一致。
 - 不要把 provider 配置字段、内部控制字段或运行时元数据加入资源的 `spec`/`TargetState`。这类字段必须留在 Terraform Provider 配置层。
 
-## 4. Create 幂等与身份语义
+## 4. 操作幂等、ClientToken 与失败重试
 
-Create 的 ClientToken 需要根据调用方的身份能力选择策略：Upjet/Crossplane 同时满足“重试稳定”和“不同逻辑资源隔离”；直接 Terraform 在当前接口限制下优先保证不同逻辑资源隔离。当前约定如下：
+Cloud Control 对相同 ClientToken 回放原 task，**包括已经 `FAILED` 的 task**。因此 ClientToken 只能保护「一次结果未知的尝试」，不能把一个资源的某种操作绑死在一个 token 上。所有 Create / Update / Delete 都必须经过 `internal/service/cloudcontrol.Run`，不要在资源代码里直接调用 `CreateResourceWithContext` / `UpdateResourceWithContext` / `DeleteResourceWithContext`。
 
-- Upjet/Crossplane 场景：Upjet 将 Managed Resource 的 Kubernetes UID 作为 provider 配置 `crossplane_uid` 注入，Provider 使用 `create + TypeName + UID` 生成稳定 Token。
-- 直接 Terraform 场景：没有 `crossplane_uid` 时，使用每次 Create 请求唯一的随机 Token，避免相同类型和相同配置的两个资源发生 Token 碰撞。由于 Terraform Provider 当前拿不到 resource address，这种模式不承诺请求结果丢失后的跨重启幂等。
-- Update/Delete 使用真实云资源 ID 作为身份；不要在这两条路径重新使用 Kubernetes UID。
-- 不要在 Upjet/Crossplane 场景使用随机 Create Token。随机 Token 无法保证 provider 重启或请求重试的幂等性；直接 Terraform 场景只有在没有稳定 resource identity 时才使用随机 Token。
-- 不要仅使用 `ClusterId`、`Type` 等业务字段作为 Create Token 身份。同一集群允许创建多个同类型资源时，这会造成 Token 碰撞。
-- 不要把 `crossplane_uid` 写入 `desiredState`、Cloud Control `TargetState`、资源 CRD 或云资源属性。它只是 Provider 内部的幂等身份。
-- Token 算法变更必须同时更新单元测试，至少覆盖：
-  - 相同 UID 得到相同 Create Token；
-  - 不同 UID 得到不同 Create Token；
-  - UID 为空时生成 32 位随机 Token，并避免相邻请求复用同一 Token。
+执行器约定（`internal/service/cloudcontrol/operation.go`）：
 
-相关实现：`internal/service/cloudcontrol/token.go`、`internal/generic/resource.go`、`internal/provider/provider.go`。
+- 第一次提交总是使用稳定 token（`StableToken`），用于在超时或 provider 重启后接续仍在 `IN_PROGRESS` 的 task，而不是重复开操作。
+- `IN_PROGRESS` / `PENDING` 只轮询 `GetTask`，不再提交。
+- `FAILED` 分类（`retry.go`）：
+  - NotFound：Delete 视为成功，Create/Update 返回 `tfresource.NotFoundError`；
+  - 回放（`EventTime` 早于本次尝试开始，超出 `ReplaySkew`）：不论错误码，换 `AttemptToken` 再提交一次，拿到本次真实结论；
+  - 可重试（`InvalidLock`、`ResourceConflict`、限流、`InternalError`、`ServiceUnavailable` 等，匹配 `ErrorCode` 和 `StatusMessage`）：换 `AttemptToken`，指数退避后重试，受 `MaxAttempts` 与操作 `Timeout` 约束；
+  - 不可重试（权限、参数、配额、未知码）：立即返回，由调用方（Terraform / Crossplane）决定下一轮。下一轮的稳定 token 会回放这次 FAILED，被判定为回放后再真实提交一次，因此任何错误每个 reconcile 最多打一次真实 API，不会热循环。
+- Create 的 `FAILED` 若带 `Identifier`，不得再提交（可能已留下部分资源），直接返回带 Identifier 的错误。
+- 传输层错误（5xx、429、网络）用**同一个** token 重试；请求可能已被接受。
+- 错误信息只含 type、identifier、task_id、request_id、error_code、status_message、event_time、attempts、class；不要拼接请求体。
+
+稳定 token 的身份规则：
+
+- Upjet/Crossplane 场景 Create：Upjet 将 Managed Resource 的 Kubernetes UID 作为 provider 配置 `crossplane_uid` 注入，Provider 使用 `create + TypeName + UID`（`CreateOperationToken`）。
+- 直接 Terraform 场景 Create：没有 `crossplane_uid` 时使用每次唯一的随机 token，避免相同类型相同配置的两个资源碰撞；这种模式不承诺请求结果丢失后的跨重启幂等。
+- Update：`UpdateOperationToken(TypeName, id, patchDocument)`；Delete：`DeleteOperationToken(TypeName, id)`。不要在这两条路径重新使用 Kubernetes UID。
+- 不要仅使用 `ClusterId`、`Type` 等业务字段作为 Create token 身份。
+- 不要把 `crossplane_uid` 写入 `desiredState`、Cloud Control `TargetState`、资源 CRD 或云资源属性。
+
+改 token 算法、执行器或分类表时必须同步 `token_test.go` / `operation_test.go`，至少覆盖：相同 UID 同 token、不同 UID 不同 token、UID 为空随机 token；回放 FAILED → 新 token；`IN_PROGRESS` 只轮询；NotFound 不重提；不可重试一次即停；重试预算耗尽；Create 带 Identifier 不重提；传输错误同 token 重试。
+
+相关实现：`internal/service/cloudcontrol/operation.go`、`retry.go`、`token.go`、`internal/generic/resource.go`、`internal/provider/provider.go`。
 
 ## 5. Provider 配置与 Upjet 集成
 

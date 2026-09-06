@@ -25,15 +25,10 @@ package iam
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
-	hclog "github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/volcengine/terraform-provider-volcenginecc/internal/base"
-	"github.com/volcengine/terraform-provider-volcenginecc/internal/cloudcontrol"
 	"github.com/volcengine/terraform-provider-volcenginecc/internal/customresources"
 	"github.com/volcengine/terraform-provider-volcenginecc/internal/generic"
 	tfcloudcontrol "github.com/volcengine/terraform-provider-volcenginecc/internal/service/cloudcontrol"
@@ -150,52 +145,20 @@ func (r *accesskeyResourceWithSecret) Create(ctx context.Context, request resour
 		return
 	}
 
-	output, err := cloudControlClient.CreateResourceWithContext(ctx, &cloudcontrol.CreateResourceInput{
-		TypeName:    util.StringPtr(accesskeyCloudControlTypeName),
-		RegionID:    r.provider.Region(ctx),
-		ClientToken: util.StringPtr(tfcloudcontrol.CreateOperationToken(accesskeyCloudControlTypeName, r.provider.CreateIdentity(ctx))),
+	result, err := tfcloudcontrol.Run(ctx, cloudControlClient, tfcloudcontrol.Operation{
+		Kind:        tfcloudcontrol.OperationCreate,
+		TypeName:    accesskeyCloudControlTypeName,
+		Region:      r.provider.Region(ctx),
 		TargetState: &targetState,
+		StableToken: tfcloudcontrol.CreateOperationToken(accesskeyCloudControlTypeName, r.provider.CreateIdentity(ctx)),
 	})
 	if err != nil {
 		response.Diagnostics.Append(generic.ServiceOperationErrorDiag("Cloud Control API", "CreateResource", err))
 		return
 	}
-	if output == nil || output.OperationStatus == nil {
-		response.Diagnostics.Append(generic.ServiceOperationEmptyResultDiag("Cloud Control API", "CreateResource"))
-		return
-	}
 
-	var event *cloudcontrol.ProgressEvent
-	switch *output.OperationStatus {
-	case base.SUCCESS:
-		// Synchronous success: the create response itself carries the ProgressEvent.
-		e := output.ProgressEvent
-		event = &e
-	case base.IN_PROGRESS, base.PENDING:
-		if output.TaskID == nil || *output.TaskID == "" {
-			response.Diagnostics.AddError("Cloud Control API CreateResource", "response did not include a task ID")
-			return
-		}
-		taskId := *output.TaskID
-		tflog.Info(ctx, "Cloud Control API CreateResource waiting task ......  ", map[string]interface{}{
-			"TaskID":    hclog.Fmt("%v", taskId),
-			"RequestID": hclog.Fmt("%v", output.GetRequestId()),
-		})
-		event, _, err = tfcloudcontrol.AwaitTask(ctx, cloudControlClient, taskId)
-		if err != nil {
-			response.Diagnostics.Append(generic.ServiceOperationErrorDiag("Cloud Control API Failed", "GetTask", err))
-			return
-		}
-	case base.FAILED:
-		response.Diagnostics.Append(generic.ServiceOperationErrorDiag("Cloud Control API Failed", "CreateResource",
-			fmt.Errorf("invoke create handler failed status,resp:%s ", util.JsonString(output))))
-		return
-	default:
-		response.Diagnostics.Append(generic.ServiceOperationErrorDiag("Cloud Control API Failed", "CreateResource",
-			fmt.Errorf("invoke create handler other status,resp:%s ", util.JsonString(output))))
-		return
-	}
-
+	// The create event is the only response that ever carries SecretAccessKey.
+	event := result.Event
 	if event == nil || event.Identifier == nil {
 		response.Diagnostics.Append(generic.ServiceOperationEmptyResultDiag("Cloud Control API", "CreateResource"))
 		return

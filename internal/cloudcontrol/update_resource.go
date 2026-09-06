@@ -42,12 +42,9 @@ type (
 	}
 
 	UpdateResourceOutput struct {
-		Metadata        *response.ResponseMetadata
-		EventTime       *string
-		TypeName        *string
-		Operation       *string
-		OperationStatus *string
-		TaskID          *string
+		Metadata *response.ResponseMetadata
+
+		ProgressEvent
 	}
 )
 

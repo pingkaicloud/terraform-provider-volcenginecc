@@ -12,10 +12,31 @@ import (
 )
 
 // OperationToken returns a deterministic Cloud Control client token. Cloud
-// Control treats a repeated token as the same operation, which makes retries
-// after a provider restart safe.
+// Control treats a repeated token as the same operation, which makes resuming
+// an in-flight task after a provider restart safe.
+//
+// The same token also replays a task that already FAILED, so callers must not
+// reuse it for a fresh attempt after a failure; see AttemptToken and Run.
 func OperationToken(operation, typeName, identifier, payload string) string {
 	sum := sha256.Sum256([]byte(strings.Join([]string{operation, typeName, identifier, payload}, "\x00")))
+	return hex.EncodeToString(sum[:])[:32]
+}
+
+// UpdateOperationToken is the stable token for applying patchDocument to id.
+func UpdateOperationToken(typeName, id, patchDocument string) string {
+	return OperationToken("update", typeName, id, patchDocument)
+}
+
+// DeleteOperationToken is the stable token for deleting id.
+func DeleteOperationToken(typeName, id string) string {
+	return OperationToken("delete", typeName, id, "")
+}
+
+// AttemptToken derives a fresh token for a new attempt of the operation that
+// stableToken identifies. It is unique per call so Cloud Control starts a new
+// task instead of replaying a FAILED one.
+func AttemptToken(stableToken string) string {
+	sum := sha256.Sum256([]byte(strings.Join([]string{stableToken, util.GenerateToken(32)}, "\x00")))
 	return hex.EncodeToString(sum[:])[:32]
 }
 
