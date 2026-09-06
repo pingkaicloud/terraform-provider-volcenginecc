@@ -472,6 +472,25 @@ func (r *genericResource) ModifyPlan(ctx context.Context, request resource.Modif
 		plan = normalized
 		response.Plan.Raw = plan
 	}
+	if r.ccTypeName == volcengineTOSBucketType {
+		normalized, err := normalizeTOSBucketPolicyPlan(request.State.Raw, plan)
+		if err != nil {
+			response.Diagnostics.AddError("Unable to normalize TOS Bucket policy plan", err.Error())
+			return
+		}
+		normalized, err = normalizeTOSBucketLifecyclePlan(request.State.Raw, normalized)
+		if err != nil {
+			response.Diagnostics.AddError("Unable to normalize TOS Bucket lifecycle plan", err.Error())
+			return
+		}
+		normalized, err = normalizeTOSBucketACLPlan(request.State.Raw, normalized)
+		if err != nil {
+			response.Diagnostics.AddError("Unable to normalize TOS Bucket ACL plan", err.Error())
+			return
+		}
+		plan = normalized
+		response.Plan.Raw = plan
+	}
 	if r.ccTypeName == volcenginePrivateLinkEndpointServiceType {
 		normalized, err := normalizePrivateLinkEndpointServiceZoneIDsPlan(request.State.Raw, plan)
 		if err != nil {
@@ -852,6 +871,32 @@ func (r *genericResource) Update(ctx context.Context, request resource.UpdateReq
 			response.Diagnostics.AddError(
 				"Creation Of JSON Patch Unsuccessful",
 				fmt.Sprintf("Unable to normalize the NodePool security groups before creating a JSON Patch. Original Error: %s", err.Error()),
+			)
+			return
+		}
+	}
+	if r.ccTypeName == volcengineTOSBucketType {
+		currentDesiredState, plannedDesiredState, _, err = suppressTOSBucketInjectedPolicy(currentDesiredState, plannedDesiredState)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Creation Of JSON Patch Unsuccessful",
+				fmt.Sprintf("Unable to normalize the TOS Bucket policy before creating a JSON Patch. Original Error: %s", err.Error()),
+			)
+			return
+		}
+		currentDesiredState, plannedDesiredState, _, err = suppressTOSBucketEmptyLifecyclePrefix(currentDesiredState, plannedDesiredState)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Creation Of JSON Patch Unsuccessful",
+				fmt.Sprintf("Unable to normalize the TOS Bucket lifecycle before creating a JSON Patch. Original Error: %s", err.Error()),
+			)
+			return
+		}
+		currentDesiredState, plannedDesiredState, _, err = suppressTOSBucketInjectedACL(currentDesiredState, plannedDesiredState)
+		if err != nil {
+			response.Diagnostics.AddError(
+				"Creation Of JSON Patch Unsuccessful",
+				fmt.Sprintf("Unable to normalize the TOS Bucket ACL before creating a JSON Patch. Original Error: %s", err.Error()),
 			)
 			return
 		}
