@@ -165,6 +165,8 @@ resource "volcenginecc_vke_node_pool" "VKENodePoolDemo" {
 
 ### Optional
 
+- `kubernetes_version` (String) Target Kubernetes major.minor version. The control plane must already be at this version. Changes upgrade this pool in place with one unavailable node at a time, no allowed failures, and precheck warnings enforced.
+
 - `auto_scaling` (Attributes) Node pool scaling policy configuration. (see [below for nested schema](#nestedatt--auto_scaling))
 - `kubernetes_config` (Attributes) Kubernetes-related configuration for the node pool (see [below for nested schema](#nestedatt--kubernetes_config))
 - `management` (Attributes) Managed node pool configuration (see [below for nested schema](#nestedatt--management))
@@ -175,6 +177,8 @@ resource "volcenginecc_vke_node_pool" "VKENodePoolDemo" {
  Important Note: When using SetNestedAttribute, you must fully define all attributes of its nested structure. Incomplete definitions may cause Terraform to detect unexpected differences during plan comparison, triggering unnecessary resource updates and affecting resource stability and predictability. (see [below for nested schema](#nestedatt--tags))
 
 ### Read-Only
+
+- `applied_kubernetes_version` (String) Last version confirmed by a successful provider create or VKE upgrade task. This is not a live query of individual kubelet versions. Unknown for imported pools until an upgrade succeeds.
 
 - `created_time` (String) Node pool creation time
 - `id` (String) Uniquely identifies the resource.

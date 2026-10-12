@@ -66,6 +66,7 @@ resource "volcenginecc_vke_cluster" "VKEClusterDemo" {
 - `delete_protection_enabled` (Boolean) Cluster deletion protection. Values: false (default): Deletion protection is disabled. true: Deletion protection is enabled; the cluster cannot be deleted directly.
 - `description` (String) Cluster description. Maximum length is 300 characters.
 - `irsa_config` (Attributes) IRSA (IAM Role for Service Account) capability parameter configuration (see [below for nested schema](#nestedatt--irsa_config))
+- `kubernetes_version` (String) Kubernetes major.minor version, for example `1.34`. Changing this upgrades the control plane in place through VKE, including its precheck and asynchronous task wait. Leave `kubernetes_version_create` unchanged after creation.
 - `kubernetes_version_create` (String) Kubernetes version of the cluster, in the format x.xx. When creating a cluster, the system automatically matches the latest VKE version corresponding to this Kubernetes version. (For creation)
 - `logging_config` (Attributes) Cluster log configuration information. (see [below for nested schema](#nestedatt--logging_config))
 - `monitoring_config` (Attributes) Monitoring configuration information. (see [below for nested schema](#nestedatt--monitoring_config))
@@ -81,7 +82,6 @@ resource "volcenginecc_vke_cluster" "VKEClusterDemo" {
 - `cluster_id` (String) Cluster ID.
 - `created_time` (String) Cluster creation time. Standard RFC3339 format, UTC+0.
 - `id` (String) Uniquely identifies the resource.
-- `kubernetes_version` (String) Cluster Kubernetes version in the format x.xx. When creating a cluster, the system automatically matches the latest VKE version corresponding to this Kubernetes version (for query use)
 - `message` (String) Cluster status description.
 - `node_statistics` (Attributes) Statistics of node counts for each main status in the cluster. (see [below for nested schema](#nestedatt--node_statistics))
 - `status` (Attributes) Cluster status. (see [below for nested schema](#nestedatt--status))
